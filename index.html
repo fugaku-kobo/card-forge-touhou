@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Card Forge — 手塚カード制作ツール</title>
+<title>Touhou Card Forge — 東方カード制作ツール</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Serif+JP:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -13,30 +13,34 @@
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 :root {
-  --bg-deep: #1a1410;
-  --bg-mid: #241c17;
-  --bg-light: #2d241e;
-  --parchment: #f4ead5;
-  --parchment-dim: #d4c8a8;
-  --gold: #c9a961;
-  --gold-bright: #e6c878;
-  --ink: #1a1410;
-  --shadow: 0 4px 20px rgba(0,0,0,0.4);
-  /* レベル別のカラー */
+  /* 東方版テーマ: 夜空の博麗神社 (濃紺ベース + 鳥居の朱 + 金装飾) */
+  --bg-deep: #0e1226;       /* 深夜空 */
+  --bg-mid:  #161a39;       /* 中間 */
+  --bg-light: #1e2348;      /* 明るめの夜 */
+  --parchment: #f5ead0;     /* 御札・和紙風 */
+  --parchment-dim: #c8bd9d; /* 薄い金 */
+  --gold: #d4af37;          /* 注連縄・装飾 */
+  --gold-bright: #ecc962;
+  --torii: #d33848;         /* 鳥居の朱 */
+  --torii-deep: #a52736;    /* 朱の影 */
+  --ink: #0a0d22;
+  --shadow: 0 4px 20px rgba(0,0,0,0.5);
+  /* レベル別のカラー (淡い和紙トーン) */
   --lv1-bg: #f5f0e6;
   --lv2-bg: #f0e4c8;
   --lv2-frame: #b59560;
   --lv3-bg: #fff8e1;
   --lv3-frame: #d4af37;
-  --lv3-glow: rgba(212, 175, 55, 0.5);
+  --lv3-glow: rgba(212, 175, 55, 0.55);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Noto Sans JP', sans-serif;
   background: var(--bg-deep);
   background-image:
-    radial-gradient(circle at 10% 20%, rgba(201, 169, 97, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(139, 44, 31, 0.06) 0%, transparent 40%);
+    radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 88% 78%, rgba(211, 56, 72, 0.10) 0%, transparent 45%),
+    radial-gradient(circle at 50% 110%, rgba(120, 80, 180, 0.07) 0%, transparent 50%);
   color: var(--parchment);
   min-height: 100vh;
   line-height: 1.6;
@@ -62,7 +66,7 @@ header {
   color: var(--gold); letter-spacing: 0.1em;
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
-.brand-mark::before { content: "❦ "; color: var(--gold-bright); }
+.brand-mark::before { content: "⛩ "; color: var(--torii); text-shadow: 0 0 8px rgba(211,56,72,0.4); }
 .brand-tag {
   font-family: 'Noto Serif JP', serif;
   font-size: 0.78rem; color: var(--parchment-dim);
@@ -543,6 +547,9 @@ main {
 .kind-leveled .cp-illust { height: 90px; }   /* 主人公: 大きめ */
 .kind-character .cp-illust { height: 70px; } /* キャラ: 中くらい(技2つ分のスペース確保) */
 .kind-effect .cp-illust { height: 60px; }    /* 効果: コンパクト(効果文を大きく) */
+.kind-touhou-char .cp-illust  { height: 78px; }
+.kind-touhou-spell .cp-illust { height: 66px; }
+.kind-touhou-shoot .cp-illust { height: 66px; }
 
 .cp-illust-icon {
   font-size: 36px;
@@ -552,6 +559,113 @@ main {
 .kind-leveled .cp-illust-icon { font-size: 48px; }
 .kind-character .cp-illust-icon { font-size: 36px; }
 .kind-effect .cp-illust-icon { font-size: 32px; }
+.kind-touhou-char .cp-illust-icon  { font-size: 42px; }
+.kind-touhou-spell .cp-illust-icon { font-size: 36px; }
+.kind-touhou-shoot .cp-illust-icon { font-size: 36px; }
+
+/* === 東方版: ステータスチップ(回避/進化情報) === */
+.cp-th-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px 2px;
+  font-size: 10.5px;
+  min-height: 14px;
+}
+.cp-th-stats:empty { display: none; }
+.cp-th-chip {
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 10px;
+  padding: 1px 7px;
+  color: #3a2e22;
+  white-space: nowrap;
+}
+.cp-th-eva { background: rgba(60,120,200,0.10); border-color: rgba(60,120,200,0.30); color: #1f4a86; }
+.cp-th-atk-aw { background: rgba(216,58,48,0.15); border-color: rgba(216,58,48,0.45); color: #a02822; font-weight: 600; }
+.cp-th-eva-aw { background: rgba(60,120,200,0.18); border-color: rgba(60,120,200,0.50); color: #1f4a86; font-weight: 600; }
+
+/* === 東方版: キャラの覚醒ブロック === */
+.cp-awaken-block {
+  margin: 4px 6px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(255,196,84,0.10) 0%, rgba(255,140,60,0.06) 100%);
+  border: 1px solid rgba(216,150,30,0.40);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cp-awaken-head {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8a5a08;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cp-awaken-cost {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6a4810;
+  background: rgba(255,255,255,0.55);
+  padding: 0 6px;
+  border-radius: 8px;
+}
+.cp-awaken-stats {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cp-awaken-effect {
+  font-size: 10.5px;
+  color: #3a2e22;
+  line-height: 1.35;
+}
+
+/* === 東方版: 攻撃力バッジ === */
+.cp-badge-atk {
+  background: linear-gradient(180deg, #d83a30 0%, #a02822 100%);
+  color: #fff5dc;
+  border-color: #7a1a14;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+}
+.cp-badge-atk .cp-badge-prefix { font-size: 9px; }
+
+/* === 東方版: 回避力バッジ (通常時、攻撃力の右隣) === */
+.cp-badge-eva {
+  background: linear-gradient(180deg, #3a78d8 0%, #2256a0 100%);
+  color: #f0f7ff;
+  border-color: #143e7c;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+}
+.cp-badge-eva .cp-badge-prefix { font-size: 9px; }
+
+/* === 東方版: スペル/シューティング 使用者タグ (右下) === */
+.cp-user-tag {
+  color: #6a4810;
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* === 東方版: スペルの回収P(右下青字) === */
+.cp-recover-p {
+  color: #1d63bc;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* === 東方版: スペルのトリガー文(コストとカード効果の間) === */
+.cp-th-trigger {
+  font-size: 10.5px;
+  color: #6a4810;
+  background: rgba(200,140,40,0.08);
+  border-left: 2.5px solid rgba(200,140,40,0.50);
+  padding: 2px 7px;
+  margin: 2px 0;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.3;
+}
 
 .cp-illust-memo {
   position: absolute;
@@ -1569,6 +1683,88 @@ main {
   align-items: stretch;
   overflow: hidden;
 }
+
+/* === 東方版 PLAY タブ追加スタイル === */
+.th-board { /* 3カラム: ライフ&BOMB | 盤面+手札 | デッキ・トラッシュ・P */ }
+.th-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 110px;
+  max-width: 130px;
+}
+.th-meter-block {
+  background: rgba(20, 24, 50, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 6px;
+  padding: 5px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.th-pip-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.th-pip {
+  width: 24px;
+  height: 30px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.th-pip:hover { transform: translateY(-1px); }
+.th-pip-life.filled {
+  background: linear-gradient(160deg, #c23048 0%, #82202c 100%);
+  border-color: #d33848;
+  box-shadow: 0 0 8px rgba(211,56,72,0.35), inset 0 1px 2px rgba(255,255,255,0.20);
+}
+.th-pip-life.filled::after { content: "❤"; color: #fff; font-size: 12px; opacity: 0.85; }
+.th-pip-life.empty {
+  background: rgba(80, 30, 40, 0.20);
+  border-style: dashed;
+  border-color: rgba(211,56,72,0.30);
+}
+.th-pip-bomb.filled {
+  background: linear-gradient(160deg, #5a3892 0%, #34205c 100%);
+  border-color: #8a5cb8;
+  box-shadow: 0 0 8px rgba(138,92,184,0.30), inset 0 1px 2px rgba(255,255,255,0.18);
+  color: #ffe6c2;
+}
+.th-pip-bomb.empty {
+  background: rgba(60, 40, 90, 0.18);
+  border-style: dashed;
+  border-color: rgba(138,92,184,0.30);
+}
+.th-pip-bomb.empty::after { content: "·"; color: rgba(255,255,255,0.20); }
+
+.counter-pill.life-pill { border-color: rgba(211,56,72,0.45); }
+.counter-pill.life-pill strong { color: #ff7080; font-size: 1.0rem; }
+.counter-pill.life-pill.warn { background: rgba(211,56,72,0.10); }
+.counter-pill.life-pill.warn strong { color: #ffb070; }
+.counter-pill.life-pill.lose { background: rgba(211,56,72,0.25); animation: th-life-pulse 1.2s ease-in-out infinite; }
+.counter-pill.life-pill.lose strong { color: #ff5566; }
+.counter-pill.bomb-pill { border-color: rgba(138,92,184,0.45); }
+.counter-pill.bomb-pill strong { color: #d0aaff; }
+@keyframes th-life-pulse { 0%,100% { box-shadow: 0 0 0 rgba(211,56,72,0); } 50% { box-shadow: 0 0 12px rgba(211,56,72,0.6); } }
+
+.zone-stack-p { border-color: rgba(60, 120, 200, 0.30); }
+.zone-stack-trash { border-color: rgba(120, 90, 60, 0.30); }
+.zone-block-label.warn { color: #ff8090; }
+.zone-block-label.lose { color: #ff5566; }
+
+/* 上下反転時、左カラムは中央寄せに */
+.play-side.side-top .th-left { order: 3; }
+.play-side.side-top .zone-center { order: 2; }
+.play-side.side-top .zone-block-stacks { order: 1; }
 /* 中央列: 場(上) + 手札(下) 縦並び */
 .zone-center {
   display: flex;
@@ -2208,6 +2404,16 @@ main {
   border: 1px solid rgba(0,0,0,0.3);
   font-family: 'Cinzel', serif;
 }
+/* 東方版: 覚醒バッジ */
+.card-chip-awaken {
+  position: absolute;
+  top: 1px; right: 1px;
+  font-size: 11px;
+  z-index: 3;
+  filter: drop-shadow(0 0 3px rgba(255,200,80,0.8));
+  animation: th-awaken-pulse 1.6s ease-in-out infinite;
+}
+@keyframes th-awaken-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
 /* 進化したカード(stackあり)は枠を二重に */
 .card-chip.lv2:has(.chip-stack-badge),
 .card-chip.lv3:has(.chip-stack-badge) {
@@ -2628,8 +2834,8 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 <header>
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-mark">CARD FORGE</div>
-      <div class="brand-tag">— 手塚カード制作ツール —</div>
+      <div class="brand-mark">TOUHOU CARD FORGE</div>
+      <div class="brand-tag">— 東方カード制作ツール —</div>
     </div>
     <div class="actions">
       <button onclick="document.getElementById('importXlsxFile').click()" class="btn-small">📊 Excel取込</button>
@@ -2664,160 +2870,125 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 
         <div class="field">
           <label>カード名</label>
-          <input type="text" id="f-name" placeholder="例: ブラック・ジャック">
+          <input type="text" id="f-name" placeholder="例: 博麗霊夢 / 霊符「夢想封印」">
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label>作品名 (出典)</label>
-            <input type="text" id="f-work" placeholder="例: ブラック・ジャック">
+            <label>使用者 / 出典キャラ</label>
+            <input type="text" id="f-work" placeholder="例: 霊夢(キャラ本人なら自分自身の名前/スペルなら使用キャラ名)" list="userCharList">
+            <datalist id="userCharList"></datalist>
           </div>
           <div class="field">
             <label>ID / 型番</label>
-            <input type="text" id="f-cardCode" placeholder="例: BJ-001">
+            <input type="text" id="f-cardCode" placeholder="例: TH-001">
           </div>
         </div>
 
-        <!-- 主人公・キャラ用フィールド (動的表示) -->
-        <div id="fields-leveled" style="display:none">
+        <!-- キャラカード用フィールド (覚醒モデル: 1枚で通常↔覚醒の2状態) -->
+        <div id="fields-char" style="display:none">
           <div class="field-row">
-            <div class="field" id="field-level">
+            <div class="field" style="flex:0 0 96px">
               <label>レベル</label>
               <select id="f-level">
-                <option value="1">1 (原案/脇役)</option>
-                <option value="2">2 (ネーム/名脇役)</option>
-                <option value="3">3 (清書/相棒・ライバル)</option>
+                <option value="">(なし)</option>
+                <option value="1">Lv 1</option>
+                <option value="2">Lv 2</option>
+                <option value="3">Lv 3</option>
               </select>
             </div>
-            <div class="field" id="field-subrole">
-              <label>サブ区分</label>
-              <input type="text" id="f-subrole" placeholder="例: 原案 / ネーム / 清書">
-            </div>
-          </div>
-        </div>
-
-        <!-- デッキアイコン(旧主人公)用 — 両面共通効果 + 裏面効果 -->
-        <div id="fields-icon" style="display:none">
-          <div class="editor-section">
-            <div class="editor-section-title">📘 両面共通効果(常在パッシブ)</div>
             <div class="field">
-              <textarea id="f-frontEffect" placeholder="例: 自分のドローフェイズに自陣キャラから10ダメージ取り除く"></textarea>
+              <label>攻撃力 (通常時)</label>
+              <input type="text" id="f-attack" placeholder="例: 13" maxlength="3" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label>回避力 (通常時)</label>
+              <input type="text" id="f-evasion" placeholder="例: 5" maxlength="3" inputmode="numeric">
             </div>
           </div>
+          <div class="field">
+            <label>効果文 (任意・登場時/常時など)</label>
+            <textarea id="f-effect-char" placeholder="例: 登場時、相手のPゾーンを2枚デッキに戻す"></textarea>
+          </div>
           <div class="editor-section">
-            <div class="editor-section-title">🔄 裏面効果(覚醒スキル)</div>
+            <div class="editor-section-title">🌟 覚醒</div>
             <div class="field-row">
-              <div class="field" style="flex:3">
-                <label>裏面効果名</label>
-                <input type="text" id="f-backEffectName" placeholder="例: 無免許の天才外科医">
+              <div class="field" style="flex:0 0 130px">
+                <label>覚醒コスト</label>
+                <input type="text" id="f-awakenCost" placeholder="例: 3" maxlength="3" inputmode="numeric">
               </div>
-              <div class="field" style="flex:1">
-                <label>コスト</label>
-                <input type="text" id="f-backCost" placeholder="例: 10" maxlength="3" inputmode="numeric">
+              <div class="field">
+                <label>覚醒時 攻撃力</label>
+                <input type="text" id="f-awakenAttack" placeholder="例: 15" maxlength="3" inputmode="numeric">
+              </div>
+              <div class="field">
+                <label>覚醒時 回避力</label>
+                <input type="text" id="f-awakenEvasion" placeholder="例: 7" maxlength="3" inputmode="numeric">
               </div>
             </div>
             <div class="field">
-              <label>裏面効果</label>
-              <textarea id="f-backEffect" placeholder="例: 自陣全キャラからダメージを取り除き、相手キャラに合計200ダメージを割り振る"></textarea>
+              <label>覚醒時 能力</label>
+              <textarea id="f-awakenEffect" placeholder="例: 1ドロー / 覚醒時、相手のPゾーンから1枚デッキに戻す"></textarea>
             </div>
-            <div class="field">
-              <label>覚醒ルール</label>
-              <textarea id="f-iconRule" placeholder="例: 対戦相手の原稿が4枚以上の時、このカードを裏返してコストを支払うことで、1度だけ使える"></textarea>
-            </div>
+          </div>
+          <div class="field-checkbox">
+            <input type="checkbox" id="f-unlimited-char">
+            <label for="f-unlimited-char">∞ デッキに何枚でも入れられる</label>
           </div>
         </div>
 
-        <!-- HPとIP (キャラクターのみ) -->
-        <div id="fields-character" style="display:none">
+        <!-- スペル/シューティング 共通フィールド -->
+        <div id="fields-spell" style="display:none">
           <div class="field-row">
-            <div class="field">
-              <label>HP</label>
-              <input type="text" id="f-hp" placeholder="例: 70">
+            <div class="field" style="flex:0 0 200px">
+              <label>種類 (任意)</label>
+              <input type="text" id="f-spellKind" placeholder="例: スペルカード / QUICK" list="spellKindList">
+              <datalist id="spellKindList">
+                <option value="スペルカード"></option>
+                <option value="シューティング"></option>
+                <option value="QUICK"></option>
+                <option value="COUNTER"></option>
+              </datalist>
+            </div>
+            <div class="field" style="flex:0 0 130px">
+              <label>発動条件Lv (左上)</label>
+              <select id="f-requiredCharLevel">
+                <option value="">(なし)</option>
+                <option value="1">Lv 1 以上</option>
+                <option value="2">Lv 2 以上</option>
+                <option value="3">Lv 3 以上</option>
+              </select>
             </div>
             <div class="field">
-              <label>没で得るIP</label>
-              <input type="text" id="f-ip" placeholder="例: 1">
+              <label style="font-size:0.7rem; opacity:0.7;">※「使用者」は上の共通欄に入力</label>
+              <div style="font-size:0.78rem; padding:9px 0; opacity:0.6;">使用者キャラがいるデッキにのみ入れられます</div>
             </div>
           </div>
-          <div class="field-checkbox">
-            <input type="checkbox" id="f-shinsaku">
-            <label for="f-shinsaku">★ イチオシ(没で相手の原稿+2)</label>
-          </div>
-          <div class="field-checkbox">
-            <input type="checkbox" id="f-unlimited">
-            <label for="f-unlimited">∞ デッキに何枚でも入れられる</label>
-          </div>
-          <div class="field">
-            <label>パッシブ能力(任意、場にいる間常時発動)</label>
-            <textarea id="f-passive" placeholder="例: 自陣にアトムが居る間、自分の魅力+5"></textarea>
-          </div>
-        </div>
-
-        <!-- IP・コスト (展開・テコ入れ・どんでん返し) -->
-        <div id="fields-ip-only" style="display:none">
           <div class="field-row">
-            <div class="field">
-              <label>必要コスト (使うとき)</label>
-              <input type="text" id="f-cost" placeholder="例: 2" maxlength="2" inputmode="numeric">
+            <div class="field" style="flex:0 0 110px">
+              <label>PPコスト</label>
+              <input type="text" id="f-ppCost" placeholder="例: 3" maxlength="3" inputmode="numeric">
+            </div>
+            <div class="field" style="flex:0 0 110px">
+              <label>BOMコスト</label>
+              <input type="text" id="f-bomCost" placeholder="例: 1" maxlength="3" inputmode="numeric">
+            </div>
+            <div class="field" style="flex:0 0 110px">
+              <label>トリガー (数値)</label>
+              <input type="text" id="f-trigger" placeholder="例: 1" maxlength="3" inputmode="numeric">
             </div>
             <div class="field">
-              <label>没で得るIP</label>
-              <input type="text" id="f-ip2" placeholder="例: 2">
-            </div>
-          </div>
-          <div class="field-checkbox">
-            <input type="checkbox" id="f-unlimited2">
-            <label for="f-unlimited2">∞ デッキに何枚でも入れられる</label>
-          </div>
-        </div>
-
-        <!-- 技/スキル (主人公・キャラ) -->
-        <div id="fields-skills" style="display:none">
-          <div class="editor-section">
-            <div class="editor-section-title">技 / スキル</div>
-            <div class="skill-block">
-              <label>技1</label>
-              <div class="skill-fields">
-                <input type="text" id="f-skill1Name" placeholder="技名 (例: メス投げ)">
-                <input type="text" id="f-skill1Cost" placeholder="コスト" maxlength="2" inputmode="numeric">
-              </div>
-              <textarea id="f-skill1Effect" placeholder="効果 (例: 指定したキャラに20ダメージ)"></textarea>
-            </div>
-            <div class="skill-block">
-              <label>技2 (空欄でも可)</label>
-              <div class="skill-fields">
-                <input type="text" id="f-skill2Name" placeholder="技名">
-                <input type="text" id="f-skill2Cost" placeholder="コスト" maxlength="2" inputmode="numeric">
-              </div>
-              <textarea id="f-skill2Effect" placeholder="効果"></textarea>
-            </div>
-          </div>
-          <div class="field" id="field-other-ability">
-            <label>ルール (例: このカードはデッキに何枚でも入れられる)</label>
-            <textarea id="f-other" placeholder="このカードに固有の特殊ルールがあれば記入"></textarea>
-          </div>
-        </div>
-
-        <!-- 効果 (展開・テコ入れ・どんでん返し) -->
-        <div id="fields-effects" style="display:none">
-          <div class="editor-section">
-            <div class="editor-section-title">カード効果</div>
-            <div class="field">
-              <label>カード効果(メイン)</label>
-              <textarea id="f-effect1" placeholder="例: 自分は3枚ドローする"></textarea>
-            </div>
-            <div class="field">
-              <label>追加効果 / 使用条件(任意)</label>
-              <textarea id="f-effect2" placeholder="(空欄でも可、複数効果ある場合はここに)"></textarea>
-            </div>
-            <div class="field" id="field-effect3">
-              <label>補足効果(任意)</label>
-              <textarea id="f-effect3" placeholder="例: 対戦相手の原稿が6枚以上のときのみ使用可能"></textarea>
+              <label>回収P (右下青)</label>
+              <input type="text" id="f-recoverP" placeholder="例: 1" maxlength="3" inputmode="numeric">
             </div>
           </div>
           <div class="field">
-            <label>ルール (例: このカードはターン中1枚しか使えない)</label>
-            <textarea id="f-rule-effect" placeholder="このカードに固有の特殊ルール"></textarea>
+            <label>カード効果</label>
+            <textarea id="f-effect-spell" placeholder="例: 攻撃力+10 / 2回攻撃"></textarea>
+          </div>
+          <div class="field-checkbox">
+            <input type="checkbox" id="f-unlimited-spell">
+            <label for="f-unlimited-spell">∞ デッキに何枚でも入れられる</label>
           </div>
         </div>
 
@@ -2998,37 +3169,27 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 <div class="toast" id="toast"></div>
 
 <footer>
-  <div class="ornament">❦ · · · ❦ · · · ❦</div>
-  Card Forge — 手塚カードゲーム制作ツール
+  <div class="ornament">⛩ · · · 🌸 · · · ⛩</div>
+  Touhou Card Forge — 東方カードゲーム制作ツール
 </footer>
 
 <script>
 // ============ DATA ============
-const STORAGE_KEY = 'card_forge_data_v4_tezuka';
+const STORAGE_KEY = 'touhou_card_forge_v1';
 
-// 5つの基本タイプ
-// 色は意味重視: 主人公=朱赤(主役)、キャラ=青(仲間)、展開=緑(発想)、テコ入れ=橙(介入)、どんでん返し=紫(逆転)
+// 3つの基本タイプ(東方版)
+// 色は意味重視: キャラ=紅(博麗系)、スペル=青(夜空・弾幕)、シューティング=紫(妖怪・弾幕舞)
 const BUILTIN_TYPES = [
-  { name: '主人公',         color: '#a02d1f', builtin: true, kind: 'leveled',   meaning: 'デッキアイコンカード (1 枚必須、デッキを識別)' },
-  { name: 'キャラクター',   color: '#2c5fa0', builtin: true, kind: 'character', meaning: '場で戦う仲間(脇役/相棒/ライバル/自信作)' },
-  { name: '展開アイディア', color: '#3d8a3a', builtin: true, kind: 'effect',    meaning: 'アイデア・物語の発展を促すカード' },
-  { name: 'テコ入れ',       color: '#c8761f', builtin: true, kind: 'effect',    meaning: '伏せて相手ターンに発動する介入カード' },
-  { name: 'どんでん返し',   color: '#6e3a8b', builtin: true, kind: 'effect',    meaning: '原稿6枚以上で使える大逆転カード' }
+  { name: 'キャラ',         color: '#c8324c', builtin: true, kind: 'touhou-char',  meaning: '盤面に1体出せる、覚醒モデル(通常↔覚醒で攻撃/回避が切替)' },
+  { name: 'スペル',         color: '#3878c8', builtin: true, kind: 'touhou-spell', meaning: 'スペルカード(必殺)。使用者・PP/BOM コスト・トリガー・効果' },
+  { name: 'シューティング', color: '#8a5cb8', builtin: true, kind: 'touhou-shoot', meaning: 'シューティングカード(弾幕)。スペルと同じフィールド構成' }
 ];
 
-// 旧デフォルト色 → 新色マイグレーション用
-const OLD_DEFAULT_COLORS = {
-  '主人公':         '#8b2c1f',
-  'キャラクター':   '#2c4f7c',
-  '展開アイディア': '#3d6b3a',
-  'テコ入れ':       '#6b4f2c',
-  'どんでん返し':   '#5d3a6b'
-};
 // kind の意味:
-// - 'leveled':   レベルあり、技あり、HPなし、IPなし   (主人公)
-// - 'character': レベル・サブ区分・HP・IP・技・自信作  (キャラクター)
-// - 'effect':    IPと効果1〜3                          (展開・テコ入れ・どんでん返し)
-// カスタム追加されたタイプはデフォルトで 'character' kind を持つ
+// - 'touhou-char':  Lv + 攻撃力/回避力(通常+覚醒) + 覚醒コスト + 効果
+// - 'touhou-spell': 使用者 + 種類 + PP/BOM + トリガー + 回収P + 効果
+// - 'touhou-shoot': 使用者 + 種類 + PP/BOM + トリガー + 回収P + 効果(スペルと同フィールド)
+// カスタム追加されたタイプはデフォルトで 'touhou-char' kind を持つ
 
 let state = {
   cards: [],
@@ -3065,23 +3226,6 @@ function loadData() {
       if (state.playSession?.network && state.playSession.network.mode !== 'solo') {
         state.playSession = null;
       }
-      // 旧形式の phase 文字列を phaseIdx に移行
-      if (state.playSession && state.playSession.phaseIdx === undefined) {
-        state.playSession.phaseIdx = 2; // 「メイン」相当 = ② アイディア
-        state.playSession.firstPlayer = state.playSession.firstPlayer || 'A';
-        delete state.playSession.phase;
-      }
-      // 原稿カード配列・泣きフラグ・インスピレーションゾーンの初期化
-      if (state.playSession) {
-        ['A','B'].forEach(k => {
-          const s = state.playSession.sides?.[k];
-          if (s) {
-            if (!s.manuscriptCards) s.manuscriptCards = [];
-            if (s.nakiUsed === undefined) s.nakiUsed = false;
-            if (!s.inspiration) s.inspiration = [];
-          }
-        });
-      }
       cardIdCounter = data.cardIdCounter || (state.cards.length + 1);
       loaded = true;
     }
@@ -3089,9 +3233,7 @@ function loadData() {
 
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
-  // 旧色を新色へ自動更新(ユーザーカスタム色は維持)
-  migrateBuiltinColors();
-  // デッキ形式の移行
+  // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
   migrateDecks();
   // カードのunlimitedフラグを必要なら推測
   autoDetectUnlimited();
@@ -3108,17 +3250,6 @@ function ensureBuiltinTypes() {
       exists.kind = builtin.kind;
       // meaning も常に最新化
       exists.meaning = builtin.meaning;
-    }
-  });
-}
-
-// 旧デフォルト色のままなら新色に更新(カスタム済の色は維持)
-function migrateBuiltinColors() {
-  state.types.forEach(t => {
-    const old = OLD_DEFAULT_COLORS[t.name];
-    const newType = BUILTIN_TYPES.find(b => b.name === t.name);
-    if (old && newType && t.color === old) {
-      t.color = newType.color;
     }
   });
 }
@@ -3172,22 +3303,54 @@ function getTypeColor(name) {
   return getType(name)?.color || '#5d3a6b';
 }
 function getTypeKind(name) {
-  return getType(name)?.kind || 'character';
+  return getType(name)?.kind || 'touhou-char';
 }
 
 // ============ 絵文字推測 ============
 // カード名・タイプ・スキル等のキーワードから絵文字を推測
 const EMOJI_KEYWORDS = [
-  // 手塚作品の固有名詞 (優先度高)
-  ['ブラック・ジャック|ブラックジャック|間黒男', '🩺'],
-  ['ピノコ', '👧'],
-  ['ドクター・キリコ|キリコ', '💀'],
-  ['鉄腕アトム|アトム$|アトム　', '🤖'],
-  ['お茶の水博士', '🔬'],
-  ['ウラン', '👧'],
-  ['コバルト', '🤖'],
-  ['天馬|天馬博士', '🔬'],
-  ['アトラス', '🤖'],
+  // 東方Project の固有名詞 (優先度高)
+  ['博麗霊夢|霊夢', '🎀'],
+  ['霧雨魔理沙|魔理沙', '🧹'],
+  ['十六夜咲夜|咲夜', '🔪'],
+  ['レミリア(?:・スカーレット)?|レミリア', '🦇'],
+  ['フランドール(?:・スカーレット)?|フラン$', '💎'],
+  ['紅美鈴|美鈴', '🐉'],
+  ['パチュリー(?:・ノーレッジ)?', '📚'],
+  ['アリス(?:・マーガトロイド)?|アリス', '🪆'],
+  ['八雲紫|ゆかり|紫$', '🌌'],
+  ['チルノ', '❄'],
+  ['古明地さとり|さとり', '👁'],
+  ['古明地こいし|こいし', '💭'],
+  ['射命丸文|あや$|文$', '📰'],
+  ['河城にとり|にとり', '🥒'],
+  ['魂魄妖夢|妖夢', '🗡'],
+  ['西行寺幽々子|幽々子', '🌸'],
+  ['八意永琳|永琳', '💊'],
+  ['蓬莱山輝夜|輝夜', '🌙'],
+  ['鈴仙|うどんげ', '🐰'],
+  ['東風谷早苗|早苗', '🐍'],
+  ['八坂神奈子|神奈子', '⛩'],
+  ['洩矢諏訪子|諏訪子', '🐸'],
+  ['藤原妹紅|妹紅', '🔥'],
+  ['上白沢慧音|慧音', '📜'],
+  ['比那名居天子|天子', '☁'],
+  ['永江衣玖|衣玖', '⚡'],
+  ['秦こころ|こころ', '🎭'],
+  ['大妖精|大ちゃん', '🧚'],
+  ['ルーミア', '🌑'],
+  ['キスメ', '🪣'],
+  ['黒谷ヤマメ|ヤマメ', '🕷'],
+  ['水橋パルスィ|パルスィ', '💚'],
+  ['星熊勇儀|勇儀', '🍶'],
+  ['火焔猫燐|お燐|燐$', '🐈'],
+  ['霊烏路空|お空|空$', '☀'],
+  ['古明地|地霊殿', '🏮'],
+  ['博麗神社|神社', '⛩'],
+  ['紅魔館', '🏰'],
+  ['白玉楼', '🌸'],
+  ['迷いの竹林', '🎋'],
+  ['弾幕|スペルカード', '💥'],
   // 人物・職業系
   ['医者|医師|外科|ドクター|手術|病院|看護', '🩺'],
   ['博士|学者|教授|研究', '🔬'],
@@ -3266,11 +3429,9 @@ const EMOJI_KEYWORDS = [
 
 // タイプ別のフォールバック絵文字
 const TYPE_DEFAULT_EMOJI = {
-  '主人公': '⭐',
-  'キャラクター': '👤',
-  '展開アイディア': '💡',
-  'テコ入れ': '🔧',
-  'どんでん返し': '🎲'
+  'キャラ': '🎀',
+  'スペル': '✨',
+  'シューティング': '💥'
 };
 
 function guessEmoji(card) {
@@ -3375,31 +3536,10 @@ function switchTab(tabName, btn) {
 function onTypeChange() {
   const typeName = document.getElementById('f-type').value;
   const kind = getTypeKind(typeName);
-
-  // 全部一旦隠す
-  document.getElementById('fields-leveled').style.display = 'none';
-  document.getElementById('fields-icon').style.display = 'none';
-  document.getElementById('fields-character').style.display = 'none';
-  document.getElementById('fields-ip-only').style.display = 'none';
-  document.getElementById('fields-skills').style.display = 'none';
-  document.getElementById('fields-effects').style.display = 'none';
-
-  if (kind === 'leveled') {
-    // デッキアイコンカード(旧主人公): 両面共通効果+裏面効果(Lv 廃止、技も廃止)
-    document.getElementById('fields-icon').style.display = '';
-    // 旧フィールドは互換性のため非表示にする(データは残す)
-  } else if (kind === 'character') {
-    // キャラクター: フル装備 + パッシブ能力
-    document.getElementById('fields-leveled').style.display = '';
-    document.getElementById('field-subrole').style.display = '';
-    document.getElementById('fields-character').style.display = '';
-    document.getElementById('fields-skills').style.display = '';
-    document.getElementById('field-other-ability').style.display = '';
-  } else if (kind === 'effect') {
-    // 展開/テコ入れ/どんでん返し: IPと効果
-    document.getElementById('fields-ip-only').style.display = '';
-    document.getElementById('fields-effects').style.display = '';
-  }
+  document.getElementById('fields-char').style.display  = (kind === 'touhou-char')  ? '' : 'none';
+  // スペル / シューティング は同じフィールド構成を共有
+  const isSpellLike = (kind === 'touhou-spell' || kind === 'touhou-shoot');
+  document.getElementById('fields-spell').style.display = isSpellLike ? '' : 'none';
 }
 
 function readForm() {
@@ -3413,99 +3553,78 @@ function readForm() {
     icon: document.getElementById('f-icon').value.trim(),
     art: document.getElementById('f-art').value.trim()
   };
-  if (kind === 'leveled') {
-    // デッキアイコンカード(旧主人公) — 両面共通効果 + 裏面効果
-    data.frontEffect = document.getElementById('f-frontEffect').value.trim();
-    data.backEffectName = document.getElementById('f-backEffectName').value.trim();
-    data.backCost = normalizeNumStr(document.getElementById('f-backCost').value);
-    data.backEffect = document.getElementById('f-backEffect').value.trim();
-    data.iconRule = document.getElementById('f-iconRule').value.trim();
-    // 旧フィールドは編集中に保持(互換性のため、UI 上は隠す)
-    data.level = document.getElementById('f-level').value || '1';
-    data.skill1 = composeSkillText(
-      document.getElementById('f-skill1Name').value,
-      document.getElementById('f-skill1Cost').value,
-      document.getElementById('f-skill1Effect').value
-    );
-    data.skill2 = composeSkillText(
-      document.getElementById('f-skill2Name').value,
-      document.getElementById('f-skill2Cost').value,
-      document.getElementById('f-skill2Effect').value
-    );
+  if (kind === 'touhou-char') {
+    data.level          = document.getElementById('f-level').value || '';
+    data.attack         = normalizeNumStr(document.getElementById('f-attack').value);
+    data.evasion        = normalizeNumStr(document.getElementById('f-evasion').value);
+    data.effect         = document.getElementById('f-effect-char').value.trim();
+    data.awakenCost     = normalizeNumStr(document.getElementById('f-awakenCost').value);
+    data.awakenAttack   = normalizeNumStr(document.getElementById('f-awakenAttack').value);
+    data.awakenEvasion  = normalizeNumStr(document.getElementById('f-awakenEvasion').value);
+    data.awakenEffect   = document.getElementById('f-awakenEffect').value.trim();
+    data.unlimited      = document.getElementById('f-unlimited-char').checked;
   }
-  if (kind === 'character') {
-    data.level = document.getElementById('f-level').value;
-    data.skill1 = composeSkillText(
-      document.getElementById('f-skill1Name').value,
-      document.getElementById('f-skill1Cost').value,
-      document.getElementById('f-skill1Effect').value
-    );
-    data.skill2 = composeSkillText(
-      document.getElementById('f-skill2Name').value,
-      document.getElementById('f-skill2Cost').value,
-      document.getElementById('f-skill2Effect').value
-    );
-    data.subrole = document.getElementById('f-subrole').value.trim();
-    data.hp = document.getElementById('f-hp').value.trim();
-    data.ip = document.getElementById('f-ip').value.trim();
-    data.shinsaku = document.getElementById('f-shinsaku').checked;
-    data.unlimited = document.getElementById('f-unlimited').checked;
-    data.passive = document.getElementById('f-passive').value.trim();
-    data.rule = document.getElementById('f-other').value.trim();
-    data.other = data.rule;  // 旧フィールド互換
+  if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+    data.spellKind         = document.getElementById('f-spellKind').value.trim();
+    data.requiredCharLevel = document.getElementById('f-requiredCharLevel').value || '';
+    data.ppCost            = normalizeNumStr(document.getElementById('f-ppCost').value);
+    data.bomCost           = normalizeNumStr(document.getElementById('f-bomCost').value);
+    data.trigger           = normalizeNumStr(document.getElementById('f-trigger').value);
+    data.recoverP          = normalizeNumStr(document.getElementById('f-recoverP').value);
+    data.effect            = document.getElementById('f-effect-spell').value.trim();
+    data.unlimited         = document.getElementById('f-unlimited-spell').checked;
+    // 使用者 = work フィールド(共通入力)。スペル/シューティングでは必須(デッキ整合性チェックに使用)
+    data.user              = data.work; // alias for compatibility
   }
-  if (kind === 'effect') {
-    data.ip = document.getElementById('f-ip2').value.trim();
-    data.cost = normalizeNumStr(document.getElementById('f-cost').value);
-    data.unlimited = document.getElementById('f-unlimited2').checked;
-    data.effect1 = document.getElementById('f-effect1').value.trim();
-    data.effect2 = document.getElementById('f-effect2').value.trim();
-    data.effect3 = document.getElementById('f-effect3').value.trim();
-    data.rule = document.getElementById('f-rule-effect').value.trim();
+  if (kind === 'touhou-char') {
+    // キャラ本人の名前を使用者 alias として保持(デッキ整合性チェックに使う)
+    if (!data.work && data.name) data.work = data.name;
+    data.user = data.work || data.name;
   }
   return data;
 }
 
 function writeForm(c) {
   c = c || {};
-  // タイプ初期値: 既に何か設定されてれば優先、なければ最初のタイプ
-  document.getElementById('f-type').value = c.type || state.types[0]?.name || '主人公';
+  document.getElementById('f-type').value = c.type || state.types[0]?.name || 'キャラ';
   document.getElementById('f-name').value = c.name || '';
   document.getElementById('f-work').value = c.work || '';
   document.getElementById('f-cardCode').value = c.cardCode || '';
   document.getElementById('f-icon').value = c.icon || '';
   document.getElementById('f-art').value  = c.art || '';
-  document.getElementById('f-level').value = c.level || '1';
-  document.getElementById('f-subrole').value = c.subrole || '';
-  document.getElementById('f-hp').value = c.hp || '';
-  document.getElementById('f-ip').value = c.ip || '';
-  document.getElementById('f-shinsaku').checked = !!c.shinsaku;
-  document.getElementById('f-unlimited').checked = !!c.unlimited;
-  document.getElementById('f-unlimited2').checked = !!c.unlimited;
-  document.getElementById('f-other').value = c.rule || c.other || '';
-  document.getElementById('f-ip2').value = c.ip || '';
-  document.getElementById('f-cost').value = c.cost || '';
-  // 第二稿 新フィールド: デッキアイコン用 / キャラのパッシブ
-  document.getElementById('f-frontEffect').value = c.frontEffect || '';
-  document.getElementById('f-backEffectName').value = c.backEffectName || '';
-  document.getElementById('f-backCost').value = c.backCost || '';
-  document.getElementById('f-backEffect').value = c.backEffect || '';
-  document.getElementById('f-iconRule').value = c.iconRule || c.rule || '';
-  document.getElementById('f-passive').value = c.passive || '';
-  // 既存スキルテキストを 名前/コスト/効果 に分解してフォームに割り当て
-  const sk1 = parseSkillText(c.skill1 || '');
-  const sk2 = parseSkillText(c.skill2 || '');
-  document.getElementById('f-skill1Name').value = sk1.name;
-  document.getElementById('f-skill1Cost').value = sk1.cost;
-  document.getElementById('f-skill1Effect').value = sk1.effect;
-  document.getElementById('f-skill2Name').value = sk2.name;
-  document.getElementById('f-skill2Cost').value = sk2.cost;
-  document.getElementById('f-skill2Effect').value = sk2.effect;
-  document.getElementById('f-effect1').value = c.effect1 || '';
-  document.getElementById('f-effect2').value = c.effect2 || '';
-  document.getElementById('f-effect3').value = c.effect3 || '';
-  document.getElementById('f-rule-effect').value = c.rule || '';
+  // キャラ用
+  document.getElementById('f-level').value          = c.level || '';
+  document.getElementById('f-attack').value         = c.attack || '';
+  document.getElementById('f-evasion').value        = c.evasion || '';
+  document.getElementById('f-effect-char').value    = c.effect || '';
+  document.getElementById('f-awakenCost').value     = c.awakenCost || '';
+  document.getElementById('f-awakenAttack').value   = c.awakenAttack || '';
+  document.getElementById('f-awakenEvasion').value  = c.awakenEvasion || '';
+  document.getElementById('f-awakenEffect').value   = c.awakenEffect || '';
+  document.getElementById('f-unlimited-char').checked = !!c.unlimited;
+  // スペル/シューティング用 (使用者は f-work 共通入力に統合)
+  document.getElementById('f-spellKind').value         = c.spellKind || '';
+  document.getElementById('f-requiredCharLevel').value = c.requiredCharLevel || '';
+  document.getElementById('f-ppCost').value            = c.ppCost || '';
+  document.getElementById('f-bomCost').value           = c.bomCost || '';
+  document.getElementById('f-trigger').value           = c.trigger || '';
+  document.getElementById('f-recoverP').value          = c.recoverP || '';
+  document.getElementById('f-effect-spell').value      = c.effect || '';
+  document.getElementById('f-unlimited-spell').checked = !!c.unlimited;
+  // 使用者の候補リスト(既存キャラ)を datalist へ
+  updateUserCharDatalist();
   onTypeChange();
+}
+
+// 使用者入力欄(f-work)の datalist に既存キャラ名を列挙
+function updateUserCharDatalist() {
+  const dl = document.getElementById('userCharList');
+  if (!dl) return;
+  const charNames = [...new Set(state.cards
+    .filter(c => getTypeKind(c.type) === 'touhou-char' && c.name)
+    .map(c => c.name.trim())
+    .filter(n => n))].sort();
+  dl.innerHTML = charNames.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
 }
 
 function resetEditor() {
@@ -3572,19 +3691,13 @@ function getFilteredCards() {
     filtered = filtered.filter(c =>
       (c.name || '').toLowerCase().includes(search) ||
       (c.cardCode || '').toLowerCase().includes(search) ||
-      (c.skill1 || '').toLowerCase().includes(search) ||
-      (c.skill2 || '').toLowerCase().includes(search) ||
-      (c.effect1 || '').toLowerCase().includes(search) ||
-      (c.effect2 || '').toLowerCase().includes(search) ||
-      (c.effect3 || '').toLowerCase().includes(search) ||
-      (c.other || '').toLowerCase().includes(search) ||
+      (c.effect || '').toLowerCase().includes(search) ||
       (c.art || '').toLowerCase().includes(search) ||
-      (c.subrole || '').toLowerCase().includes(search) ||
       (c.work || '').toLowerCase().includes(search) ||
-      (c.passive || '').toLowerCase().includes(search) ||
-      (c.frontEffect || '').toLowerCase().includes(search) ||
-      (c.backEffectName || '').toLowerCase().includes(search) ||
-      (c.backEffect || '').toLowerCase().includes(search)
+      (c.awakenEffect || '').toLowerCase().includes(search) ||
+      (c.spellKind || '').toLowerCase().includes(search) ||
+      (c.user || '').toLowerCase().includes(search) ||
+      (c.trigger || '').toLowerCase().includes(search)
     );
   }
   if (typeFilter) filtered = filtered.filter(c => c.type === typeFilter);
@@ -3644,107 +3757,49 @@ function buildCardHTML(c, idx, opts) {
 
   let body = '';
 
-  if (kind === 'leveled') {
-    // ============ デッキアイコンカード(第二稿) ============
-    // 旧主人公カード。両面共通効果(常在) + 裏面効果(覚醒スキル) を表示
-    const hasIconSpec = !!(c.frontEffect || c.backEffectName || c.backEffect);
-    const lvLabels = { '1': '原案', '2': 'ネーム', '3': '清書' };
-    const lvLabel = lvLabels[String(c.level || '')] || '';
-
-    if (hasIconSpec) {
-      // 第二稿: デッキアイコン版
-      body = `
-        <div class="cp-protagonist-banner" style="background:${color}">
-          <span class="cp-protagonist-mark">📘 デッキアイコン</span>
-          ${c.backCost ? `<span class="cp-protagonist-lv">裏面コスト ${escapeHtml(c.backCost)}</span>` : ''}
-        </div>
-        <div class="cp-header">
-          <div class="cp-title-bar" style="background:${color}">
-            <div class="cp-title">${escapeHtml(c.name || '無名')}${unlimitedMark}</div>
-          </div>
-        </div>
-        <div class="cp-illust">
-          <span class="cp-illust-icon">${escapeHtml(icon)}</span>
-          ${memo ? `<span class="cp-illust-memo">${escapeHtml(memo)}</span>` : ''}
-        </div>
-        <div class="cp-icon-effects">
-          ${c.frontEffect ? `<div class="cp-icon-front"><span class="cp-icon-label" style="background:${color}">両面共通</span><span class="cp-icon-text">${escapeHtml(c.frontEffect)}</span></div>` : ''}
-          ${c.backEffectName || c.backEffect ? `<div class="cp-icon-back"><span class="cp-icon-label cp-icon-label-back">🔄 裏面${c.backEffectName ? '・' + escapeHtml(c.backEffectName) : ''}</span><span class="cp-icon-text">${escapeHtml(c.backEffect || '')}</span></div>` : ''}
-        </div>
-        ${c.iconRule ? `<div class="cp-footer"><div class="cp-footer-rule">${escapeHtml(c.iconRule)}</div></div>` : ''}
-      `;
-    } else {
-      // 旧主人公カード(後方互換): レベル + 技2つ
-      body = `
-        <div class="cp-protagonist-banner" style="background:${color}">
-          <span class="cp-protagonist-mark">👑 主人公</span>
-          ${c.level ? `<span class="cp-protagonist-lv">Lv ${escapeHtml(c.level)}${lvLabel ? '・' + escapeHtml(lvLabel) : ''}</span>` : ''}
-        </div>
-        <div class="cp-header">
-          <div class="cp-title-bar" style="background:${color}">
-            <div class="cp-title">${escapeHtml(c.name || '無名')}${unlimitedMark}</div>
-            ${c.subrole ? `<div class="cp-subrole">${escapeHtml(c.subrole)}</div>` : ''}
-          </div>
-        </div>
-        <div class="cp-illust">
-          <span class="cp-illust-icon">${escapeHtml(icon)}</span>
-          ${memo ? `<span class="cp-illust-memo">${escapeHtml(memo)}</span>` : ''}
-        </div>
-        <div class="cp-skill-area">
-          ${renderSkill(c.skill1, '技1', color)}
-          ${renderSkill(c.skill2, '技2', color)}
-        </div>
-      `;
-    }
-  } else if (kind === 'character') {
-    // ============ キャラクターカード(設計図2番目) ============
-    // ① レベル(左上、丸囲み) ② IP(隣、丸囲み) ③ カード名(横長) ④ HP(右独立)
-    // ⑤ カードイラスト  ⑥ 技1  ⑦ 技2
-    // ⑧ 作品名(左下)  ⑨ ルール(右下)
-    const charLvLabels = { '1': '脇役', '2': '名脇役', '3': '相棒/ライバル' };
-    const charLvLabel = charLvLabels[String(c.level || '')] || '';
-    const lvTooltip = c.level ? `Lv${c.level}${charLvLabel?'・'+charLvLabel:''}(背景の色はレベルを表します)` : '';
+  if (kind === 'touhou-char') {
+    // ============ キャラカード(東方版・覚醒モデル) ============
+    // [Lv] [カード名 ............] [⚔攻撃] [🛡回避] のヘッダ (通常時)
+    // イラスト → 通常時効果 → 覚醒ブロック → フッタ(使用者=自分自身)
     body = `
       <div class="cp-header">
-        ${c.level ? `<div class="cp-badge cp-badge-level" style="background:${color}" title="${escapeHtml(lvTooltip)}"><span class="cp-badge-prefix">Lv</span>${escapeHtml(c.level)}</div>` : ''}
-        ${c.ip ? `<div class="cp-badge cp-badge-ip" title="没で得るIP(没にしたとき得られる)"><span class="cp-badge-prefix">💎</span>${escapeHtml(c.ip)}</div>` : ''}
+        ${c.level ? `<div class="cp-badge cp-badge-level" style="background:${color}" title="レベル ${escapeHtml(c.level)}"><span class="cp-badge-prefix">Lv</span>${escapeHtml(c.level)}</div>` : ''}
         <div class="cp-title-bar" style="background:${color}">
           <div class="cp-title">${escapeHtml(c.name || '無名')}${unlimitedMark}</div>
-          ${(c.subrole || charLvLabel) ? `<div class="cp-subrole">${escapeHtml(c.subrole || charLvLabel)}</div>` : ''}
         </div>
-        ${c.hp ? `<div class="cp-badge cp-badge-hp" title="HP(体力)"><span class="cp-badge-prefix">HP</span>${escapeHtml(c.hp)}</div>` : ''}
+        ${c.attack ? `<div class="cp-badge cp-badge-atk" title="通常時攻撃力"><span class="cp-badge-prefix">⚔</span>${escapeHtml(c.attack)}</div>` : ''}
+        ${c.evasion ? `<div class="cp-badge cp-badge-eva" title="通常時回避力"><span class="cp-badge-prefix">🛡</span>${escapeHtml(c.evasion)}</div>` : ''}
       </div>
       <div class="cp-illust">
         <span class="cp-illust-icon">${escapeHtml(icon)}</span>
         ${memo ? `<span class="cp-illust-memo">${escapeHtml(memo)}</span>` : ''}
       </div>
-      ${c.passive ? `<div class="cp-passive-area"><span class="cp-passive-label" style="background:${color}">パッシブ</span><span class="cp-passive-text">${escapeHtml(c.passive)}</span></div>` : ''}
-      <div class="cp-skill-area">
-        ${renderSkill(c.skill1, '技1', color)}
-        ${renderSkill(c.skill2, '技2', color)}
-      </div>
-      <div class="cp-footer">
-        ${c.work ? `<div class="cp-footer-work">${escapeHtml(c.work)}</div>` : '<div></div>'}
-        ${c.rule ? `<div class="cp-footer-rule">${escapeHtml(c.rule)}</div>` : ''}
-      </div>
+      ${c.effect ? `<div class="cp-effect-area"><div class="cp-effect-text">${escapeHtml(c.effect)}</div></div>` : ''}
+      ${(c.awakenAttack || c.awakenEvasion || c.awakenEffect || c.awakenCost) ? `
+        <div class="cp-awaken-block">
+          <div class="cp-awaken-head">🌟 覚醒${c.awakenCost ? ` <span class="cp-awaken-cost">コスト ${escapeHtml(c.awakenCost)}</span>` : ''}</div>
+          <div class="cp-awaken-stats">
+            ${c.awakenAttack ? `<span class="cp-th-chip cp-th-atk-aw">⚔ ${escapeHtml(c.awakenAttack)}</span>` : ''}
+            ${c.awakenEvasion ? `<span class="cp-th-chip cp-th-eva-aw">🛡 ${escapeHtml(c.awakenEvasion)}</span>` : ''}
+          </div>
+          ${c.awakenEffect ? `<div class="cp-awaken-effect">${escapeHtml(c.awakenEffect)}</div>` : ''}
+        </div>
+      ` : ''}
     `;
-  } else if (kind === 'effect') {
-    // ============ 効果カード(設計図3番目) ============
-    // ① カードタイプ(左上、丸囲み) ② IP(隣、丸囲み) ③ カード名(横長)
-    // ④ カードイラスト
-    // ⑤ カード効果(大きく1つ)
-    // ⑥ 作品名(左下) ⑦ ルール(右下)
-    const typeShort = shortenType(c.type);
-    // 効果1〜3を結合(新形式は効果1のみ、旧形式は1+2、effect3は使用条件としてrule扱い)
-    const effectText = [c.effect1, c.effect2].filter(t => t && t.trim()).join('\n\n');
-    const conditionText = c.effect3 || c.rule || '';
-
+  } else if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+    // ============ スペル / シューティング カード(東方版) ============
+    // [Lv] [カード名 / 種類] のヘッダ → イラスト → コスト(PP/BOM)+トリガー → 効果文 → 回収P(左) / 使用者(右下)
+    const costParts = [];
+    if (c.ppCost) costParts.push(`✨PP ${c.ppCost}`);
+    if (c.bomCost) costParts.push(`💣BOM ${c.bomCost}`);
+    const costLine = costParts.join(' / ');
+    const userName = c.user || c.work || '';
     body = `
       <div class="cp-header">
-        <div class="cp-badge cp-badge-type" style="background:${color}" title="${escapeHtml(c.type)}">${escapeHtml(typeShort)}</div>
-        ${c.ip ? `<div class="cp-badge cp-badge-ip" title="没で得るIP(没にしたとき得られる)"><span class="cp-badge-prefix">💎</span>${escapeHtml(c.ip)}</div>` : ''}
+        ${c.requiredCharLevel ? `<div class="cp-badge cp-badge-level" style="background:${color}" title="発動条件: 盤面キャラが Lv ${escapeHtml(c.requiredCharLevel)} 以上"><span class="cp-badge-prefix">≥Lv</span>${escapeHtml(c.requiredCharLevel)}</div>` : ''}
         <div class="cp-title-bar" style="background:${color}">
           <div class="cp-title">${escapeHtml(c.name || '無名')}${unlimitedMark}</div>
+          ${c.spellKind ? `<div class="cp-subrole">${escapeHtml(c.spellKind)}</div>` : ''}
         </div>
       </div>
       <div class="cp-illust">
@@ -3752,12 +3807,13 @@ function buildCardHTML(c, idx, opts) {
         ${memo ? `<span class="cp-illust-memo">${escapeHtml(memo)}</span>` : ''}
       </div>
       <div class="cp-effect-area">
-        ${c.cost ? `<div class="cp-cost-line" style="background:${color}">必要コスト ${escapeHtml(c.cost)}</div>` : ''}
-        <div class="cp-effect-text">${escapeHtml(effectText) || '<span style="opacity:0.4;">効果なし</span>'}</div>
+        ${costLine ? `<div class="cp-cost-line" style="background:${color}">${escapeHtml(costLine)}</div>` : ''}
+        ${c.trigger ? `<div class="cp-th-trigger">⏱ トリガー ${escapeHtml(c.trigger)}</div>` : ''}
+        <div class="cp-effect-text">${c.effect ? escapeHtml(c.effect) : '<span style="opacity:0.4;">効果なし</span>'}</div>
       </div>
       <div class="cp-footer">
-        ${c.work ? `<div class="cp-footer-work">${escapeHtml(c.work)}</div>` : '<div></div>'}
-        ${conditionText ? `<div class="cp-footer-rule">${escapeHtml(conditionText)}</div>` : ''}
+        ${c.recoverP ? `<div class="cp-footer-work cp-recover-p" title="攻撃でトラッシュに送られた時、攻撃側が獲得">回収P ${escapeHtml(c.recoverP)}</div>` : '<div></div>'}
+        ${userName ? `<div class="cp-footer-rule cp-user-tag" title="使用者">👤 ${escapeHtml(userName)}</div>` : ''}
       </div>
     `;
   }
@@ -3931,6 +3987,8 @@ function fitCardTexts(rootEl) {
     card.querySelectorAll('.cp-footer-rule').forEach(el => fitTextElement(el, 0.7));
     // 第二稿で追加: デッキアイコン両面/裏面効果、キャラ パッシブ
     card.querySelectorAll('.cp-icon-text, .cp-passive-text').forEach(el => fitTextElement(el, 0.55));
+    // 東方版で追加: 覚醒能力テキスト、スペルトリガー文
+    card.querySelectorAll('.cp-awaken-effect, .cp-th-trigger').forEach(el => fitTextElement(el, 0.55));
   });
 }
 
@@ -4209,79 +4267,49 @@ async function importDeckCode() {
   closeDeckCodeModal();
   toast(`「${newDeck.name}」を取込(カード${addedCards}枚追加)`);
 }
-// デッキ枚数ゲージ(60〜80推奨)
-const DECK_MIN = 60, DECK_MAX = 80, DECK_GAUGE_SCALE = 100;
+// デッキ枚数ゲージ(東方版: 50枚目安)
+const DECK_TARGET = 50, DECK_GAUGE_SCALE = 60;
 function renderDeckSizeGauge(total, deck) {
-  const minPct = (DECK_MIN / DECK_GAUGE_SCALE) * 100;
-  const rangePct = ((DECK_MAX - DECK_MIN) / DECK_GAUGE_SCALE) * 100;
+  const targetPct = (DECK_TARGET / DECK_GAUGE_SCALE) * 100;
   const fillPct = Math.min(100, (total / DECK_GAUGE_SCALE) * 100);
-  let status = 'ok', label = '✓ 推奨範囲内';
-  if (total < DECK_MIN) { status = 'under'; label = `あと ${DECK_MIN - total} 枚で推奨範囲`; }
-  else if (total > DECK_MAX) { status = 'over'; label = `${total - DECK_MAX} 枚オーバー`; }
+  let status = 'ok', label = '✓ 規定枚数';
+  if (total < DECK_TARGET) { status = 'under'; label = `あと ${DECK_TARGET - total} 枚`; }
+  else if (total > DECK_TARGET) { status = 'over'; label = `${total - DECK_TARGET} 枚オーバー`; }
 
-  // 内訳: 主人公・キャラ・効果ごとの枚数
-  let heroCount = 0, charCount = 0, effectCount = 0;
+  // 内訳: キャラ・スペル
+  let charCount = 0, spellCount = 0;
   (deck?.cards || []).forEach(e => {
     const card = state.cards.find(c => c.id === e.cardId);
     if (!card) return;
     const k = getTypeKind(card.type);
-    if (k === 'leveled') heroCount += e.count;
-    else if (k === 'character') charCount += e.count;
-    else effectCount += e.count;
+    if (k === 'touhou-char') charCount += e.count;
+    else if (k === 'touhou-spell') spellCount += e.count;
   });
 
   return `
     <div class="deck-size-gauge">
       <div class="deck-size-row">
-        <div class="deck-size-num">${total} <span class="deck-size-unit">枚</span></div>
+        <div class="deck-size-num">${total} <span class="deck-size-unit">/ ${DECK_TARGET} 枚</span></div>
         <div class="deck-size-status status-${status}">${label}</div>
       </div>
-      <div class="deck-size-bar" title="推奨 ${DECK_MIN}〜${DECK_MAX} 枚">
-        <div class="deck-size-zone" style="left:${minPct}%; width:${rangePct}%"></div>
+      <div class="deck-size-bar" title="規定 ${DECK_TARGET} 枚">
+        <div class="deck-size-zone" style="left:${targetPct - 1}%; width:2%"></div>
         <div class="deck-size-fill ${status}" style="width:${fillPct}%"></div>
-        <div class="deck-size-tick" style="left:${minPct}%" title="推奨下限 ${DECK_MIN}"></div>
-        <div class="deck-size-tick" style="left:${minPct + rangePct}%" title="推奨上限 ${DECK_MAX}"></div>
+        <div class="deck-size-tick" style="left:${targetPct}%" title="規定 ${DECK_TARGET}"></div>
       </div>
       <div class="deck-size-scale">
-        <span>0</span><span>${DECK_MIN}</span><span>${DECK_MAX}</span><span>${DECK_GAUGE_SCALE}+</span>
+        <span>0</span><span style="margin-left:auto">${DECK_TARGET}</span><span style="margin-left:auto">${DECK_GAUGE_SCALE}+</span>
       </div>
       <div class="deck-size-breakdown">
-        <span class="dsb-item dsb-hero">👑 主人公 ${heroCount}</span>
-        <span class="dsb-item dsb-char">🎴 キャラ ${charCount}</span>
-        <span class="dsb-item dsb-effect">⚡ 効果 ${effectCount}</span>
+        <span class="dsb-item dsb-char">🎀 キャラ ${charCount}</span>
+        <span class="dsb-item dsb-effect">✨ スペル ${spellCount}</span>
       </div>
     </div>`;
 }
 
-// リーダー状況パネル
+// リーダー状況パネル (東方版では使わない、PLAYタブ等の互換のため stub)
 function renderLeaderStatusBox(leaderInfo, leaderSetCandidates) {
-  const entries = Object.entries(leaderInfo); // [name, {count, cards}]
-  let statusHtml = '';
-  if (entries.length === 0) {
-    statusHtml = `<div class="leader-status warn">⚠ デッキアイコンカードが選ばれていません。1 枚必須です。</div>`;
-  } else if (entries.length === 1 && entries[0][1].count === 1) {
-    statusHtml = `<div class="leader-status ok"><strong>📘 ${escapeHtml(entries[0][0])}</strong> <span class="leader-note">(1 枚)</span></div>`;
-  } else {
-    // 複数主人公 or 同じ主人公の複数枚 → 警告
-    statusHtml = entries.map(([nm, info]) => {
-      const cls = (entries.length === 1 && info.count === 1) ? 'ok' : 'warn';
-      const note = info.count > 1
-        ? `${info.count} 枚あります(1 枚にしてください)`
-        : (entries.length > 1 ? '複数の主人公がいます(1 枚に絞ってください)' : '');
-      return `<div class="leader-status ${cls}">
-        <strong>📘 ${escapeHtml(nm)}</strong> <span class="leader-note">${note ? '(' + note + ')' : ''}</span>
-      </div>`;
-    }).join('');
-  }
-  // ワンクリックで主人公追加するボタン
-  const candidateOptions = leaderSetCandidates.length === 0 ? ''
-    : leaderSetCandidates.map(nm => `<button class="btn-small" onclick="setLeaderSet('${escapeHtml(nm).replace(/'/g, "\\'")}')">+ ${escapeHtml(nm)}</button>`).join('');
-
-  return `
-    <div class="deck-section-title">デッキアイコンカード — 1 枚必須</div>
-    ${statusHtml}
-    ${candidateOptions ? `<div class="leader-actions"><span class="leader-actions-label">主人公を選ぶ:</span>${candidateOptions}</div>` : ''}
-  `;
+  return '';
 }
 
 // 追加できるカードを表示モードに応じて描画
@@ -4289,22 +4317,18 @@ function renderAddCards(availableCards, deck) {
   const mode = _deckAddViewMode || 'grid';
   if (mode === 'list') {
     return `<div class="add-card-list">${availableCards.map(c => {
-      // どんでん返しは別山なので、そちらのカウントを参照
-      const entry = isDondengCard(c)
-        ? (deck.dondengCards || []).find(x => x.cardId === c.id)
-        : (deck.cards || []).find(x => x.cardId === c.id);
+      const entry = (deck.cards || []).find(x => x.cardId === c.id);
       const currentCount = entry ? entry.count : 0;
       const max = getMaxCopies(c);
       const limitText = c.unlimited ? '∞' : `${currentCount}/${max}`;
       const codeBadge = c.cardCode ? `<span class="add-card-code">${escapeHtml(c.cardCode)}</span>` : '';
-      const dondengMark = isDondengCard(c) ? ' 🎲' : '';
       return `
       <div class="add-card-row" onclick="addCardToDeck('${c.id}')"
            onmouseenter="showHoverPreview('${c.id}', event)"
            onmouseleave="hideHoverPreview()">
         <div style="width: 8px; height: 24px; background: ${getTypeColor(c.type)};"></div>
         ${codeBadge}
-        <div class="add-card-name">${escapeHtml(c.name)}${c.unlimited ? ' <span style="color:#c9a961;">∞</span>' : ''}${isLeaderCard(c)?' 👑':''}${dondengMark}</div>
+        <div class="add-card-name">${escapeHtml(c.name)}${c.unlimited ? ' <span style="color:#c9a961;">∞</span>' : ''}</div>
         <div class="add-card-meta">${escapeHtml(c.type)}${c.level?' / Lv.'+escapeHtml(c.level):''}${c.work?' / '+escapeHtml(c.work):''} <span style="color: #c9a961;">[${limitText}]</span></div>
         <button class="add-card-btn btn-primary">+ 追加</button>
       </div>`;
@@ -4334,21 +4358,22 @@ function renderAddCards(availableCards, deck) {
     const limitText = c.unlimited ? '∞' : `${currentCount}/${max}`;
     const tColor = getTypeColor(c.type);
     const icon = getDisplayIcon(c);
-    const isHero = isLeaderCard(c);
+    const kind = getTypeKind(c.type);
+    const atkBadge = (kind === 'touhou-char' && c.attack) ? `<span class="amini-tag amini-cost">⚔${escapeHtml(c.attack)}</span>` : '';
+    const ppBadge = (kind === 'touhou-spell' && c.ppCost) ? `<span class="amini-tag amini-cost">✨${escapeHtml(c.ppCost)}</span>` : '';
+    const bomBadge = (kind === 'touhou-spell' && c.bomCost) ? `<span class="amini-tag amini-ip">💣${escapeHtml(c.bomCost)}</span>` : '';
     return `
-    <button class="add-card-mini ${isHero?'is-hero':''} ${currentCount>0?'in-deck':''}"
+    <button class="add-card-mini ${currentCount>0?'in-deck':''}"
             onclick="addCardToDeck('${c.id}')"
             onmouseenter="showHoverPreview('${c.id}', event)"
             onmouseleave="hideHoverPreview()"
             title="${escapeHtml(c.name)}">
       <div class="add-card-mini-color" style="background:${tColor}"></div>
-      ${isHero ? '<div class="add-card-mini-hero">👑</div>' : ''}
       ${c.level ? `<div class="add-card-mini-lv" style="background:${tColor}">Lv${escapeHtml(c.level)}</div>` : ''}
       <div class="add-card-mini-icon">${escapeHtml(icon)}</div>
       <div class="add-card-mini-name">${escapeHtml(c.name)}</div>
       <div class="add-card-mini-meta">
-        ${c.cost ? `<span class="amini-tag amini-cost">⚡${escapeHtml(c.cost)}</span>` : ''}
-        ${c.ip ? `<span class="amini-tag amini-ip">💎${escapeHtml(c.ip)}</span>` : ''}
+        ${atkBadge}${ppBadge}${bomBadge}
         <span class="amini-tag amini-count">${limitText}</span>
       </div>
       ${c.work ? `<div class="add-card-mini-work">${escapeHtml(c.work)}</div>` : ''}
@@ -4356,90 +4381,26 @@ function renderAddCards(availableCards, deck) {
   }).join('')}</div>`;
 }
 
-// 指定名の主人公(デッキアイコン)をデッキに 1 枚追加。既に別名の主人公が居れば確認の上で交代。
-function setLeaderSet(name) {
-  const deck = state.decks.find(d => d.id === state.currentDeckId);
-  if (!deck) return;
-  if (!deck.cards) deck.cards = [];
+// 指定名の主人公をデッキに追加 (東方版では使わない、stub)
+function setLeaderSet(name) { /* no-op */ }
 
-  // 同名候補から代表 1 枚を選択(複数バージョンがある場合は最初の 1 枚)
-  const heroCandidates = state.cards.filter(c => isLeaderCard(c) && c.name === name);
-  if (heroCandidates.length === 0) {
-    toast(`「${name}」が見つかりません`);
-    return;
-  }
-  const targetCard = heroCandidates[0];
-
-  const otherNames = new Set();
-  deck.cards.forEach(e => {
-    const c = state.cards.find(c => c.id === e.cardId);
-    if (c && isLeaderCard(c) && c.name !== name) otherNames.add(c.name);
-  });
-
-  const doApply = () => {
-    // 別名の主人公カードを全削除
-    deck.cards = deck.cards.filter(e => {
-      const c = state.cards.find(c => c.id === e.cardId);
-      return !(c && isLeaderCard(c) && c.name !== name);
-    });
-    // 同名で別バージョンがあればそれらも削除して、targetCard 1 枚に統一
-    deck.cards = deck.cards.filter(e => {
-      const c = state.cards.find(c => c.id === e.cardId);
-      return !(c && isLeaderCard(c) && c.id !== targetCard.id);
-    });
-    // 既に target が入っていれば 1 枚に、無ければ追加
-    const existing = deck.cards.find(x => x.cardId === targetCard.id);
-    if (existing) existing.count = 1;
-    else deck.cards.push({cardId: targetCard.id, count: 1});
-    saveData(); renderDeckList();
-    toast(`デッキアイコン「${name}」を設定`);
-  };
-
-  if (otherNames.size > 0) {
-    const others = [...otherNames].join('・');
-    showModal('主人公の変更', `現在「${others}」がデッキに入っています。「${name}」に変更しますか?(既存の主人公カードは削除されます)`, doApply);
-  } else {
-    doApply();
-  }
-}
-
-// 主人公(リーダー)カードかどうか
-function isLeaderCard(card) {
-  return card && getTypeKind(card.type) === 'leveled';
-}
-// どんでん返しカードかどうか
-function isDondengCard(card) {
-  return card && card.type === 'どんでん返し';
-}
-// どんでん返しデッキ(別山) の上限
+// 主人公(リーダー)カードかどうか — 東方版には存在しない
+function isLeaderCard(card) { return false; }
+// どんでん返しカードかどうか — 東方版には存在しない
+function isDondengCard(card) { return false; }
+// どんでん返しデッキ(別山) の上限 — 互換用
 const DONDENG_DECK_MAX = 5;
-// カード1種あたりの最大枚数(主人公は1枚、unlimited は無制限)
+// カード1種あたりの最大枚数
 function getMaxCopies(card) {
   if (!card) return 4;
   if (card.unlimited) return Infinity;
-  if (isLeaderCard(card)) return 1;
-  return 4;
+  return 4; // 同 ID 上限 (rules.md §J で未確定)
 }
-// デッキを初期化(後方互換: 既存の deck.cards に入ったどんでん返しを別山に移動)
+// デッキ初期化(東方版では dondengCards は実質未使用、互換のため空配列で確保)
 function ensureDondengDeck(deck) {
   if (!deck) return;
   if (!deck.cards) deck.cards = [];
   if (!deck.dondengCards) deck.dondengCards = [];
-  // 既存データのマイグレーション: deck.cards 内のどんでん返しを dondengCards へ移動
-  const dondengToMigrate = [];
-  deck.cards = deck.cards.filter(entry => {
-    const c = state.cards.find(c => c.id === entry.cardId);
-    if (c && isDondengCard(c)) {
-      dondengToMigrate.push(entry);
-      return false;
-    }
-    return true;
-  });
-  dondengToMigrate.forEach(entry => {
-    const existing = deck.dondengCards.find(x => x.cardId === entry.cardId);
-    if (existing) existing.count += entry.count;
-    else deck.dondengCards.push(entry);
-  });
 }
 
 function addCardToDeck(cardId) {
@@ -4450,39 +4411,28 @@ function addCardToDeck(cardId) {
   const card = state.cards.find(c => c.id === cardId);
   if (!card) return;
 
-  // どんでん返しカード → 別山(どんでん返しデッキ)へ
-  if (isDondengCard(card)) {
-    const totalDondeng = deck.dondengCards.reduce((s, x) => s + (x.count || 0), 0);
-    const existing = deck.dondengCards.find(x => x.cardId === cardId);
-    const maxCount = getMaxCopies(card);
-    if (totalDondeng >= DONDENG_DECK_MAX && !(existing && card.unlimited)) {
-      toast(`どんでん返しデッキは ${DONDENG_DECK_MAX} 枚までです`);
-      return;
-    }
-    if (existing) {
-      if (existing.count >= maxCount) {
-        toast(card.unlimited ? '上限なし(エラー)' : '同じカードは4枚までです');
+  // 使用者整合性チェック: スペル/シューティングは、デッキ内のキャラ(name)と
+  // user/work が一致するもののみ受け入れる
+  const kind = getTypeKind(card.type);
+  if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+    const requiredUser = (card.user || card.work || '').trim();
+    if (requiredUser) {
+      const deckCharNames = new Set();
+      (deck.cards || []).forEach(e => {
+        const c = state.cards.find(c => c.id === e.cardId);
+        if (c && getTypeKind(c.type) === 'touhou-char') {
+          deckCharNames.add((c.name || '').trim());
+        }
+      });
+      if (deckCharNames.size === 0) {
+        toast(`使用者「${requiredUser}」のキャラをデッキに先に入れてください`);
         return;
       }
-      existing.count++;
-    } else {
-      deck.dondengCards.push({cardId, count: 1});
-    }
-    saveData(); renderDeckList();
-    toast(`どんでん返し「${card.name}」を追加 (${(existing ? existing.count : 1)}枚目)`);
-    return;
-  }
-
-  // 1デッキ1主人公: 別名の主人公が既に入っていれば拒否
-  if (isLeaderCard(card)) {
-    const otherEntry = deck.cards.find(e => {
-      const c2 = state.cards.find(c => c.id === e.cardId);
-      return c2 && isLeaderCard(c2) && c2.name !== card.name;
-    });
-    if (otherEntry) {
-      const otherCard = state.cards.find(c => c.id === otherEntry.cardId);
-      toast(`既に主人公「${otherCard?.name || '?'}」が入っています。1デッキにつき1名のみです`);
-      return;
+      if (!deckCharNames.has(requiredUser)) {
+        const inDeck = [...deckCharNames].join('・');
+        toast(`このカードは使用者「${requiredUser}」専用です(デッキのキャラ: ${inDeck})`);
+        return;
+      }
     }
   }
 
@@ -4491,10 +4441,7 @@ function addCardToDeck(cardId) {
 
   if (existing) {
     if (existing.count >= maxCount) {
-      const msg = card.unlimited ? '上限なし(エラー)'
-                : isLeaderCard(card) ? '主人公カードは1枚までです'
-                : 'デッキに同じカードは4枚までです';
-      toast(msg);
+      toast(card.unlimited ? '上限なし(エラー)' : `同じカードは ${maxCount} 枚までです`);
       return;
     }
     existing.count++;
@@ -4509,18 +4456,11 @@ function decrementCardInDeck(cardId) {
   const deck = state.decks.find(d => d.id === state.currentDeckId);
   if (!deck) return;
   ensureDondengDeck(deck);
-  // メインデッキとどんでん返しデッキの両方から探す
-  let entry = (deck.cards || []).find(x => x.cardId === cardId);
-  let isInDondeng = false;
-  if (!entry) {
-    entry = (deck.dondengCards || []).find(x => x.cardId === cardId);
-    isInDondeng = !!entry;
-  }
+  const entry = (deck.cards || []).find(x => x.cardId === cardId);
   if (!entry) return;
   entry.count--;
   if (entry.count <= 0) {
-    if (isInDondeng) deck.dondengCards = deck.dondengCards.filter(x => x.cardId !== cardId);
-    else deck.cards = deck.cards.filter(x => x.cardId !== cardId);
+    deck.cards = deck.cards.filter(x => x.cardId !== cardId);
   }
   saveData(); renderDeckList();
 }
@@ -4528,20 +4468,16 @@ function decrementCardInDeck(cardId) {
 function removeCardFromDeck(cardId) {
   const deck = state.decks.find(d => d.id === state.currentDeckId);
   if (!deck) return;
-  ensureDondengDeck(deck);
   deck.cards = (deck.cards || []).filter(x => x.cardId !== cardId);
-  deck.dondengCards = (deck.dondengCards || []).filter(x => x.cardId !== cardId);
   saveData(); renderDeckList();
 }
 
-// デッキの合計枚数(メインデッキのみ、どんでん返しは含まない)
+// デッキの合計枚数
 function getDeckTotalCount(deck) {
   return (deck.cards || []).reduce((sum, x) => sum + (x.count || 0), 0);
 }
-// どんでん返しデッキの合計枚数
-function getDondengDeckCount(deck) {
-  return (deck.dondengCards || []).reduce((sum, x) => sum + (x.count || 0), 0);
-}
+// どんでん返しデッキの合計枚数 (互換 stub、常に 0)
+function getDondengDeckCount(deck) { return 0; }
 function renderDeckDetail() {
   const detail = document.getElementById('deckDetail');
   const deck = state.decks.find(d => d.id === state.currentDeckId);
@@ -4551,7 +4487,7 @@ function renderDeckDetail() {
     return;
   }
 
-  // 後方互換: 既存データのどんでん返しを別山に分離
+  // 互換: deck.cards / dondengCards を保証(東方版では dondengCards 未使用)
   ensureDondengDeck(deck);
 
   // メインデッキ内カードを {card, count} のペアで取得
@@ -4560,59 +4496,25 @@ function renderDeckDetail() {
     count: entry.count
   })).filter(e => e.card);
 
-  // どんでん返しデッキ内カード
-  const dondengEntries = (deck.dondengCards || []).map(entry => ({
-    card: state.cards.find(c => c.id === entry.cardId),
-    count: entry.count
-  })).filter(e => e.card);
-
-  // 追加可能カード:
-  //  - どんでん返しは別山なので dondengCards でカウント
-  //  - その他はメインデッキでカウント
+  // 追加可能カード: メインデッキのカウントで判定
   const availableAll = state.cards.filter(c => {
-    if (isDondengCard(c)) {
-      const entry = (deck.dondengCards || []).find(x => x.cardId === c.id);
-      const currentCount = entry ? entry.count : 0;
-      const totalDondeng = (deck.dondengCards || []).reduce((s, x) => s + (x.count || 0), 0);
-      if (totalDondeng >= DONDENG_DECK_MAX && !entry) return false;
-      return currentCount < getMaxCopies(c);
-    }
     const entry = (deck.cards || []).find(x => x.cardId === c.id);
     const currentCount = entry ? entry.count : 0;
     return currentCount < getMaxCopies(c);
   });
 
-  // 主人公(デッキアイコン)状況の集計: 名前ごとに枚数を確認
-  const leaderInfo = {}; // name -> { count, cards }
-  inDeckEntries.forEach(e => {
-    if (!isLeaderCard(e.card)) return;
-    const nm = e.card.name || '無名';
-    if (!leaderInfo[nm]) leaderInfo[nm] = { count: 0, cards: [] };
-    leaderInfo[nm].count += e.count;
-    leaderInfo[nm].cards.push(e.card);
-  });
-  const leaderNames = Object.keys(leaderInfo);
-  // 主人公として追加可能な候補(全主人公カードを名前ごとに代表 1 枚抽出)
-  const allHeroes = state.cards.filter(isLeaderCard);
-  const heroByName = {};
-  allHeroes.forEach(c => {
-    const nm = c.name || '無名';
-    if (!heroByName[nm]) heroByName[nm] = c;  // 同名なら最初の 1 枚
-  });
-  const leaderSetCandidates = Object.keys(heroByName).sort();
-
-  // 作品名一覧 (重複排除、空文字除外、ソート)
-  const allWorks = [...new Set(state.cards.map(c => (c.work || '').trim()).filter(w => w))].sort();
+  // 使用者(キャラ名 + 作品名 alias)一覧 (重複排除、空文字除外、ソート)
+  const allWorks = [...new Set(state.cards.map(c => (c.user || c.work || '').trim()).filter(w => w))].sort();
 
   // フィルタ適用
   const f = deckAddFilter;
   const searchLower = (f.search || '').toLowerCase();
   const availableCards = availableAll.filter(c => {
-    if (f.work && (c.work || '').trim() !== f.work) return false;
+    if (f.work && (c.user || c.work || '').trim() !== f.work) return false;
     if (f.type && c.type !== f.type) return false;
     if (searchLower) {
-      const hay = [c.name, c.cardCode, c.skill1, c.skill2, c.effect1, c.effect2, c.effect3,
-                   c.subrole, c.work, c.rule, c.other, c.passive, c.frontEffect, c.backEffectName, c.backEffect]
+      const hay = [c.name, c.cardCode, c.effect, c.awakenEffect, c.trigger, c.spellKind,
+                   c.work, c.art]
         .filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(searchLower)) return false;
     }
@@ -4638,9 +4540,6 @@ function renderDeckDetail() {
     </div>
     ${renderDeckSizeGauge(totalCount, deck)}
     <div class="deck-section">
-      ${renderLeaderStatusBox(leaderInfo, leaderSetCandidates)}
-    </div>
-    <div class="deck-section">
       <div class="deck-section-title">デッキ内のカード — 計${totalCount}枚 (${uniqueCount}種類)</div>
       ${inDeckEntries.length === 0 ? `<div class="empty-state" style="padding: 30px;"><p>まだカードがありません。下から追加してください。</p></div>`
         : `<div class="deck-cards">${inDeckEntries.map(e => {
@@ -4648,29 +4547,6 @@ function renderDeckDetail() {
             const origIdx = state.cards.indexOf(c);
             const maxCount = getMaxCopies(c);
             const canAdd = e.count < maxCount;
-            const countBadge = `<div class="deck-count-badge">×${e.count}</div>`;
-            const counterCtrls = `
-              <div class="deck-card-controls" onclick="event.stopPropagation()">
-                <button class="cp-ctrl-btn" onclick="event.stopPropagation(); decrementCardInDeck('${c.id}')" title="1枚減らす">−</button>
-                <button class="cp-ctrl-btn" onclick="event.stopPropagation(); addCardToDeck('${c.id}')" title="1枚増やす" ${!canAdd ? 'disabled' : ''}>＋</button>
-              </div>`;
-            return buildCardHTML(c, origIdx, {
-              inDeck: true, showIndex: false,
-              attrs: `onclick="openCardZoom(${origIdx})"`,
-              extraInner: countBadge + counterCtrls
-            });
-          }).join('')}</div>`}
-    </div>
-    <div class="deck-section deck-section-dondeng">
-      <div class="deck-section-title">🎲 どんでん返しデッキ(別山) — ${getDondengDeckCount(deck)} / ${DONDENG_DECK_MAX} 枚</div>
-      <div class="deck-section-subtitle">メインデッキとは別の山。主人公の覚醒(相手原稿4枚以上)時のみ使用可。</div>
-      ${dondengEntries.length === 0 ? `<div class="empty-state" style="padding: 20px;"><p>どんでん返しカードを下から追加してください(最大 ${DONDENG_DECK_MAX} 枚、0 枚でも可)</p></div>`
-        : `<div class="deck-cards">${dondengEntries.map(e => {
-            const c = e.card;
-            const origIdx = state.cards.indexOf(c);
-            const maxCount = getMaxCopies(c);
-            const totalDondeng = getDondengDeckCount(deck);
-            const canAdd = e.count < maxCount && totalDondeng < DONDENG_DECK_MAX;
             const countBadge = `<div class="deck-count-badge">×${e.count}</div>`;
             const counterCtrls = `
               <div class="deck-card-controls" onclick="event.stopPropagation()">
@@ -4700,7 +4576,7 @@ function renderDeckDetail() {
                oncompositionend="this.dataset.composing=''; updateDeckAddFilter('search', this.value)"
                oninput="if(!this.dataset.composing) updateDeckAddFilter('search', this.value)">
         <select id="deck-filter-work" onchange="updateDeckAddFilter('work', this.value)">
-          <option value="">すべての作品</option>
+          <option value="">すべての使用者</option>
           ${allWorks.map(w => `<option value="${escapeHtml(w)}" ${w===f.work?'selected':''}>${escapeHtml(w)}</option>`).join('')}
         </select>
         <select id="deck-filter-type" onchange="updateDeckAddFilter('type', this.value)">
@@ -4906,7 +4782,11 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// ============ EXCEL IMPORT ============
+// ============ EXCEL IMPORT (東方版) ============
+// シート構成想定:
+//   キャラカード   : 名前 | 攻撃力 | 回避力 | 覚醒コスト | 覚醒時攻撃力 | 覚醒時回避力 | 覚醒時能力
+//   スペルカード   : カード名 | 使用者 | 種類 | PPコスト | BOMコスト | トリガー | 効果
+//   シューディングカード / シューティングカード : (同上)
 function importXLSX(ev) {
   const file = ev.target.files[0];
   if (!file) return;
@@ -4924,137 +4804,56 @@ function importXLSX(ev) {
         if (rows.length < 2) return;
 
         const headers = rows[0].map(h => String(h || '').trim());
-        // 「使い方」「世界観やルール」などの説明シートはスキップ
-        if (!headers.some(h => h.includes('カード名') || h.includes('No.') || h === 'ID')) return;
+        // 内容のない説明シートはスキップ
+        if (!headers.some(h => h.includes('名前') || h.includes('カード名'))) return;
 
-        // ヘッダーマッピング (新旧両形式対応)
+        // シート名でカードタイプを判定
+        let detectedType = null;
+        if (sheetName.includes('キャラ')) detectedType = 'キャラ';
+        else if (sheetName.includes('シューディング') || sheetName.includes('シューティング')) detectedType = 'シューティング';
+        else if (sheetName.includes('スペル')) detectedType = 'スペル';
+
+        // ヘッダ → 列インデックスのマッピング
         const colIdx = {};
         headers.forEach((h, i) => {
-          // ID/管理番号
+          // 共通
           if (h === 'ID' || h === '型番') colIdx.cardCode = i;
-          else if (h === 'No.' || h === 'No') colIdx.no = i;
-          // 名前・タイプ・作品
-          else if (h === 'カード名') colIdx.name = i;
-          else if (h === 'カードタイプ') colIdx.type = i;  // 効果カードシートで使われる
-          else if (h === 'タイプ' && !h.includes('カード')) colIdx.type = i;
+          else if (h === '名前' || h === 'カード名') colIdx.name = i;
           else if (h === '作品名') colIdx.work = i;
-          // レベル・サブ
-          else if (h === 'レベル') colIdx.level = i;
-          else if (h === 'サブ区分') colIdx.subrole = i;
-          // ステータス
-          else if (h === 'HP' || h.includes('HP')) colIdx.hp = i;
-          else if (h.includes('IP') && (h.includes('得') || h === 'IP')) colIdx.ip = i;
-          else if (h === '自信作' || h === 'イチオシ') colIdx.shinsaku = i;
-          else if (h === 'コスト') colIdx.cost = i;  // 効果カードのコスト / アイコン裏面コスト
-          // 第二稿 デッキアイコンカード
-          else if (h === '両面共通効果') colIdx.frontEffect = i;
-          else if (h === '裏面効果名') colIdx.backEffectName = i;
-          else if (h === '裏面効果') colIdx.backEffect = i;
-          // 第二稿 キャラパッシブ
-          else if (h === 'パッシブ能力' || h === 'パッシブ') colIdx.passive = i;
-          // 技/スキル分割形式
-          else if (h.match(/^(技|スキル)[1１].*名$/)) colIdx.skill1Name = i;
-          else if (h.match(/^(技|スキル)[1１].*コスト$/)) colIdx.skill1Cost = i;
-          else if (h.match(/^(技|スキル)[1１].*効果$/)) colIdx.skill1Effect = i;
-          else if (h.match(/^(技|スキル)[2２].*名$/)) colIdx.skill2Name = i;
-          else if (h.match(/^(技|スキル)[2２].*コスト$/)) colIdx.skill2Cost = i;
-          else if (h.match(/^(技|スキル)[2２].*効果$/)) colIdx.skill2Effect = i;
-          // 旧形式: 技がまとめて1セル
-          else if (h === '技１' || h === '技1') colIdx.skill1Full = i;
-          else if (h === '技２' || h === '技2') colIdx.skill2Full = i;
-          else if (h.match(/^スキル[1１]$/)) colIdx.skill1Full = i;
-          else if (h.match(/^スキル[2２]$/)) colIdx.skill2Full = i;
-          // 効果カード
-          else if (h === 'カード効果' || h === '効果') colIdx.effectMain = i;
-          else if (h.includes('効果') && h.match(/[1①]/)) colIdx.effect1 = i;
-          else if (h.includes('効果') && h.match(/[2②]/)) colIdx.effect2 = i;
-          else if (h.includes('効果') && h.match(/[3③]/)) colIdx.effect3 = i;
-          // その他
-          else if (h === 'ルール' || h.includes('その他')) colIdx.rule = i;
           else if (h.includes('アイコン') || h.includes('絵文字')) colIdx.icon = i;
           else if (h.includes('イラスト') || h.includes('メモ')) colIdx.art = i;
+          // キャラ用
+          else if (h === '攻撃力') colIdx.attack = i;
+          else if (h === '回避力') colIdx.evasion = i;
+          else if (h === '覚醒コスト') colIdx.awakenCost = i;
+          else if (h === '覚醒時攻撃力') colIdx.awakenAttack = i;
+          else if (h === '覚醒時回避力') colIdx.awakenEvasion = i;
+          else if (h === '覚醒時能力' || h === '覚醒能力') colIdx.awakenEffect = i;
+          else if (h === 'レベル' || h === 'Lv') colIdx.level = i;
+          else if (h === '効果' && colIdx.effect === undefined) colIdx.effect = i;
+          // スペル / シューティング 用
+          else if (h === '使用者') colIdx.user = i;
+          else if (h === '種類') colIdx.spellKind = i;
+          else if (h === 'PPコスト' || h === 'Pコスト') colIdx.ppCost = i;
+          else if (h === 'BOMコスト' || h === 'BOMBコスト') colIdx.bomCost = i;
+          else if (h === 'トリガー') colIdx.trigger = i;
+          else if (h === '回収P' || h === '回収Pコスト') colIdx.recoverP = i;
+          else if (h === '発動条件Lv' || h === '左上') colIdx.requiredCharLevel = i;
         });
-
-        // デッキアイコンカードシート判定: 「両面共通効果」「裏面効果名」「裏面効果」がある場合
-        const isIconSheet = colIdx.frontEffect !== undefined || colIdx.backEffectName !== undefined || colIdx.backEffect !== undefined;
-
-        // シート名からカードタイプ推測
-        let detectedType = null;
-        if (sheetName.includes('主人公')) detectedType = '主人公';
-        else if (sheetName.includes('キャラクター')) detectedType = 'キャラクター';
-        else if (sheetName.includes('展開') && !sheetName.includes('テコ') && !sheetName.includes('どんでん')) detectedType = '展開アイディア';
-        else if (sheetName.includes('テコ入れ') || sheetName === 'テコ入れカード') detectedType = 'テコ入れ';
-        else if (sheetName.includes('どんでん')) detectedType = 'どんでん返し';
 
         for (let r = 1; r < rows.length; r++) {
           const row = rows[r];
           const name = String(row[colIdx.name] || '').trim();
           if (!name) continue;
 
-          // タイプ確定
           let cardType = detectedType;
-          const typeCellVal = String(row[colIdx.type] || '').trim();
-          if (typeCellVal) {
-            // タイプ列に明記があれば優先
-            if (typeCellVal === 'キャラアイディア' || typeCellVal === 'キャラクター') cardType = 'キャラクター';
-            else if (typeCellVal === '主人公') cardType = '主人公';
-            else if (typeCellVal === '展開アイディア') cardType = '展開アイディア';
-            else if (typeCellVal === 'テコ入れ') cardType = 'テコ入れ';
-            else if (typeCellVal === 'どんでん返し') cardType = 'どんでん返し';
+          // シート名から決まらない場合、種類列を見る
+          if (!cardType && colIdx.spellKind !== undefined) {
+            const k = String(row[colIdx.spellKind] || '').trim();
+            if (k.includes('シューティング')) cardType = 'シューティング';
+            else if (k.includes('スペル')) cardType = 'スペル';
           }
-          if (!cardType) cardType = 'キャラクター';
-
-          // レベル解析: 数値ならそのまま、"１(脇役)"のような旧形式ならパース
-          let level = '', subrole = '', shinsaku = false;
-          if (colIdx.level !== undefined) {
-            const lvRaw = String(row[colIdx.level] || '').trim();
-            if (lvRaw) {
-              if (/^[123]$/.test(lvRaw)) {
-                level = lvRaw;  // 新形式: 数字のみ
-              } else {
-                if (/[1１一]/.test(lvRaw)) level = '1';
-                else if (/[2２二]/.test(lvRaw)) level = '2';
-                else if (/[3３三]/.test(lvRaw)) level = '3';
-                const m = lvRaw.match(/[(（]([^)）]+)[)）]/);
-                if (m) {
-                  const inner = m[1];
-                  if (inner.includes('自信作')) shinsaku = true;
-                  subrole = inner.replace('・自信作','').replace('自信作','').trim();
-                }
-              }
-            }
-          }
-          // サブ区分が独立列にあれば優先
-          if (colIdx.subrole !== undefined) {
-            const sRaw = String(row[colIdx.subrole] || '').trim();
-            if (sRaw) subrole = sRaw;
-          }
-          // 自信作列が独立にあれば
-          if (colIdx.shinsaku !== undefined) {
-            const sRaw = String(row[colIdx.shinsaku] || '').trim();
-            if (sRaw === 'はい' || sRaw === 'TRUE' || sRaw === 'true' || sRaw === '○') shinsaku = true;
-          }
-
-          // 技を解析(新形式: 分割列 / 旧形式: 1つのテキスト)
-          function buildSkillText(nameCol, costCol, effectCol, fullCol) {
-            // 新形式: 分割されている場合
-            if (nameCol !== undefined || costCol !== undefined || effectCol !== undefined) {
-              const sn = String(row[nameCol] || '').trim();
-              const sc = String(row[costCol] || '').trim();
-              const se = String(row[effectCol] || '').trim();
-              if (!sn && !sc && !se) return '';
-              const parts = [];
-              if (sn) parts.push(sn);
-              if (sc) parts.push(`必要コスト${sc}`);
-              if (se) parts.push(se);
-              return parts.join('　');
-            }
-            // 旧形式: 1セル
-            if (fullCol !== undefined) return String(row[fullCol] || '').trim();
-            return '';
-          }
-          const skill1 = buildSkillText(colIdx.skill1Name, colIdx.skill1Cost, colIdx.skill1Effect, colIdx.skill1Full);
-          const skill2 = buildSkillText(colIdx.skill2Name, colIdx.skill2Cost, colIdx.skill2Effect, colIdx.skill2Full);
+          if (!cardType) cardType = 'キャラ';
 
           const card = {
             id: cid(),
@@ -5067,61 +4866,32 @@ function importXLSX(ev) {
           };
 
           const kind = getTypeKind(cardType);
-          if (kind === 'leveled') {
-            // 第二稿: デッキアイコンカード
-            if (isIconSheet) {
-              card.frontEffect = String(row[colIdx.frontEffect] || '').trim();
-              card.backEffectName = String(row[colIdx.backEffectName] || '').trim();
-              card.backCost = normalizeNumStr(row[colIdx.cost]);  // アイコンシートのコスト = 裏面コスト
-              card.backEffect = String(row[colIdx.backEffect] || '').trim();
-              card.iconRule = String(row[colIdx.rule] || '').trim();
-              card.rule = card.iconRule;  // 互換のため
-              // level は任意(空でも OK)
-              if (level) card.level = level;
-              card.skill1 = '';
-              card.skill2 = '';
-            } else {
-              // 旧形式: 主人公カード(Lv 進化型)
-              if (level) card.level = level;
-              card.skill1 = skill1;
-              card.skill2 = skill2;
+          if (kind === 'touhou-char') {
+            if (colIdx.level !== undefined) {
+              const lv = normalizeNumStr(row[colIdx.level]);
+              if (/^[123]$/.test(lv)) card.level = lv;
             }
+            card.attack        = normalizeNumStr(row[colIdx.attack]);
+            card.evasion       = normalizeNumStr(row[colIdx.evasion]);
+            card.awakenCost    = normalizeNumStr(row[colIdx.awakenCost]);
+            card.awakenAttack  = normalizeNumStr(row[colIdx.awakenAttack]);
+            card.awakenEvasion = normalizeNumStr(row[colIdx.awakenEvasion]);
+            card.awakenEffect  = String(row[colIdx.awakenEffect] || '').trim();
+            card.effect        = String(row[colIdx.effect] || '').trim();
+            // 使用者 = キャラ本人の名前(デッキ整合性チェック用)
+            card.user = card.user || card.work || card.name;
+            card.work = card.work || card.name;
           }
-          if (kind === 'character') {
-            if (level) card.level = level;
-            card.skill1 = skill1;
-            card.skill2 = skill2;
-            card.subrole = subrole;
-            card.hp = normalizeNumStr(row[colIdx.hp]);
-            card.ip = normalizeNumStr(row[colIdx.ip]);
-            card.shinsaku = shinsaku;
-            // 第二稿: パッシブ能力
-            if (colIdx.passive !== undefined) {
-              card.passive = String(row[colIdx.passive] || '').trim();
-            }
-            card.rule = String(row[colIdx.rule] || '').trim();
-            // 旧形式互換 (otherフィールドに同じ値も入れておく)
-            card.other = card.rule;
-            // unlimited自動推測
-            if (/何枚でも|枚数制限なし|無制限/.test(card.rule)) card.unlimited = true;
-          }
-          if (kind === 'effect') {
-            card.ip = normalizeNumStr(row[colIdx.ip]);
-            card.cost = normalizeNumStr(row[colIdx.cost]);
-            card.rule = String(row[colIdx.rule] || '').trim();
-            // 効果文の組み立て
-            if (colIdx.effectMain !== undefined) {
-              // 新形式: 効果列1つ
-              card.effect1 = String(row[colIdx.effectMain] || '').trim();
-              card.effect2 = '';
-              card.effect3 = card.rule;  // ルール列が条件文として使われていた旧データ互換
-            } else {
-              // 旧形式: 効果1〜3
-              card.effect1 = String(row[colIdx.effect1] || '').trim();
-              card.effect2 = String(row[colIdx.effect2] || '').trim();
-              card.effect3 = String(row[colIdx.effect3] || '').trim();
-            }
-            if (/何枚でも|枚数制限なし|無制限/.test(card.rule)) card.unlimited = true;
+          if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+            card.user              = String(row[colIdx.user] || '').trim() || card.work;
+            card.work              = card.work || card.user; // alias
+            card.spellKind         = String(row[colIdx.spellKind] || '').trim();
+            card.requiredCharLevel = normalizeNumStr(row[colIdx.requiredCharLevel]);
+            card.ppCost            = normalizeNumStr(row[colIdx.ppCost]);
+            card.bomCost           = normalizeNumStr(row[colIdx.bomCost]);
+            card.trigger           = normalizeNumStr(row[colIdx.trigger]);
+            card.recoverP          = normalizeNumStr(row[colIdx.recoverP]);
+            card.effect            = String(row[colIdx.effect] || '').trim();
           }
           importedCards.push(card);
         }
@@ -5221,39 +4991,48 @@ function download(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-// ============ PLAY (テストプレイ用プレイマット) ============
-const PLAY_INITIAL_HAND = 7;
-const PLAY_FIELD_MAX = 6;
-// フェーズ定義 (ターン進行)
+// ============ PLAY (テストプレイ用プレイマット・東方版) ============
+const PLAY_INITIAL_HAND = 4;   // 東方: 手札4枚
+const PLAY_INITIAL_LIFE = 3;   // 東方: ライフ3
+const PLAY_INITIAL_BOMB = 3;   // 東方: BOMB3 (固定)
+const PLAY_FIELD_MAX = 1;      // 東方: 盤面キャラ1体のみ
+// フェーズ定義 (東方 6 フェイズ + ⓞ セットアップ)
 const PHASE_DEFS = [
-  { idx: 0, name: '開始', icon: 'ⓠ', full: 'ⓠ ゲーム開始', desc: '主人公・脇役を表に' },
-  { idx: 1, name: 'ドロー', icon: '①', full: '① ドローフェイズ', desc: 'デッキから2枚ドロー(先行1ターン目はスキップ)' },
-  { idx: 2, name: 'アイディア', icon: '②', full: '② アイディアフェイズ', desc: '手札から場に出す/進化/展開/伏せ' },
-  { idx: 3, name: '持ち込み', icon: '③', full: '③ 持ち込みフェイズ', desc: '相手キャラを攻撃 → 原稿ゾーンへ送る' },
-  { idx: 4, name: '担当編集', icon: '④', full: '④ 担当編集フェイズ', desc: '展開/どんでん返し使用、主人公練り上げ' },
-  { idx: 5, name: '就寝', icon: '⑤', full: '⑤ 就寝(エンド)フェイズ', desc: '手札クリンナップ(余り手札を💡インスピレーションへ送れる)、ターン終了' }
+  { idx: 0, name: 'セットアップ', icon: '⓪', full: '⓪ セットアップ',   desc: 'ライフ3/BOMB3/手札4/盤面1伏せ' },
+  { idx: 1, name: 'ドロー',       icon: '①', full: '① ドロー',           desc: 'デッキから1枚ドロー' },
+  { idx: 2, name: 'チャージ',     icon: '②', full: '② チャージ',         desc: '手札1枚をPゾーンに置き、1枚ドロー(任意)' },
+  { idx: 3, name: '覚醒',         icon: '③', full: '③ 覚醒',             desc: '覚醒コストを払って裏返し(先攻1ターン目はスキップ)' },
+  { idx: 4, name: 'メイン',       icon: '④', full: '④ メイン',           desc: 'スペル発動・伏せ等' },
+  { idx: 5, name: 'バトル',       icon: '⑤', full: '⑤ バトル',           desc: '攻撃力−回避力でデッキを削る/QUICK割込み' },
+  { idx: 6, name: 'エンド',       icon: '⑥', full: '⑥ エンド',           desc: 'ターン終了' }
 ];
-const PLAY_VICTORY_MANUSCRIPT = 10;
+const PLAY_VICTORY_MANUSCRIPT = 0;  // 互換: 未使用(東方はライフ0で敗北)
 let playInstanceCounter = 1;
 function pInst() { return 'pi' + (playInstanceCounter++); }
 
-// 1サイドの初期state
+// 1サイドの初期state(東方ゾーン: deck/hand/field/trash/p/life/bomb)
 function makePlaySide(deckId, name) {
   return {
     name: name || '',
     deckId: deckId,
-    manuscript: 0,       // 旧抽象カウンタ (互換用、表示は manuscriptCards.length 優先)
-    manuscriptCards: [], // 原稿ゾーン (持ち込み勝利時にデッキトップから物理的に送られる)
+    // 東方版ゾーン
+    deck:  [],   // 山札 (上から取る、攻撃でトラッシュへ送られる戦場)
+    hand:  [],   // 手札 (初期 4)
+    field: [],   // 盤面 (キャラ最大 1。{instanceId, cardId, awakened, faceDown})
+    trash: [],   // トラッシュ (旧称 没。スペルがあれば攻撃側に回収P)
+    p:     [],   // P ゾーン (チャージ・スペル発動コスト源)
+    life:  [],   // ライフ 3 (裏向き、デッキ上3枚から)
+    bomb:  [],   // BOMB 3 (裏向き、固定数。プレースホルダ instance)
+    // ↓ 旧手塚向け互換 (PLAYタブ既存コードが参照する。空配列で安全に)
+    manuscript: 0,
+    manuscriptCards: [],
     ip: 0,
-    nakiUsed: false,     // 泣きの一回を既に使用したか
-    hand: [],            // [{instanceId, cardId, hp?}]
-    deck: [],            // 山札 (上から取る)
-    leader: [],          // 主人公ゾーン (現在の主人公、最大1枚)
-    leaderReserve: [],   // 主人公控え (Lv2/Lv3 等の進化先)
-    field: [],           // 場 (キャラ・継続効果)
-    discard: [],         // 没案ゾーン (戦闘で没になったカード)
-    inspiration: [],     // 💡 インスピレーションゾーン (任意でIP化したカード)
-    dondengDeck: []      // 🎲 どんでん返しデッキ(別山、覚醒時のみ使用)
+    nakiUsed: false,
+    leader: [],
+    leaderReserve: [],
+    discard: [],
+    inspiration: [],
+    dondengDeck: []
   };
 }
 
@@ -5350,19 +5129,8 @@ function startPlaySession() {
 
   const sideA = makePlaySide(deckIdA, nameA);
   const sideB = makePlaySide(deckIdB, nameB);
-  sideA.deck = shuffleArray(buildDeckInstances(deckIdA));
-  sideB.deck = shuffleArray(buildDeckInstances(deckIdB));
-  // どんでん返しデッキ(別山)をビルド
-  sideA.dondengDeck = buildDondengDeckInstances(deckIdA);
-  sideB.dondengDeck = buildDondengDeckInstances(deckIdB);
-  // リーダー(主人公)カードは山札から抜いて場へ
-  const heroesA = extractLeadersToZone(sideA, state.cards);
-  const heroesB = extractLeadersToZone(sideB, state.cards);
-  // 初手ドロー(リーダーを除いた山から)
-  for (let i = 0; i < PLAY_INITIAL_HAND; i++) {
-    if (sideA.deck.length) sideA.hand.push(sideA.deck.shift());
-    if (sideB.deck.length) sideB.hand.push(sideB.deck.shift());
-  }
+  setupPlaySide(sideA, deckIdA);
+  setupPlaySide(sideB, deckIdB);
 
   state.playSession = {
     active: true,
@@ -5375,12 +5143,31 @@ function startPlaySession() {
     network: { mode: 'solo' }
   };
   playLog(null, `ゲーム開始 (${nameA} vs ${nameB})`);
-  if (heroesA > 0) playLog('A', `主人公 ${heroesA} 枚を主人公ゾーンへ配置`);
-  if (heroesB > 0) playLog('B', `主人公 ${heroesB} 枚を主人公ゾーンへ配置`);
-  playLog('A', `初手 ${sideA.hand.length} 枚ドロー`);
-  playLog('B', `初手 ${sideB.hand.length} 枚ドロー`);
+  playLog('A', `ライフ ${sideA.life.length} / BOMB ${sideA.bomb.length} / 手札 ${sideA.hand.length} / 盤面 ${sideA.field.length}`);
+  playLog('B', `ライフ ${sideB.life.length} / BOMB ${sideB.bomb.length} / 手札 ${sideB.hand.length} / 盤面 ${sideB.field.length}`);
   saveData();
   renderPlay();
+}
+
+// 1 サイドのデッキ・ライフ・BOMB・手札・盤面 初期配置
+function setupPlaySide(side, deckId) {
+  // デッキ構築 + シャッフル
+  side.deck = shuffleArray(buildDeckInstances(deckId));
+  // ライフ: デッキ上 3 枚を裏向きで取る
+  side.life = side.deck.splice(0, PLAY_INITIAL_LIFE).map(inst => ({...inst, faceDown: true}));
+  // BOMB: 抽象プレースホルダを 3 個
+  side.bomb = [];
+  for (let i = 0; i < PLAY_INITIAL_BOMB; i++) {
+    side.bomb.push({ instanceId: pInst(), placeholder: 'bomb', faceDown: true });
+  }
+  // 盤面: 次の 1 枚を裏向きで設置(キャラなら fine、それ以外なら…とりあえず置く。要ルール確認)
+  if (side.deck.length > 0) {
+    side.field = [{...side.deck.shift(), faceDown: true}];
+  }
+  // 手札: 4 枚ドロー
+  for (let i = 0; i < PLAY_INITIAL_HAND; i++) {
+    if (side.deck.length) side.hand.push(side.deck.shift());
+  }
 }
 
 function endPlaySession() {
@@ -5405,16 +5192,8 @@ function restartPlaySession() {
     const deckIdA = ps.sides.A.deckId, deckIdB = ps.sides.B.deckId;
     const sideA = makePlaySide(deckIdA, nameA);
     const sideB = makePlaySide(deckIdB, nameB);
-    sideA.deck = shuffleArray(buildDeckInstances(deckIdA));
-    sideB.deck = shuffleArray(buildDeckInstances(deckIdB));
-    sideA.dondengDeck = buildDondengDeckInstances(deckIdA);
-    sideB.dondengDeck = buildDondengDeckInstances(deckIdB);
-    extractLeadersToZone(sideA, state.cards);
-    extractLeadersToZone(sideB, state.cards);
-    for (let i = 0; i < PLAY_INITIAL_HAND; i++) {
-      if (sideA.deck.length) sideA.hand.push(sideA.deck.shift());
-      if (sideB.deck.length) sideB.hand.push(sideB.deck.shift());
-    }
+    setupPlaySide(sideA, deckIdA);
+    setupPlaySide(sideB, deckIdB);
     state.playSession = {
       active: true, turn: 1, activeSide: 'A', phaseIdx: 0, firstPlayer: 'A',
       sides: { A: sideA, B: sideB }, log: [],
@@ -5458,7 +5237,8 @@ function endTurn() {
 // フェーズインデックスを直接セット (UI のステッパーから)
 function setPhase(idx) {
   if (!state.playSession) return;
-  const newIdx = Math.max(0, Math.min(5, idx));
+  const lastIdx = PHASE_DEFS.length - 1;
+  const newIdx = Math.max(0, Math.min(lastIdx, idx));
   if (state.playSession.phaseIdx === newIdx) return;
   state.playSession.phaseIdx = newIdx;
   const def = PHASE_DEFS[newIdx];
@@ -5467,22 +5247,22 @@ function setPhase(idx) {
   netSendOp({ type: 'phase', phaseIdx: newIdx });
 }
 
-// 「次のフェーズへ」: 現在のフェーズから1つ進める
+// 「次のフェーズへ」: 現在のフェーズから1つ進める(東方版・6フェイズ + ⓞセットアップ)
 function nextPhase() {
   if (!state.playSession) return;
   const ps = state.playSession;
   const isFirstTurnFirstPlayer = (ps.turn === 1 && ps.activeSide === ps.firstPlayer);
   let next = ps.phaseIdx + 1;
-  // 先行1ターン目は ① ドローと ③ 持ち込み をスキップ
-  if (isFirstTurnFirstPlayer && next === 1) next = 2;
+  // 先攻1ターン目は ③ 覚醒 をスキップ
   if (isFirstTurnFirstPlayer && next === 3) next = 4;
-  if (next > 5) {
+  const lastIdx = PHASE_DEFS.length - 1;
+  if (next > lastIdx) {
     endTurn();
     return;
   }
-  // 副作用: ① ドローフェイズに入ったら自動で2枚ドロー
+  // 副作用: ① ドローフェイズに入ったら自動で1枚ドロー(東方版: 1枚)
   if (next === 1) {
-    drawCard(ps.activeSide, 2);
+    drawCard(ps.activeSide, 1);
   }
   setPhase(next);
 }
@@ -5788,8 +5568,13 @@ function moveInstance(side, instanceId, fromZone, toZone, toTop) {
   else toArr.push(inst);
 
   const card = findPlayCard(inst.cardId);
-  const labels = { hand: '手札', field: '場', discard: '没案', deck: '山', leader: '主人公', leaderReserve: '主人公控え', inspiration: 'インスピレーション', manuscriptCards: '原稿', dondengDeck: 'どんでん返し' };
-  const placeNote = toZone === 'deck' ? (toTop ? '山の上へ' : '山の底へ') : labels[toZone] + 'へ';
+  const labels = {
+    // 東方ゾーン
+    hand: '手札', field: '盤面', deck: 'デッキ', trash: 'トラッシュ', p: 'P', life: 'ライフ', bomb: 'BOMB',
+    // 互換: 手塚向け
+    discard: '没案', leader: '主人公', leaderReserve: '主人公控え', inspiration: 'インスピレーション', manuscriptCards: '原稿', dondengDeck: 'どんでん返し'
+  };
+  const placeNote = toZone === 'deck' ? (toTop ? 'デッキの上へ' : 'デッキの底へ') : labels[toZone] + 'へ';
   // インスピレーション送りで IP 加算、戻すとき減算
   if (toZone === 'inspiration' && fromZone !== 'inspiration') {
     const ipGain = parseInt(card?.ip) || 1;
@@ -5859,40 +5644,20 @@ function openPlayPopover(side, instanceId, fromZone) {
     </div>` : '';
 
   const actions = [];
-  // 拡大表示
   actions.push({ label: `🔍 拡大表示`, fn: `openCardZoomById('${inst.cardId}')` });
 
-  // ネット対戦時、自分のサイドでなければ操作はさせない(閲覧のみ)
   const canControl = myCanControl(side);
   const ps = state.playSession;
-  const isPhase3 = ps.phaseIdx === 3;
-  const myAttackerSide = ps.network?.mySide || ps.activeSide;
-  // 敵フィールドのキャラに ③ 持ち込みバトル
-  const canBattle = isPhase3 && fromZone === 'field' && side !== myAttackerSide
-                  && ps.activeSide === myAttackerSide
-                  && (ps.network?.mode === 'solo' || ps.network?.mySide === myAttackerSide);
-  // 泣きの一回: 自分の没案に脇役、自分の場が空、未使用、自分のターン
-  const mySideForNaki = myAttackerSide;
-  const myState = ps.sides[mySideForNaki];
-  const canNaki = isPhase3 && side === mySideForNaki && fromZone === 'discard'
-                && !myState.nakiUsed && myState.field.length === 0
-                && (() => {
-                    const c = findPlayCard(inst.cardId);
-                    return c && getTypeKind(c.type) === 'character' && (parseInt(c.level) || 0) === 1;
-                  })();
-  const battleBtns = canBattle ? `
-    <button class="btn-primary" onclick="startBattle('${myAttackerSide}','${side}','${instanceId}',1)">⚔ 持ち込みバトル (原稿+1)</button>
-    <button class="btn-primary" onclick="startBattle('${myAttackerSide}','${side}','${instanceId}',2)">⚔⚔ 持ち込みバトル (原稿+2)</button>` : '';
-  const nakiBtns = canNaki ? `
-    <button class="btn-primary" onclick="useNaki('${mySideForNaki}','${instanceId}',100)">💧 泣きの一回 (HP+100で戻す)</button>
-    <button class="btn-primary" onclick="useNaki('${mySideForNaki}','${instanceId}',50)">💧 泣きの一回 (HP+50で戻す)</button>` : '';
+
+  // タイトル表示用: 覚醒状態などを示す
+  const awakenMark = inst.awakened ? ' 🌟覚醒中' : '';
+  const faceMark = inst.faceDown ? ' (裏)' : '';
 
   if (!canControl) {
     const html = `
-      <div class="play-popover-title">${escapeHtml(cardName)}${inst.hp !== undefined ? ` (HP ${inst.hp})` : ''}<br><span style="font-size:0.78rem; color:var(--parchment-dim);">${canBattle?'敵キャラ — 持ち込みバトル可能':'相手のカードは操作できません'}</span></div>
+      <div class="play-popover-title">${escapeHtml(cardName)}${awakenMark}${faceMark}<br><span style="font-size:0.78rem; color:var(--parchment-dim);">相手のカードは操作できません</span></div>
       ${stackList}
       <div class="play-popover-actions">
-        ${battleBtns}
         ${actions.map(a => `<button onclick="${a.fn}; closePlayPopover();">${a.label}</button>`).join('')}
         <button onclick="closePlayPopover()" style="margin-top: 8px;">閉じる</button>
       </div>`;
@@ -5901,72 +5666,51 @@ function openPlayPopover(side, instanceId, fromZone) {
     return;
   }
 
-  // ゾーン移動候補
-  if (fromZone === 'leader') {
-    actions.push({ label: '➡ 場に出す', fn: `moveInstance('${side}','${instanceId}','leader','field')` });
-    actions.push({ label: '➡ 控えへ戻す', fn: `moveInstance('${side}','${instanceId}','leader','leaderReserve')` });
-    actions.push({ label: '➡ 没案ゾーンへ (退場)', fn: `moveInstance('${side}','${instanceId}','leader','discard')` });
-  } else if (fromZone === 'leaderReserve') {
-    actions.push({ label: '👑 主人公へ昇格 (練り上げ)', fn: `moveInstance('${side}','${instanceId}','leaderReserve','leader')` });
-    actions.push({ label: '➡ 没案ゾーンへ', fn: `moveInstance('${side}','${instanceId}','leaderReserve','discard')` });
-  } else if (fromZone === 'hand') {
-    // 主人公カードは主人公ゾーンへ昇格を最優先で出す
-    if (card && isLeaderCard(card)) {
-      actions.push({ label: '👑 主人公ゾーンへ昇格', fn: `moveInstance('${side}','${instanceId}','hand','leader')` });
-      actions.push({ label: '➡ 主人公控えへ', fn: `moveInstance('${side}','${instanceId}','hand','leaderReserve')` });
+  // 東方版ゾーン別アクション
+  if (fromZone === 'hand') {
+    if (s.field.length < PLAY_FIELD_MAX) {
+      actions.push({ label: '⛩ 盤面に出す', fn: `moveInstance('${side}','${instanceId}','hand','field')` });
     }
-    actions.push({ label: '➡ 場に出す', fn: `moveInstance('${side}','${instanceId}','hand','field')` });
-    // 💡 インスピレーションへ送る (全フェーズで可)
-    {
-      const ipGain = parseInt(card?.ip) || 1;
-      actions.push({ label: `💡 インスピレーションへ送る (+IP${ipGain})`, fn: `moveInstance('${side}','${instanceId}','hand','inspiration')` });
-    }
-    actions.push({ label: '➡ 没案ゾーンへ', fn: `moveInstance('${side}','${instanceId}','hand','discard')` });
-    actions.push({ label: '➡ 山の上へ戻す', fn: `moveInstance('${side}','${instanceId}','hand','deck',true)` });
-    actions.push({ label: '➡ 山の底へ戻す', fn: `moveInstance('${side}','${instanceId}','hand','deck',false)` });
-  } else if (fromZone === 'inspiration') {
-    actions.push({ label: '➡ 手札に戻す (IP-)', fn: `moveInstance('${side}','${instanceId}','inspiration','hand')` });
-    actions.push({ label: '➡ 没案ゾーンへ (IP-)', fn: `moveInstance('${side}','${instanceId}','inspiration','discard')` });
+    actions.push({ label: '✨ P ゾーンへ送る (チャージ)', fn: `moveInstance('${side}','${instanceId}','hand','p')` });
+    actions.push({ label: '🗑 トラッシュへ', fn: `moveInstance('${side}','${instanceId}','hand','trash')` });
+    actions.push({ label: '🃏 デッキ上へ戻す', fn: `moveInstance('${side}','${instanceId}','hand','deck',true)` });
+    actions.push({ label: '🃏 デッキ底へ戻す', fn: `moveInstance('${side}','${instanceId}','hand','deck',false)` });
   } else if (fromZone === 'field') {
-    if (inst.hp !== undefined) {
-      actions.push({ label: `❤ HP −1 (現${inst.hp})`, fn: `adjustFieldHP('${side}','${instanceId}',-1)`, keep: true });
-      actions.push({ label: '❤ HP +1', fn: `adjustFieldHP('${side}','${instanceId}',1)`, keep: true });
-      actions.push({ label: '❤ HP −10', fn: `adjustFieldHP('${side}','${instanceId}',-10)`, keep: true });
-      actions.push({ label: '❤ HP +10', fn: `adjustFieldHP('${side}','${instanceId}',10)`, keep: true });
+    if (card && getTypeKind(card.type) === 'touhou-char' && !inst.faceDown) {
+      const oppSide = side === 'A' ? 'B' : 'A';
+      actions.push({ label: '⚔ このキャラで攻撃 (相手デッキ削り)', fn: `performAttack('${side}','${oppSide}')` });
+      actions.push({ label: inst.awakened ? '🔙 覚醒解除' : '🌟 覚醒する', fn: `togglePlayAwaken('${side}','${instanceId}')`, keep: true });
     }
-    actions.push({ label: '➡ 没案ゾーンへ', fn: `moveInstance('${side}','${instanceId}','field','discard')` });
+    actions.push({ label: inst.faceDown ? '🔍 表にする' : '🙈 裏にする', fn: `togglePlayFaceDown('${side}','${instanceId}')`, keep: true });
     actions.push({ label: '➡ 手札に戻す', fn: `moveInstance('${side}','${instanceId}','field','hand')` });
-    // 💡 場 → インスピ (全フェーズで可)
-    {
-      const ipGain = parseInt(card?.ip) || 1;
-      actions.push({ label: `💡 インスピレーションへ送る (+IP${ipGain})`, fn: `moveInstance('${side}','${instanceId}','field','inspiration')` });
-    }
-  } else if (fromZone === 'discard') {
-    actions.push({ label: '➡ 手札に戻す', fn: `moveInstance('${side}','${instanceId}','discard','hand')` });
-    actions.push({ label: '➡ 場に出す', fn: `moveInstance('${side}','${instanceId}','discard','field')` });
-    actions.push({ label: '➡ 山の上へ', fn: `moveInstance('${side}','${instanceId}','discard','deck',true)` });
-    actions.push({ label: '➡ 山の底へ', fn: `moveInstance('${side}','${instanceId}','discard','deck',false)` });
+    actions.push({ label: '🗑 トラッシュへ', fn: `moveInstance('${side}','${instanceId}','field','trash')` });
+    actions.push({ label: '🃏 デッキ上へ戻す', fn: `moveInstance('${side}','${instanceId}','field','deck',true)` });
   } else if (fromZone === 'deck') {
-    // 山のカードはドロー操作で対応するため、ここは「上を見る」だけ
     actions.push({ label: '➡ 手札に加える', fn: `moveInstance('${side}','${instanceId}','deck','hand')` });
-    actions.push({ label: '➡ 没案ゾーンへ', fn: `moveInstance('${side}','${instanceId}','deck','discard')` });
-  } else if (fromZone === 'dondengDeck') {
-    // どんでん返しデッキ: 表向き、いつでも場に出せる
-    actions.push({ label: '⚡ 場に出して使う', fn: `moveInstance('${side}','${instanceId}','dondengDeck','field')` });
-    actions.push({ label: '🔥 効果発動 → 没案へ', fn: `moveInstance('${side}','${instanceId}','dondengDeck','discard')` });
-    actions.push({ label: '➡ 手札に加える', fn: `moveInstance('${side}','${instanceId}','dondengDeck','hand')` });
-    {
-      const ipGain = parseInt(card?.ip) || 1;
-      actions.push({ label: `💡 インスピレーションへ送る (+IP${ipGain})`, fn: `moveInstance('${side}','${instanceId}','dondengDeck','inspiration')` });
+    actions.push({ label: '🗑 トラッシュへ', fn: `moveInstance('${side}','${instanceId}','deck','trash')` });
+  } else if (fromZone === 'trash') {
+    actions.push({ label: '➡ 手札に戻す', fn: `moveInstance('${side}','${instanceId}','trash','hand')` });
+    actions.push({ label: '✨ P ゾーンへ (回収P)', fn: `moveInstance('${side}','${instanceId}','trash','p')` });
+    actions.push({ label: '🃏 デッキ上へ', fn: `moveInstance('${side}','${instanceId}','trash','deck',true)` });
+    actions.push({ label: '🃏 デッキ底へ', fn: `moveInstance('${side}','${instanceId}','trash','deck',false)` });
+  } else if (fromZone === 'p') {
+    actions.push({ label: '➡ 手札に戻す', fn: `moveInstance('${side}','${instanceId}','p','hand')` });
+    actions.push({ label: '🗑 トラッシュへ (消費)', fn: `moveInstance('${side}','${instanceId}','p','trash')` });
+  } else if (fromZone === 'life') {
+    actions.push({ label: inst.faceDown ? '🔍 表にする' : '🙈 裏に戻す', fn: `togglePlayFaceDown('${side}','${instanceId}')`, keep: true });
+    actions.push({ label: '➡ 手札に加える (リフレッシュ)', fn: `moveInstance('${side}','${instanceId}','life','hand')` });
+    actions.push({ label: '🗑 トラッシュへ', fn: `moveInstance('${side}','${instanceId}','life','trash')` });
+  } else if (fromZone === 'bomb') {
+    if (s.bomb.length >= 2) {
+      actions.push({ label: '🛡 BOMB 2 枚消費で攻撃 1 回無効', fn: `nullifyAttackWithBomb('${side}')` });
     }
+    actions.push({ label: '🗑 トラッシュへ (BOMB 1 消費)', fn: `moveInstance('${side}','${instanceId}','bomb','trash')` });
   }
 
   const html = `
-    <div class="play-popover-title">${escapeHtml(cardName)}${inst.hp !== undefined ? ` (HP ${inst.hp})` : ''}</div>
+    <div class="play-popover-title">${escapeHtml(cardName)}${awakenMark}${faceMark}</div>
     ${stackList}
     <div class="play-popover-actions">
-      ${battleBtns}
-      ${nakiBtns}
       ${actions.map(a => `<button onclick="${a.fn}; ${a.keep ? '' : 'closePlayPopover();'}">${a.label}</button>`).join('')}
       <button onclick="closePlayPopover()" style="margin-top: 8px;">キャンセル</button>
     </div>`;
@@ -5974,8 +5718,193 @@ function openPlayPopover(side, instanceId, fromZone) {
   document.getElementById('playPopoverBg').classList.add('show');
 }
 
+// 覚醒トグル
+function togglePlayAwaken(side, instanceId) {
+  if (!state.playSession) return;
+  const s = state.playSession.sides[side];
+  const inst = s.field.find(x => x.instanceId === instanceId);
+  if (!inst) return;
+  inst.awakened = !inst.awakened;
+  const card = findPlayCard(inst.cardId);
+  playLog(side, `${card?.name || '?'} ${inst.awakened ? '🌟 覚醒' : '🔙 覚醒解除'}`);
+  saveData(); renderPlay();
+  netSendOp({ type: 'awaken', side, instanceId, awakened: inst.awakened });
+  if (document.getElementById('playPopoverBg').classList.contains('show')) {
+    openPlayPopover(side, instanceId, 'field');
+  }
+}
+
+// 表/裏トグル(盤面・ライフ等)
+function togglePlayFaceDown(side, instanceId) {
+  if (!state.playSession) return;
+  const s = state.playSession.sides[side];
+  // どのゾーンにあるか探索
+  const zones = ['field', 'life', 'bomb', 'hand', 'trash', 'p', 'deck'];
+  let inst = null, zone = null;
+  for (const z of zones) {
+    if (!s[z]) continue;
+    inst = s[z].find(x => x.instanceId === instanceId);
+    if (inst) { zone = z; break; }
+  }
+  if (!inst) return;
+  inst.faceDown = !inst.faceDown;
+  const card = findPlayCard(inst.cardId);
+  playLog(side, `${card?.name || '?'} を${inst.faceDown ? '裏向き' : '表向き'}に`);
+  saveData(); renderPlay();
+  netSendOp({ type: 'flip', side, instanceId, faceDown: inst.faceDown });
+  if (document.getElementById('playPopoverBg').classList.contains('show') && zone === 'field') {
+    openPlayPopover(side, instanceId, zone);
+  }
+}
+
 function closePlayPopover() {
   document.getElementById('playPopoverBg').classList.remove('show');
+}
+
+// ============ バトル / リフレッシュ (東方版) ============
+// 攻撃: 攻撃力 − 相手回避力 = 相手デッキ削り枚数
+function performAttack(attackerSide, defenderSide) {
+  if (!state.playSession) return;
+  const ps = state.playSession;
+  const atkS = ps.sides[attackerSide];
+  const defS = ps.sides[defenderSide];
+  const atkInst = atkS.field[0];
+  if (!atkInst) { toast('攻撃側に盤面キャラがいません'); return; }
+  const atkCard = findPlayCard(atkInst.cardId);
+  if (!atkCard) { toast('攻撃側のカード情報が見つかりません'); return; }
+  if (getTypeKind(atkCard.type) !== 'touhou-char') { toast('盤面のカードがキャラではありません'); return; }
+  const useAwaken = !!atkInst.awakened;
+  const atkValue = parseInt(useAwaken && atkCard.awakenAttack ? atkCard.awakenAttack : atkCard.attack) || 0;
+
+  let defName = '(盤面なし)', defValue = 0;
+  const defInst = defS.field[0];
+  if (defInst) {
+    const defCard = findPlayCard(defInst.cardId);
+    if (defCard) {
+      defName = defCard.name;
+      const useDefAwaken = !!defInst.awakened;
+      defValue = parseInt(useDefAwaken && defCard.awakenEvasion ? defCard.awakenEvasion : defCard.evasion) || 0;
+    }
+  }
+
+  const damage = Math.max(0, atkValue - defValue);
+  closePlayPopover();
+  showModal('⚔ 攻撃確認',
+    `${atkCard.name} (攻撃 ${atkValue}${useAwaken ? '・覚醒中' : ''}) → ${defName} (回避 ${defValue})\n\n` +
+    `相手のデッキを ${damage} 枚トラッシュへ送ります。デッキ 0 でリフレッシュ(=ライフ -1)。\n\n実行しますか?`,
+    () => {
+      executeAttack(attackerSide, defenderSide, damage, atkCard.name);
+    });
+}
+
+function executeAttack(attackerSide, defenderSide, damage, atkName) {
+  const ps = state.playSession;
+  const atkS = ps.sides[attackerSide];
+  const defS = ps.sides[defenderSide];
+  if (damage === 0) {
+    playLog(attackerSide, `${atkName} の攻撃 → ダメージ 0(回避)`);
+    saveData(); renderPlay();
+    return;
+  }
+  const trashLenBefore = defS.trash.length;
+  millDeck(defenderSide, damage);
+  const trashedCount = defS.trash.length - trashLenBefore;
+  // recoverP 集計(削られた直近の枚数のうち、スペル/シューティングの右下青)
+  // ただしリフレッシュをまたぐ可能性があるので、新しく入った末尾だけを対象
+  const trashedSlice = defS.trash.slice(trashLenBefore);
+  let recoverTotal = 0;
+  trashedSlice.forEach(inst => {
+    const c = findPlayCard(inst.cardId);
+    if (!c) return;
+    const k = getTypeKind(c.type);
+    if (k === 'touhou-spell' || k === 'touhou-shoot') {
+      recoverTotal += parseInt(c.recoverP) || 0;
+    }
+  });
+  if (recoverTotal > 0) {
+    const move = Math.min(recoverTotal, defS.trash.length);
+    const moved = defS.trash.splice(-move, move);
+    moved.forEach(inst => atkS.p.push(inst));
+    playLog(attackerSide, `✨ 回収P ${move} 枚を相手トラッシュ→自分の P へ`);
+  }
+  playLog(attackerSide, `⚔ ${atkName} 攻撃 ${damage} → 相手デッキを ${trashedCount} 枚削り`);
+  // 勝敗チェック
+  if (defS.life.length === 0 && defS.deck.length === 0 && defS.trash.length === 0) {
+    playLog(null, `🏆 ${atkS.name} の勝利!`);
+    toast(`🏆 ${atkS.name} の勝利!`);
+  } else if (defS.life.length === 0) {
+    playLog(null, `🏆 ${atkS.name} の勝利!(相手ライフ 0)`);
+    toast(`🏆 ${atkS.name} の勝利!(相手ライフ 0)`);
+  }
+  saveData(); renderPlay();
+  netSendOp({ type: 'attack', attackerSide, defenderSide, damage, atkName });
+}
+
+// デッキを amount 枚トラッシュへ削る(リフレッシュ自動)
+function millDeck(side, amount) {
+  if (!state.playSession) return;
+  const s = state.playSession.sides[side];
+  let remaining = amount;
+  while (remaining > 0) {
+    if (s.deck.length === 0) {
+      // リフレッシュ可能ならする、不可なら終了
+      if (s.trash.length === 0 && s.life.length === 0) break;
+      refreshDeck(side);
+      // ライフが 0 になったら以降の削りは無意味(敗北)
+      if (s.life.length === 0 && s.deck.length === 0) break;
+    }
+    const n = Math.min(remaining, s.deck.length);
+    for (let i = 0; i < n; i++) {
+      s.trash.push(s.deck.shift());
+    }
+    remaining -= n;
+  }
+}
+
+// リフレッシュ: トラッシュをシャッフルしてデッキへ。新デッキ上3枚を新ライフに。旧ライフはトラッシュへ
+function refreshDeck(side) {
+  if (!state.playSession) return;
+  const s = state.playSession.sides[side];
+  if (s.trash.length === 0) {
+    // トラッシュも空 → リフレッシュできない、ライフを 1 枚だけ消費するしかない
+    if (s.life.length > 0) {
+      const lost = s.life.pop();
+      s.trash.push({...lost, faceDown: false});
+      playLog(side, `⚠ デッキ・トラッシュ枯渇 → ライフ 1 枚消費 (残${s.life.length})`);
+    }
+    return;
+  }
+  // 旧ライフ → トラッシュ
+  if (s.life.length > 0) {
+    s.life.forEach(inst => s.trash.push({...inst, faceDown: false}));
+    playLog(side, `旧ライフ ${s.life.length} 枚をトラッシュへ`);
+    s.life = [];
+  }
+  // トラッシュ → デッキ + シャッフル
+  s.deck = shuffleArray(s.trash.splice(0, s.trash.length));
+  // デッキ上 3 枚を新ライフへ(裏向き)
+  s.life = s.deck.splice(0, Math.min(PLAY_INITIAL_LIFE, s.deck.length)).map(inst => ({...inst, faceDown: true}));
+  playLog(side, `🔄 リフレッシュ完了: デッキ ${s.deck.length} / 新ライフ ${s.life.length}`);
+}
+
+// BOMB を n 枚消費(2 枚で攻撃 1 回無効化など、UI 側で適切に呼ぶ)
+function consumeBomb(side, n) {
+  if (!state.playSession) return;
+  const s = state.playSession.sides[side];
+  if (s.bomb.length < n) { toast(`BOMB が足りません(必要 ${n} / 現${s.bomb.length})`); return false; }
+  const moved = s.bomb.splice(0, n);
+  moved.forEach(inst => s.trash.push({...inst, faceDown: false}));
+  playLog(side, `💣 BOMB ${n} 枚消費`);
+  saveData(); renderPlay();
+  return true;
+}
+
+// BOMB 2 消費で攻撃1回無効化(防御側UIから手動)
+function nullifyAttackWithBomb(side) {
+  if (consumeBomb(side, 2)) {
+    playLog(side, `🛡 BOMB 2 枚消費 → 直前の攻撃を無効化`);
+    toast(`🛡 攻撃 1 回無効化 (BOMB -2)`);
+  }
 }
 
 // ホバーで原寸プレビュー表示 (テキストが小さくて読めないチップを補完)
@@ -6073,14 +6002,25 @@ function buildCardChip(inst, side, fromZone, faceDown) {
 
   const color = getTypeColor(card.type);
   const icon = getDisplayIcon(card);
+  const kind = getTypeKind(card.type);
   const lvBadge = card.level ? `<span class="card-chip-badge" style="background:${color}">Lv${escapeHtml(card.level)}</span>` : '';
-  const stackCount = inst.stack && inst.stack.length > 0 ? inst.stack.length : 0;
-  const stackBadge = stackCount > 0
-    ? `<div class="chip-stack-badge" title="進化元 ${stackCount} 枚を内包">⏶${stackCount}</div>` : '';
-  const hpBadge = (inst.hp !== undefined && inst.hp !== null && inst.hp > 0)
-    ? `<div class="card-chip-hp" title="現HP">${inst.hp}</div>` : '';
-  const ipMark = card.ip ? `<span title="IP ${escapeHtml(card.ip)}">💎${escapeHtml(card.ip)}</span>` : '';
-  const costMark = card.cost ? `<span title="コスト ${escapeHtml(card.cost)}">⚡${escapeHtml(card.cost)}</span>` : '';
+  const awakenBadge = inst.awakened ? `<div class="card-chip-awaken" title="覚醒中">🌟</div>` : '';
+
+  // 東方版: 種類に応じてミニ表示
+  let footMark = '';
+  if (kind === 'touhou-char') {
+    const atk = inst.awakened && card.awakenAttack ? card.awakenAttack : card.attack;
+    const eva = inst.awakened && card.awakenEvasion ? card.awakenEvasion : card.evasion;
+    if (atk) footMark += `<span title="攻撃力">⚔${escapeHtml(atk)}</span>`;
+    if (eva) footMark += `<span title="回避力">🛡${escapeHtml(eva)}</span>`;
+  } else if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+    if (card.ppCost) footMark += `<span title="PPコスト">✨${escapeHtml(card.ppCost)}</span>`;
+    if (card.bomCost) footMark += `<span title="BOMコスト">💣${escapeHtml(card.bomCost)}</span>`;
+  } else {
+    // 互換: tezuka 系
+    if (card.ip) footMark += `<span title="IP ${escapeHtml(card.ip)}">💎${escapeHtml(card.ip)}</span>`;
+    if (card.cost) footMark += `<span title="コスト ${escapeHtml(card.cost)}">⚡${escapeHtml(card.cost)}</span>`;
+  }
 
   return `<div class="${classes.join(' ')}"
     onclick="openPlayPopover('${side}','${inst.instanceId}','${fromZone}')"
@@ -6092,9 +6032,8 @@ function buildCardChip(inst, side, fromZone, faceDown) {
       <div class="card-chip-name">${escapeHtml(card.name || '無名')}</div>
     </div>
     <div class="card-chip-icon">${escapeHtml(icon)}</div>
-    <div class="card-chip-foot">${ipMark}${costMark}</div>
-    ${hpBadge}
-    ${stackBadge}
+    <div class="card-chip-foot">${footMark}</div>
+    ${awakenBadge}
   </div>`;
 }
 
@@ -6225,31 +6164,19 @@ function renderPlayLogList() {
 function renderPlaySide(sideKey) {
   const ps = state.playSession;
   const s = ps.sides[sideKey];
-  if (!s.leader) s.leader = [];
-  if (!s.leaderReserve) s.leaderReserve = [];
-  if (!s.manuscriptCards) s.manuscriptCards = [];
-  if (!s.dondengDeck) s.dondengDeck = [];
+  // 東方ゾーンを保証
+  if (!s.life) s.life = [];
+  if (!s.bomb) s.bomb = [];
+  if (!s.trash) s.trash = [];
+  if (!s.p) s.p = [];
+
   const isActive = ps.activeSide === sideKey;
   const canControl = myCanControl(sideKey);
   const dis = canControl ? '' : 'disabled';
-  // 観戦者・ソロ は両陣営の手札が見える(ホスト・ゲスト対戦のみ相手の手札を伏せる)
   const netMode = ps.network?.mode;
   const hideOppHand = (netMode === 'host' || netMode === 'guest') && !canControl;
 
-  const leaderHtml = s.leader.length === 0
-    ? '<div class="play-empty-slot">👑</div>'
-    : s.leader.map(inst => buildCardChip(inst, sideKey, 'leader', false)).join('');
-  const reserveHtml = s.leaderReserve.length === 0
-    ? '<div class="play-empty-slot">控</div>'
-    : s.leaderReserve.map(inst => buildCardChip(inst, sideKey, 'leaderReserve', false)).join('');
-  const handHtml = s.hand.length === 0
-    ? '<div class="play-empty-slot">手札なし</div>'
-    : s.hand.map(inst => buildCardChip(inst, sideKey, 'hand', hideOppHand)).join('');
-  const fieldHtml = s.field.length === 0
-    ? '<div class="play-empty-slot">場 空き</div>'
-    : s.field.map(inst => buildCardChip(inst, sideKey, 'field', false)).join('');
-
-  // スタック表示 (top 2 をオーバーラップして枚数バッジ)
+  // ゾーンスタック描画 (top 2 をオーバーラップ)
   const stackChips = (cards, faceDown, zoneName) => {
     if (cards.length === 0) return `<div class="zone-stack-empty">空</div>`;
     const top = cards.slice(-2);
@@ -6259,87 +6186,90 @@ function renderPlaySide(sideKey) {
        </div>`
     ).join('');
   };
-  const discardStack = stackChips(s.discard, false, 'discard');
-  // 山は常に裏向き(自分の山も先読み防止)
-  const deckStack = stackChips(s.deck, true, 'deck');
-  const manuscriptStack = stackChips(s.manuscriptCards, false, 'manuscriptCards');
-  const inspirationStack = stackChips(s.inspiration || [], false, 'inspiration');
-  // どんでん返しデッキ (別山、表向き) — いつでも場に出せる
-  const dondengStack = stackChips(s.dondengDeck || [], false, 'dondengDeck');
 
+  const handHtml = s.hand.length === 0
+    ? '<div class="play-empty-slot">手札なし</div>'
+    : s.hand.map(inst => buildCardChip(inst, sideKey, 'hand', hideOppHand)).join('');
+  const fieldHtml = s.field.length === 0
+    ? '<div class="play-empty-slot">盤面 空</div>'
+    : s.field.map(inst => buildCardChip(inst, sideKey, 'field', !!inst.faceDown)).join('');
+  const deckStack  = stackChips(s.deck,  true,  'deck');
+  const trashStack = stackChips(s.trash, false, 'trash');
+  const pStack     = stackChips(s.p,     false, 'p');
+
+  // ライフ・BOMB は枚数固定なのでカード型のプレースホルダ並び
+  const lifeCards = (s.life || []).map(inst =>
+    `<div class="th-pip th-pip-life filled"
+          onclick="${canControl?`openPlayPopover('${sideKey}','${inst.instanceId}','life')`:''}"
+          title="ライフ(裏向き)"></div>`
+  ).join('') + Array.from({length: Math.max(0, PLAY_INITIAL_LIFE - s.life.length)}, () =>
+    `<div class="th-pip th-pip-life empty" title="失われたライフ"></div>`
+  ).join('');
+
+  const bombCards = (s.bomb || []).map(inst =>
+    `<div class="th-pip th-pip-bomb filled"
+          onclick="${canControl?`openPlayPopover('${sideKey}','${inst.instanceId}','bomb')`:''}"
+          title="BOMB">💣</div>`
+  ).join('') + Array.from({length: Math.max(0, PLAY_INITIAL_BOMB - s.bomb.length)}, () =>
+    `<div class="th-pip th-pip-bomb empty" title="消費されたBOMB"></div>`
+  ).join('');
+
+  const lifeWarn  = s.life.length === 0 ? 'lose' : (s.life.length === 1 ? 'warn' : '');
   const fieldCountClass = s.field.length >= PLAY_FIELD_MAX ? 'full' : '';
-  const msWinClass = s.manuscriptCards.length >= PLAY_VICTORY_MANUSCRIPT ? 'win' : '';
-
-  // 上側(B)か下側(A)か: TCG的に「相手の手札は画面の上端、自分の手札は画面の下端」
   const positionClass = sideKey === 'B' ? 'side-top' : 'side-bottom';
 
   return `
     <div class="play-side ${isActive ? 'active' : ''} ${canControl?'mine':'opponent'} ${positionClass}">
-      <!-- ヘッダー: 名前 + カウンタ + アクション (一行) -->
+      <!-- ヘッダー -->
       <div class="play-side-header">
         <div class="play-side-name">${escapeHtml(s.name)}${isActive ? ' ◆' : ''}${canControl?'':' (相手)'}</div>
-        <div class="counter-pill ms-pill ${msWinClass}" title="原稿(勝利条件)">
-          📝 原稿 <strong>${s.manuscriptCards.length}</strong>/${PLAY_VICTORY_MANUSCRIPT}
-          <button class="counter-mini" onclick="adjustCounter('${sideKey}','manuscript',-1)" ${dis}>−</button>
-          <button class="counter-mini" onclick="adjustCounter('${sideKey}','manuscript',1)" ${dis}>＋</button>
+        <div class="counter-pill life-pill ${lifeWarn}" title="ライフ(0 で敗北)">
+          ❤️ ライフ <strong>${s.life.length}</strong>/${PLAY_INITIAL_LIFE}
         </div>
-        <div class="counter-pill ip-pill" title="💡 インスピレーションパワー(IP)を手動調整">
-          💡 <strong>${s.ip}</strong>
-          <button class="counter-mini" onclick="adjustCounter('${sideKey}','ip',-1)" ${dis}>−</button>
-          <button class="counter-mini" onclick="adjustCounter('${sideKey}','ip',1)" ${dis}>＋</button>
+        <div class="counter-pill bomb-pill" title="BOMB(2消費で攻撃を1回無効化)">
+          💣 BOMB <strong>${s.bomb.length}</strong>/${PLAY_INITIAL_BOMB}
         </div>
-        ${canControl ? `<button class="btn-small" onclick="drawCard('${sideKey}',1)" title="山からドロー">🃏 ドロー</button>
-        <button class="btn-small" onclick="shuffleDeck('${sideKey}')" title="山シャッフル">🔀 シャッフル</button>` : ''}
-        ${s.nakiUsed ? '<span class="naki-used-mark" title="泣きの一回 使用済">💧 泣き使用済</span>' : ''}
+        <div class="counter-pill ip-pill" title="P ゾーン(コスト源)">
+          ✨ P <strong>${s.p.length}</strong>
+        </div>
+        ${canControl ? `<button class="btn-small" onclick="drawCard('${sideKey}',1)" title="デッキから1枚ドロー">🃏 ドロー</button>
+        <button class="btn-small" onclick="shuffleDeck('${sideKey}')" title="デッキシャッフル">🔀 シャッフル</button>` : ''}
       </div>
 
-      <!-- メイン: 主人公エリア | (場↑/手札↓ 縦並び) | スタック群 の3列 -->
-      <div class="play-side-board">
-        <div class="zone-block zone-block-hero" title="主人公エリア (本体 + 控え)">
-          <div class="zone-block-label">👑 主人公 + 控え (${s.leader.length + s.leaderReserve.length})</div>
-          <div class="zone-block-content hero-zone-content">
-            <div class="hero-current" title="現在の主人公(1枚)">${leaderHtml}</div>
-            <div class="hero-divider"></div>
-            <div class="hero-reserve" title="主人公控え(Lv2/Lv3)">${reserveHtml}</div>
+      <!-- メイン: ライフ/BOMB | 盤面+手札 | デッキ/トラッシュ/P -->
+      <div class="play-side-board th-board">
+        <div class="th-left">
+          <div class="th-meter-block">
+            <div class="zone-block-label ${lifeWarn}">❤️ ライフ ${s.life.length}/${PLAY_INITIAL_LIFE}</div>
+            <div class="th-pip-row">${lifeCards}</div>
+          </div>
+          <div class="th-meter-block">
+            <div class="zone-block-label">💣 BOMB ${s.bomb.length}/${PLAY_INITIAL_BOMB}</div>
+            <div class="th-pip-row">${bombCards}</div>
           </div>
         </div>
         <div class="zone-center">
-          <div class="zone-block zone-block-field ${fieldCountClass}" title="キャラクターアイディアゾーン(上限6)">
-            <div class="zone-block-label">🎴 場 ${s.field.length}/${PLAY_FIELD_MAX}</div>
+          <div class="zone-block zone-block-field ${fieldCountClass}" title="盤面 (キャラ最大 1 体)">
+            <div class="zone-block-label">⛩ 盤面 ${s.field.length}/${PLAY_FIELD_MAX}</div>
             <div class="zone-block-content field-grid">${fieldHtml}</div>
           </div>
           <div class="zone-block zone-block-hand" title="手札 ${s.hand.length}枚">
-            <div class="zone-block-label">✋ 手札 (${s.hand.length}枚)</div>
+            <div class="zone-block-label">✋ 手札 (${s.hand.length})</div>
             <div class="zone-block-content hand-scroll">${handHtml}</div>
           </div>
         </div>
         <div class="zone-block-stacks">
-          <!-- 原稿ゾーン: 小さく、勝利条件のメーター中心 -->
-          <div class="zone-stack zone-stack-manuscript ${msWinClass}" onclick="showZoneModal('${sideKey}','manuscriptCards','📝 原稿ゾーン')" title="原稿(勝利条件:${PLAY_VICTORY_MANUSCRIPT}枚)">
-            <div class="zone-stack-label ${msWinClass}">📝 原稿</div>
-            <div class="manuscript-count-big ${msWinClass}">${s.manuscriptCards.length}<span class="manuscript-count-max">/${PLAY_VICTORY_MANUSCRIPT}</span></div>
+          <div class="zone-stack zone-stack-p" onclick="showZoneModal('${sideKey}','p','✨ P ゾーン')" title="Pゾーン(チャージで貯まる)">
+            <div class="zone-stack-label">✨ P ${s.p.length}</div>
+            <div class="zone-stack-cards">${pStack}</div>
           </div>
-          <div class="zone-stack zone-stack-inspiration" onclick="showZoneModal('${sideKey}','inspiration','💡 インスピレーションゾーン')" title="IPパワー: 累積${s.ip}・所蔵${(s.inspiration||[]).length}枚">
-            <div class="inspiration-power">
-              <span class="inspiration-power-icon">💡</span>
-              <span class="inspiration-power-num">${s.ip || 0}</span>
-              <span class="inspiration-power-unit">IP</span>
-            </div>
-            <div class="zone-stack-label">${(s.inspiration||[]).length} 枚</div>
-            <div class="zone-stack-cards">${inspirationStack}</div>
-          </div>
-          <div class="zone-stack" onclick="showZoneModal('${sideKey}','discard','📥 没案ゾーン')" title="戦闘で没になったカード">
-            <div class="zone-stack-label">📥 没案 ${s.discard.length}</div>
-            <div class="zone-stack-cards">${discardStack}</div>
-          </div>
-          <div class="zone-stack" onclick="showZoneModal('${sideKey}','deck','🃏 山(デッキ)', true)" title="山札(伏せ)">
-            <div class="zone-stack-label">🃏 山 ${s.deck.length}</div>
+          <div class="zone-stack" onclick="showZoneModal('${sideKey}','deck','🃏 デッキ', true)" title="デッキ(攻撃でトラッシュへ削られる戦場)">
+            <div class="zone-stack-label">🃏 デッキ ${s.deck.length}</div>
             <div class="zone-stack-cards">${deckStack}</div>
           </div>
-          <!-- どんでん返しデッキ(別山、表向き、いつでも場に出せる) -->
-          <div class="zone-stack zone-stack-dondeng" onclick="showZoneModal('${sideKey}','dondengDeck','🎲 どんでん返しデッキ')" title="どんでん返しデッキ(表向き、いつでも場に出せる)">
-            <div class="zone-stack-label">🎲 どんでん返し ${s.dondengDeck.length}</div>
-            <div class="zone-stack-cards">${dondengStack}</div>
+          <div class="zone-stack zone-stack-trash" onclick="showZoneModal('${sideKey}','trash','🗑 トラッシュ')" title="トラッシュ(没ではなくトラッシュ)">
+            <div class="zone-stack-label">🗑 トラッシュ ${s.trash.length}</div>
+            <div class="zone-stack-cards">${trashStack}</div>
           </div>
         </div>
       </div>
@@ -6376,16 +6306,17 @@ function renderTurnBar() {
                   : net.mode === 'spectator' ? `<span class="play-net-badge spectator">👁 SPECTATOR (観戦中)</span>`
                   : '';
   const myTurn = net.mode === 'solo' || net.mySide === ps.activeSide;
-  const curIdx = ps.phaseIdx ?? 2;
+  const curIdx = ps.phaseIdx ?? 1;
   const curDef = PHASE_DEFS[curIdx] || PHASE_DEFS[0];
+  const lastIdx = PHASE_DEFS.length - 1;
   const isFirstTurnFirstPlayer = (ps.turn === 1 && ps.activeSide === ps.firstPlayer);
-  // 先行1ターン目は①と③をスキップ表示
+  // 東方版: 先攻1ターン目は ③ 覚醒 のみスキップ。⓪ セットアップは初回のみ
   const stepper = PHASE_DEFS.map(p => {
-    const skipped = isFirstTurnFirstPlayer && (p.idx === 1 || p.idx === 3);
+    const skipped = isFirstTurnFirstPlayer && p.idx === 3;
     const cls = p.idx === curIdx ? 'cur' : (p.idx < curIdx ? 'done' : '');
     return `<button class="phase-step ${cls} ${skipped?'skip':''}"
               onclick="setPhase(${p.idx})"
-              title="${escapeHtml(p.full)} — ${escapeHtml(p.desc)}${skipped?'(先行1ターン目はスキップ)':''}"
+              title="${escapeHtml(p.full)} — ${escapeHtml(p.desc)}${skipped?'(先攻1ターン目はスキップ)':''}"
               ${myTurn?'':'disabled'}>
               <span class="phase-icon">${p.icon}</span>
               <span class="phase-label">${p.name}</span>
@@ -6401,9 +6332,8 @@ function renderTurnBar() {
       <div class="phase-stepper">${stepper}</div>
       <div class="phase-current-desc">${escapeHtml(curDef.full)} — ${escapeHtml(curDef.desc)}</div>
       <div class="play-turnbar-actions">
-        <button class="btn-primary" onclick="nextPhase()" ${myTurn?'':'disabled'}>${curIdx >= 5 ? 'ターン終了' : '次のフェーズへ →'}</button>
+        <button class="btn-primary" onclick="nextPhase()" ${myTurn?'':'disabled'}>${curIdx >= lastIdx ? 'ターン終了' : '次のフェーズへ →'}</button>
         <button class="btn-small" onclick="endTurn()" ${myTurn?'':'disabled'} title="現在のフェーズに関係なくターン終了">⏭ ターン終了</button>
-        <button class="btn-small ${_highlightPlayable?'toggle-on':''}" onclick="toggleHighlightPlayable()" title="手札の場に出せるカードを強調(出せないカードは暗くする)">${_highlightPlayable?'💡 ハイライト ON':'💡 ハイライト'}</button>
         <button class="btn-small" onclick="togglePlayLog()">📜 ログ (${ps.log.length})</button>
         ${net.mode === 'solo' ? `<button class="btn-small" onclick="restartPlaySession()">↺ リスタート</button>` : ''}
         <button class="btn-small btn-danger" onclick="endPlaySession()">✕ 終了</button>
@@ -6881,6 +6811,14 @@ function createCardElementForPDF(card) {
     // 効果カードはテキストエリアが本体
     cardEl.querySelector('.cp-illust').style.height = '150px';
     cardEl.querySelector('.cp-illust-icon').style.fontSize = '100px';
+  } else if (cardEl.classList.contains('kind-touhou-char')) {
+    // 東方キャラ: 覚醒ブロック分のスペースを取るため中サイズ
+    cardEl.querySelector('.cp-illust').style.height = '200px';
+    cardEl.querySelector('.cp-illust-icon').style.fontSize = '130px';
+  } else if (cardEl.classList.contains('kind-touhou-spell') || cardEl.classList.contains('kind-touhou-shoot')) {
+    // スペル/シューティング: 効果テキストが本体
+    cardEl.querySelector('.cp-illust').style.height = '170px';
+    cardEl.querySelector('.cp-illust-icon').style.fontSize = '115px';
   }
   cardEl.querySelectorAll('.cp-illust-memo').forEach(e => { e.style.fontSize = '24px'; e.style.bottom = '6px'; e.style.padding = '3px 8px'; });
   // 技
@@ -6902,6 +6840,24 @@ function createCardElementForPDF(card) {
   cardEl.querySelectorAll('.cp-passive-area').forEach(e => { e.style.padding = '12px 18px'; e.style.margin = '8px 4px'; e.style.borderRadius = '8px'; e.style.gap = '14px'; });
   cardEl.querySelectorAll('.cp-passive-label').forEach(e => { e.style.fontSize = '26px'; e.style.padding = '6px 16px'; e.style.borderRadius = '6px'; });
   cardEl.querySelectorAll('.cp-passive-text').forEach(e => { e.style.fontSize = '30px'; e.style.lineHeight = '1.4'; });
+  // 東方版: ステータスチップ (回避力、覚醒情報)
+  cardEl.querySelectorAll('.cp-th-stats').forEach(e => { e.style.padding = '10px 18px 6px'; e.style.fontSize = '26px'; e.style.gap = '10px'; e.style.minHeight = '36px'; });
+  cardEl.querySelectorAll('.cp-th-chip').forEach(e => { e.style.padding = '5px 16px'; e.style.borderRadius = '20px'; e.style.fontSize = '26px'; e.style.lineHeight = '1.3'; });
+  // 東方版: 攻撃力 / 回避力 バッジ (cp-badge で 76px/34px 設定済み、追加調整のみ)
+  cardEl.querySelectorAll('.cp-badge-atk').forEach(e => { e.style.fontSize = '36px'; });
+  cardEl.querySelectorAll('.cp-badge-eva').forEach(e => { e.style.fontSize = '36px'; });
+  // 東方版: 使用者タグ
+  cardEl.querySelectorAll('.cp-user-tag').forEach(e => { e.style.fontSize = '26px'; e.style.fontStyle = 'italic'; });
+  // 東方版: 覚醒ブロック
+  cardEl.querySelectorAll('.cp-awaken-block').forEach(e => { e.style.margin = '10px 14px'; e.style.padding = '14px 18px'; e.style.borderRadius = '14px'; e.style.gap = '10px'; });
+  cardEl.querySelectorAll('.cp-awaken-head').forEach(e => { e.style.fontSize = '28px'; e.style.gap = '14px'; e.style.letterSpacing = '0.04em'; });
+  cardEl.querySelectorAll('.cp-awaken-cost').forEach(e => { e.style.fontSize = '24px'; e.style.padding = '3px 16px'; e.style.borderRadius = '16px'; });
+  cardEl.querySelectorAll('.cp-awaken-stats').forEach(e => { e.style.gap = '12px'; });
+  cardEl.querySelectorAll('.cp-awaken-effect').forEach(e => { e.style.fontSize = '28px'; e.style.lineHeight = '1.4'; });
+  // 東方版: スペル トリガー文 (コストと効果の間)
+  cardEl.querySelectorAll('.cp-th-trigger').forEach(e => { e.style.fontSize = '26px'; e.style.padding = '6px 18px'; e.style.borderRadius = '0 8px 8px 0'; e.style.borderLeftWidth = '5px'; e.style.margin = '4px 0'; e.style.lineHeight = '1.4'; });
+  // 東方版: 回収P (右下青字)
+  cardEl.querySelectorAll('.cp-recover-p').forEach(e => { e.style.fontSize = '28px'; e.style.fontWeight = '700'; });
   // フッター(覚醒ルール等の重要文も含むので大きめに)
   cardEl.querySelectorAll('.cp-footer').forEach(e => { e.style.fontSize = '24px'; e.style.minHeight = '52px'; e.style.maxHeight = '140px'; e.style.padding = '10px 6px 0'; });
   cardEl.querySelectorAll('.cp-footer-work').forEach(e => { e.style.fontSize = '24px'; e.style.padding = '6px 14px'; });

@@ -2958,6 +2958,7 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 .aib-usedrow{margin-top:5px;font-size:.78rem;color:#c9bb9c;display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
 .aib-mini{display:inline-block;color:#fff;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.25);}
 .aib-mini:hover{filter:brightness(1.25);transform:translateY(-1px);}
+.aib-trashgrid{display:flex;flex-wrap:wrap;gap:5px;}
 /* === AI対戦 v3 ボード(PLAY準拠の横並びゾーン) === */
 .aib-pl{border:1px solid rgba(212,175,110,.32);border-radius:10px;padding:7px 9px;margin:4px 0;}
 .aib-pl.you{background:rgba(216,178,90,.09);}
@@ -4351,7 +4352,8 @@ function aibSideMat(s,isHuman){
   const stacks='<div class="aib-col aib-stacks">'
     +'<div class="aib-stk p"><div class="aib-stk-l">✨ P</div><div class="aib-stk-n">'+s.P+'</div></div>'
     +'<div class="aib-stk deck"><div class="aib-stk-l">🃏 デッキ</div><div class="aib-stk-n">'+s.deck.length+'</div></div>'
-    +'<div class="aib-stk trash"><div class="aib-stk-l">🗑 トラッシュ</div><div class="aib-stk-n">'+s.trash.length+'</div></div>'
+    +'<div class="aib-stk trash" style="cursor:pointer;" onclick="aibShowTrash(\''+(isHuman?'human':'ai')+'\')" title="クリックで中身を確認">'
+    +'<div class="aib-stk-l">🗑 トラッシュ 🔍</div><div class="aib-stk-n">'+s.trash.length+'</div></div>'
     +'</div>';
   return '<div class="aib-pl '+cls+(act?' act':'')+'">'
     +'<div class="aib-plhead">'
@@ -4417,7 +4419,7 @@ function aibCenterHtml(g){
     const expDmg=Math.max(1,atk.raw-aibEva(dL));
     h+='<div class="aib-phase" style="color:#ff8a6a;">🛡 防御フェイズ ── 割り込み!</div>'
       +'<div class="aib-hint">AI の <b style="color:#ff8da0;">'+atk.atkL.k+'</b> が攻撃!実効攻撃力 <b style="color:#ff8a6a;font-size:1.1rem;">'+atk.raw+'</b>'
-      +((atk.spellNames&&atk.spellNames.length)?'<br>🤖 AIの使用スペル: <b style="color:#cfe0ff;">'+atk.spellNames.join('、')+'</b>':'<br>🤖 AIはスペル未使用')
+      +((atk.spellCards&&atk.spellCards.length)?'<br>🤖 AIの使用スペル(クリックで拡大): '+atk.spellCards.map(aibMiniCard).join(' '):'<br>🤖 AIはスペル未使用')
       +'<br>迎撃 '+dL.k+'(回避'+aibEva(dL)+') ── 防御しなければ <b style="color:#ff8a6a;">'+expDmg+' 枚</b> トラッシュ</div>';
     let defBtns='';
     g.human.hand.forEach((c,i)=>{
@@ -4478,6 +4480,21 @@ function aibCombatHtml(g){
   if(lc.defCard>=0)
     h+='<div class="aib-usedrow">'+(lc.by==='you'?'🛡 AIが使った防御カード: ':'🛡 あなたの防御カード: ')+aibMiniCard(lc.defCard)+'</div>';
   return h+'</div>';
+}
+function aibShowTrash(side){
+  const g=aibGame;if(!g)return;
+  const s=(side==='human')?g.human:g.ai;
+  const tr=s.trash||[];
+  const body=tr.length
+    ? '<div class="aib-trashgrid">'+tr.map(aibMiniCard).join('')+'</div>'
+    : '<div style="color:#8b8270;padding:18px;text-align:center;">トラッシュは空です</div>';
+  document.getElementById('aib-zoom-inner').innerHTML=
+    '<div class="aib-zoom-card" style="width:320px;max-height:82vh;overflow-y:auto;">'
+    +'<div class="aib-zoom-head" style="background:#b0683c">🗑 '+(side==='human'?'あなた':'AI')+' のトラッシュ('+tr.length+'枚)</div>'
+    +'<div style="padding:11px 13px;">'+body+'</div>'
+    +'<div class="aib-zoom-act"><button class="btn-small" onclick="aibCloseZoom()">閉じる</button></div>'
+    +'</div>';
+  document.getElementById('aib-zoom').classList.add('show');
 }
 function aibCardZoomByPool(c){
   const sp=AIB_POOL[c];

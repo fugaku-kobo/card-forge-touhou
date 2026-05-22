@@ -2414,6 +2414,9 @@ main {
   animation: th-awaken-pulse 1.6s ease-in-out infinite;
 }
 @keyframes th-awaken-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+/* 東方v3.1: 行動済み(攻撃後・次の自分のターンまで迎撃に使えない) */
+.card-chip.chip-rested { opacity: 0.62; transform: rotate(7deg); }
+.card-chip.chip-rested::after { content: "💤"; position: absolute; top: 2px; left: 3px; font-size: 13px; }
 /* 進化したカード(stackあり)は枠を二重に */
 .card-chip.lv2:has(.chip-stack-badge),
 .card-chip.lv3:has(.chip-stack-badge) {
@@ -2827,6 +2830,90 @@ footer {
   margin-top: 50px;
 }
 footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px; }
+/* === 🤖 AI対戦 プレイマット === */
+.aib-mat{background:linear-gradient(165deg,#0e1228,#1b1433 55%,#241430);border:1px solid rgba(212,175,110,.35);border-radius:14px;padding:12px;}
+.aib-side{padding:9px 11px;border-radius:11px;margin:3px 0;}
+.aib-side.ai{background:rgba(150,46,70,.16);border:1px solid rgba(200,50,76,.32);}
+.aib-side.you{background:rgba(216,178,90,.10);border:1px solid rgba(212,175,110,.32);}
+.aib-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.aib-name{font-family:'Cinzel',serif;font-weight:700;font-size:.98rem;}
+.aib-name.ai{color:#ff8da0;}
+.aib-name.you{color:#e6c878;}
+.aib-pips{display:inline-flex;gap:3px;align-items:center;vertical-align:middle;}
+.aib-pip{width:15px;height:15px;border-radius:50%;display:inline-block;}
+.aib-pip.life{background:radial-gradient(circle at 35% 30%,#ff9aa6,#c8324c);box-shadow:0 0 5px rgba(200,50,76,.55);}
+.aib-pip.bomb{background:radial-gradient(circle at 35% 30%,#dcbcff,#7a4fb0);}
+.aib-pip.spent{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);box-shadow:none;}
+.aib-leaders{display:flex;gap:12px;margin:9px 0 4px;flex-wrap:wrap;}
+.aib-leader{width:142px;border-radius:10px;overflow:hidden;border:2px solid #c8324c;background:#1d1633;box-shadow:0 2px 7px rgba(0,0,0,.4);transition:transform .15s,box-shadow .15s;}
+.aib-leader.awakened{border-color:#e6c878;box-shadow:0 0 14px rgba(216,178,90,.55);}
+.aib-leader.rested{opacity:.5;transform:rotate(6deg);}
+.aib-lname{background:#c8324c;color:#fff;font-weight:700;font-size:.84rem;padding:4px 6px;text-align:center;letter-spacing:.04em;}
+.aib-leader.awakened .aib-lname{background:linear-gradient(90deg,#c8324c,#e0a83e);}
+.aib-lbody{display:flex;justify-content:space-around;padding:9px 4px 4px;}
+.aib-lstat{text-align:center;line-height:1.1;}
+.aib-lstat .v{font-size:1.5rem;font-weight:700;color:#fff;display:block;}
+.aib-lstat .k{font-size:.62rem;color:#b9a98a;}
+.aib-ltag{font-size:.67rem;text-align:center;padding:1px 0 5px;font-weight:700;}
+.aib-ltag.aw{color:#e6c878;}
+.aib-ltag.rs{color:#ff8a6a;}
+.aib-ltag.nm{color:#8b8270;}
+.aib-zones{display:flex;gap:7px;flex-wrap:wrap;}
+.aib-zone{background:rgba(0,0,0,.32);border:1px solid rgba(212,175,110,.22);border-radius:7px;padding:3px 9px;font-size:.78rem;color:#c9bb9c;}
+.aib-zone b{color:#e6c878;font-size:.96rem;}
+.aib-center{text-align:center;padding:11px 8px;margin:7px 0;background:rgba(0,0,0,.3);border-radius:9px;border:1px solid rgba(212,175,110,.28);}
+.aib-phase{font-family:'Cinzel',serif;color:#e6c878;font-size:.82rem;letter-spacing:.07em;margin-bottom:6px;}
+.aib-hint{color:#b9a98a;font-size:.78rem;margin-bottom:7px;}
+.aib-hand-wrap{margin-top:9px;padding-top:8px;border-top:1px dashed rgba(212,175,110,.25);}
+.aib-hand-label{font-size:.75rem;color:#b9a98a;margin-bottom:4px;}
+.aib-hand{display:flex;gap:6px;flex-wrap:wrap;}
+.aib-card{width:114px;border:1px solid #3f6fb5;border-radius:8px;background:linear-gradient(165deg,#18213c,#141a30);padding:5px 7px;}
+.aib-card.castable{border-color:#e6c878;cursor:pointer;box-shadow:0 0 7px rgba(216,178,90,.32);}
+.aib-card.castable:hover{background:#212d4e;transform:translateY(-2px);}
+.aib-card.dim{opacity:.4;}
+.aib-cnm{font-weight:700;font-size:.73rem;color:#cfe0ff;margin-bottom:2px;}
+.aib-cef{font-size:.66rem;color:#a9b8d4;line-height:1.3;min-height:1.7em;}
+.aib-cpp{display:inline-block;background:#3f6fb5;color:#fff;font-size:.63rem;font-weight:700;border-radius:4px;padding:0 5px;margin-top:3px;}
+/* === 🤖 AI対戦 v2(演出強化・上書き) === */
+.aib-mat{padding:10px;}
+.aib-banner{text-align:center;font-family:'Cinzel',serif;font-weight:700;font-size:1.05rem;padding:7px;border-radius:9px;margin-bottom:7px;letter-spacing:.05em;}
+.aib-banner.you{background:linear-gradient(90deg,rgba(216,178,90,.12),rgba(216,178,90,.42),rgba(216,178,90,.12));color:#ffe6a8;border:1px solid rgba(216,178,90,.6);}
+.aib-banner.ai{background:linear-gradient(90deg,rgba(200,50,76,.12),rgba(200,50,76,.44),rgba(200,50,76,.12));color:#ffc2cd;border:1px solid rgba(200,50,76,.6);}
+.aib-steps{display:flex;gap:4px;justify-content:center;margin-bottom:7px;flex-wrap:wrap;}
+.aib-step{font-size:.68rem;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.05);color:#7a7466;border:1px solid transparent;}
+.aib-step.on{background:rgba(216,178,90,.92);color:#1a1228;font-weight:700;border-color:#ffe6a8;box-shadow:0 0 8px rgba(216,178,90,.5);}
+.aib-action{text-align:center;padding:8px 10px;margin-bottom:7px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid rgba(212,175,110,.3);font-size:.9rem;font-weight:700;color:#ffe6a8;min-height:1.3em;}
+.aib-side.active{box-shadow:0 0 0 2px rgba(216,178,90,.6),0 0 14px rgba(216,178,90,.3);}
+.aib-leader.attacker{border-color:#ff8a5a !important;box-shadow:0 0 16px rgba(255,120,90,.85) !important;}
+.aib-lface{font-size:1.7rem;text-align:center;padding:4px 0 0;}
+.aib-lbody{padding:2px 4px !important;}
+.aib-lstat .v{font-size:1.32rem !important;}
+.aib-card{width:96px !important;padding:0 !important;border:1px solid #3f6fb5;border-radius:8px;background:#141a30 !important;overflow:hidden;cursor:pointer;}
+.aib-card:hover{transform:translateY(-4px);box-shadow:0 6px 15px rgba(0,0,0,.6);}
+.aib-card.castable{border-color:#e6c878;box-shadow:0 0 8px rgba(216,178,90,.45);}
+.aib-card.dim{opacity:.5;}
+.aib-chead{font-size:.64rem;font-weight:700;color:#fff;padding:3px;text-align:center;line-height:1.15;min-height:2.3em;display:flex;align-items:center;justify-content:center;}
+.aib-cart{font-size:1.6rem;text-align:center;padding:2px 0;background:rgba(0,0,0,.32);}
+.aib-cbody{padding:3px 5px 4px;}
+.aib-cef{font-size:.6rem;color:#a9b8d4;line-height:1.25;min-height:2.5em !important;}
+.aib-cfoot{display:flex;justify-content:space-between;align-items:center;margin-top:3px;}
+.aib-cpp{display:inline-block;background:#3f6fb5;color:#fff;font-size:.62rem;font-weight:700;border-radius:4px;padding:0 5px;margin-top:0 !important;}
+.aib-clv{font-size:.57rem;color:#8b8270;}
+.aib-zoom-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9000;align-items:center;justify-content:center;}
+.aib-zoom-bg.show{display:flex;}
+.aib-zoom-card{width:266px;border-radius:14px;overflow:hidden;border:3px solid #e6c878;background:#141a30;box-shadow:0 12px 44px rgba(0,0,0,.75);}
+.aib-zoom-head{font-size:1rem;font-weight:700;color:#fff;padding:10px;text-align:center;}
+.aib-zoom-art{font-size:4.6rem;text-align:center;padding:16px 0;background:rgba(0,0,0,.32);}
+.aib-zoom-body{padding:12px 14px;}
+.aib-zoom-ef{font-size:.9rem;color:#cfe0ff;line-height:1.5;margin-bottom:9px;}
+.aib-zoom-meta{font-size:.76rem;color:#b9a98a;}
+.aib-zoom-act{text-align:center;padding:10px 13px 14px;}
+.rule-toggle{display:flex;gap:8px;margin-bottom:14px;}
+.rule-box{background:rgba(0,0,0,.25);border:1px solid rgba(212,175,110,.25);border-radius:10px;padding:14px 20px;line-height:1.75;}
+.rule-box h3{color:#e6c878;font-family:'Cinzel',serif;border-bottom:1px solid rgba(212,175,110,.3);padding-bottom:5px;margin:18px 0 8px;font-size:1rem;}
+.rule-box h3:first-child{margin-top:0;}
+.rule-box .rule-step{margin:3px 0;font-size:.9rem;}
+.rule-box b{color:#ffe6a8;}
 </style>
 </head>
 <body>
@@ -2852,6 +2939,8 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
   <button class="tab-btn active" data-tab="library" onclick="switchTab('library', this)">📚 LIBRARY</button>
   <button class="tab-btn" data-tab="decks" onclick="switchTab('decks', this)">🃏 DECKS</button>
   <button class="tab-btn" data-tab="play" onclick="switchTab('play', this)">🎮 PLAY</button>
+  <button class="tab-btn" data-tab="aibattle" onclick="switchTab('aibattle', this)">🤖 AI対戦</button>
+  <button class="tab-btn" data-tab="rules" onclick="switchTab('rules', this)">📖 ルール</button>
   <button class="tab-btn" data-tab="stats" onclick="switchTab('stats', this)">📊 STATS</button>
   <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">⚙ SETTINGS</button>
 </nav>
@@ -2945,9 +3034,7 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
               <input type="text" id="f-spellKind" placeholder="例: スペルカード / QUICK" list="spellKindList">
               <datalist id="spellKindList">
                 <option value="スペルカード"></option>
-                <option value="シューティング"></option>
                 <option value="QUICK"></option>
-                <option value="COUNTER"></option>
               </datalist>
             </div>
             <div class="field" style="flex:0 0 130px">
@@ -3065,6 +3152,7 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
       <aside class="deck-list-side">
         <div class="panel-title">デッキ一覧</div>
         <button class="btn-primary" style="width:100%; margin-bottom: 8px;" onclick="createDeck()">+ 新規デッキ</button>
+        <button class="btn-small" style="width:100%; margin-bottom: 8px;" onclick="openBulkDeckModal()">📋 リストから一括作成</button>
         <button class="btn-small" style="width:100%; margin-bottom: 12px;" onclick="openImportDeckCode()">📥 コードから取込</button>
         <div id="deckListItems"></div>
       </aside>
@@ -3081,6 +3169,112 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
   <section class="tab-panel" id="tab-play">
     <div id="playRoot"></div>
   </section>
+
+  <!-- ============ AI対戦 ============ -->
+  <section class="tab-panel" id="tab-aibattle">
+    <div style="max-width:840px; margin:0 auto; padding:8px;">
+      <h2 style="font-family:'Cinzel',serif; color:#d8b25a;">🤖 AI 対戦シミュレーター</h2>
+      <p style="color:var(--parchment-dim); font-size:0.88rem;">左のデッキ=<b>あなた</b> / 右=<b>AI</b>。「🎮 AI と対戦」で実際にプレイ、「▶ 観戦」で AI 同士の対戦が見られます。覚醒と攻撃をあなたが選択(スペル・防御は自動)。</p>
+      <div style="display:flex; gap:10px; align-items:center; margin:14px 0;">
+        <select id="aib-deckA" style="flex:1; padding:8px; background:rgba(0,0,0,0.3); color:inherit; border:1px solid rgba(212,175,110,0.4); border-radius:6px;"></select>
+        <span style="color:#d8b25a; font-weight:bold;">VS</span>
+        <select id="aib-deckB" style="flex:1; padding:8px; background:rgba(0,0,0,0.3); color:inherit; border:1px solid rgba(212,175,110,0.4); border-radius:6px;"></select>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap; border:1px solid rgba(212,175,110,0.3); border-radius:8px; padding:10px;">
+        <button class="btn-primary" onclick="aibStartGame()">🎮 この2デッキで AI と対戦</button>
+        <label style="font-size:0.85rem;"><input type="checkbox" id="aib-humanfirst" checked> あなたが先攻</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+        <button class="btn-small" onclick="aibWatchOne()">▶ 観戦(AI vs AI)</button>
+        <button class="btn-small" onclick="aibRunMany(500)">📊 500試合 勝率テスト</button>
+      </div>
+      <div id="aib-result" style="font-weight:bold; color:#d8b25a; margin-bottom:8px; min-height:1.2em;"></div>
+      <div id="aib-mat" style="margin-bottom:10px;"></div>
+      <div id="aib-log" style="background:rgba(0,0,0,0.32); border:1px solid rgba(212,175,110,0.25); border-radius:8px; padding:12px; max-height:460px; overflow-y:auto; font-size:0.82rem; line-height:1.65; white-space:pre-wrap;"></div>
+      <div id="aib-zoom" class="aib-zoom-bg" onclick="if(event.target===this)aibCloseZoom()"><div id="aib-zoom-inner"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ ルールブック ============ -->
+  <section class="tab-panel" id="tab-rules">
+    <div style="max-width:800px;margin:0 auto;padding:8px;">
+      <h2 style="font-family:'Cinzel',serif;color:#d8b25a;">📖 ルールブック</h2>
+      <p style="color:var(--parchment-dim);font-size:0.88rem;">東方カードゲームの遊び方です。はじめての方は「かんたんルール」から。</p>
+      <div class="rule-toggle">
+        <button class="btn-primary" id="rule-btn-easy" onclick="showRules('easy')">📗 かんたんルール</button>
+        <button class="btn-small" id="rule-btn-full" onclick="showRules('full')">📘 詳細ルール</button>
+      </div>
+
+      <div id="rule-easy" class="rule-box">
+        <h3>🎯 ゲームの目的</h3>
+        <div class="rule-step">相手の <b>ライフ(3)</b> を 0 にすれば勝ち。</div>
+        <h3>🎴 用意するもの</h3>
+        <div class="rule-step">・<b>リーダー(キャラ)2体</b> ── デッキとは別に選ぶ</div>
+        <div class="rule-step">・<b>スペルカード 80 枚</b>のデッキ(同じカードは 5 枚まで)</div>
+        <h3>🔰 ゲーム開始の準備</h3>
+        <div class="rule-step">1. デッキをシャッフルする</div>
+        <div class="rule-step">2. リーダー 2 体を表向きで自分の前に置く</div>
+        <div class="rule-step">3. デッキの上から 3 枚を裏向きで「ライフ」にする</div>
+        <div class="rule-step">4. 「BOMB」を 3 個 裏向きで置く</div>
+        <div class="rule-step">5. 手札を引く(先攻 4 枚 / 後攻 5 枚)。後攻はさらに <b>P を 6 個</b>持って開始</div>
+        <h3>🔄 ターンの流れ(6 フェイズ)</h3>
+        <div class="rule-step"><b>① ドロー</b> ── カードを 1 枚引く(行動済みリーダーを元に戻す)</div>
+        <div class="rule-step"><b>② チャージ</b> ── 手札 1 枚を P ゾーンに置き、1 枚引く(任意)</div>
+        <div class="rule-step"><b>③ 覚醒</b> ── P を払ってリーダーを裏返す(攻撃・回避UP+技)</div>
+        <div class="rule-step"><b>④ メイン</b> ── スペルカードを使う</div>
+        <div class="rule-step"><b>⑤ バトル</b> ── リーダー 1 体で攻撃する</div>
+        <div class="rule-step"><b>⑥ エンド</b> ── 手札が 7 枚を超えたら捨てる。ターン終了</div>
+        <div class="rule-step" style="color:#b9a98a;">※先攻の 1 ターン目はドローと覚醒をしない</div>
+        <h3>⚔ 攻撃のしかた</h3>
+        <div class="rule-step">・自分のリーダー 2 体から 1 体を選んで攻撃</div>
+        <div class="rule-step">・<b>削り量 = 攻撃力 − 相手の回避力</b>(最低でも 1)</div>
+        <div class="rule-step">・その枚数だけ相手のデッキをトラッシュへ送る</div>
+        <div class="rule-step">・攻撃したリーダーは「行動済み」── 次の自分のターンまで迎え撃ちに使えない</div>
+        <h3>💥 被弾(ライフが減るとき)</h3>
+        <div class="rule-step">デッキが 0 枚になったら、トラッシュを全部シャッフルしてデッキに戻し、<b>ライフを 1 枚 手札に加える(ライフ −1)</b>。ライフが 0 になったら負け。</div>
+        <h3>💣 BOMB</h3>
+        <div class="rule-step">BOMB を 2 個使うと、相手の攻撃を 1 回まるごと無効化できる。3 個固定・補充なし(=切り札)。</div>
+        <h3>💡 ここがポイント</h3>
+        <div class="rule-step">リーダー 2 体は全員「攻撃時の技」を持つ。<b>どちらで攻めるか=どの効果を使うか</b>。攻撃したリーダーは次のターン受けに回れない ── 「どちらで攻めるか」が毎ターンの読み合い。</div>
+      </div>
+
+      <div id="rule-full" class="rule-box" style="display:none;">
+        <h3>A. 勝敗条件</h3>
+        <div class="rule-step">相手のライフを 0 にすれば勝利。ライフは 3。デッキが 0 になるたびに 1 減る。引き分けなし。試合時間の目安 約 15〜20 分。</div>
+        <h3>B. デッキ構成</h3>
+        <div class="rule-step">・リーダー(キャラ)2 体 ── 試合前に選ぶ。メインデッキとは別。</div>
+        <div class="rule-step">・メインデッキ 80 枚 ── すべてスペルカード。同じカードは 5 枚まで(同 ID 上限 5)。</div>
+        <h3>C. カードの種類(2 種)</h3>
+        <div class="rule-step"><b>キャラカード(リーダー)</b> ── 通常 / 覚醒の 2 状態。覚醒コストを払うと裏返って強化。倒されない・トラッシュに送られない。</div>
+        <div class="rule-step"><b>スペルカード</b> ── デッキ 80 枚を構成。PP / BOM コストを払って使う。「通常」=自分のメインのみ /「QUICK」=バトル中も割込み可。発動条件 Lv 以上で使用可。「回収 P」=削られた時に攻撃側が獲得。</div>
+        <h3>D. ゾーン(7 種)</h3>
+        <div class="rule-step">デッキ / 手札(初期 4・後攻 5・上限 7)/ リーダー(2 体)/ トラッシュ / P ゾーン / ライフ(3)/ BOMB(3 固定)</div>
+        <h3>E. セットアップ</h3>
+        <div class="rule-step">リーダー 2 体を表向きで配置 → デッキ 80 枚シャッフル → 上 3 枚をライフへ → BOMB 3 個 → 手札(先攻 4 / 後攻 5)→ <b>後攻は P を 6 個</b>持って開始 → マリガン(1 回だけ全引き直し可)→ 先攻・後攻を決める。</div>
+        <h3>F. ターン構造(6 フェイズ)</h3>
+        <div class="rule-step">① ドロー … 行動済みリーダーを戻し 1 ドロー</div>
+        <div class="rule-step">② チャージ … 手札 1 枚を P ゾーンへ、1 ドロー(任意・ターン 1 回)</div>
+        <div class="rule-step">③ 覚醒 … 覚醒コストを払いリーダーを裏返す。1 ターン 1 体まで</div>
+        <div class="rule-step">④ メイン … スペルの発動・伏せ</div>
+        <div class="rule-step">⑤ バトル … 攻撃(下記 G)</div>
+        <div class="rule-step">⑥ エンド … 手札 7 枚超は捨てる。ターン終了</div>
+        <div class="rule-step" style="color:#b9a98a;">※自分の最初のターンは覚醒不可。先攻はさらに最初のドローもスキップ。</div>
+        <h3>G. バトル</h3>
+        <div class="rule-step">攻撃側はリーダー 2 体から 1 体を選んで攻撃宣言。防御側は「行動済みでない」リーダー 1 体で迎え撃つ。</div>
+        <div class="rule-step"><b>削り量 = max(1, 攻撃リーダーの攻撃力 − 迎撃リーダーの回避力)</b>。その枚数、防御側のデッキをトラッシュへ。</div>
+        <div class="rule-step">攻撃したリーダーは行動済みになり、次の自分のターンまで迎撃に使えない。</div>
+        <div class="rule-step">QUICK スペルはバトル中、攻撃側→防御側の順に割り込める。回収 P は 1 攻撃あたり最大 3。</div>
+        <h3>H. デッキリフレッシュ(被弾)</h3>
+        <div class="rule-step">デッキが 0 になったら(原因を問わず): トラッシュを全部シャッフルしてデッキに戻す → ライフを 1 枚 手札に加える(ライフ −1)→ ライフ 0 で敗北。</div>
+        <h3>I. 覚醒</h3>
+        <div class="rule-step">覚醒フェイズに覚醒コストを P で払い、リーダーを裏返す。覚醒した瞬間に覚醒時能力が発動。1 ターン 1 体まで・元に戻らない。</div>
+        <h3>J. BOMB</h3>
+        <div class="rule-step">スペルの BOM コストとして使える。BOMB 2 個消費で、相手の攻撃を 1 回無効化(削り 0)。3 個固定・補充なし。</div>
+        <div class="rule-step" style="color:#b9a98a;margin-top:10px;">※完全な確定仕様は docs/rules.md を参照。</div>
+      </div>
+    </div>
+  </section>
+
 
   <!-- ============ STATS ============ -->
   <section class="tab-panel" id="tab-stats">
@@ -3178,17 +3372,15 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 const STORAGE_KEY = 'touhou_card_forge_v1';
 
 // 3つの基本タイプ(東方版)
-// 色は意味重視: キャラ=紅(博麗系)、スペル=青(夜空・弾幕)、シューティング=紫(妖怪・弾幕舞)
+// 色は意味重視: キャラ=紅(博麗系)、スペル=青(夜空・弾幕)
 const BUILTIN_TYPES = [
-  { name: 'キャラ',         color: '#c8324c', builtin: true, kind: 'touhou-char',  meaning: '盤面に1体出せる、覚醒モデル(通常↔覚醒で攻撃/回避が切替)' },
-  { name: 'スペル',         color: '#3878c8', builtin: true, kind: 'touhou-spell', meaning: 'スペルカード(必殺)。使用者・PP/BOM コスト・トリガー・効果' },
-  { name: 'シューティング', color: '#8a5cb8', builtin: true, kind: 'touhou-shoot', meaning: 'シューティングカード(弾幕)。スペルと同じフィールド構成' }
+  { name: 'キャラ', color: '#c8324c', builtin: true, kind: 'touhou-char',  meaning: 'リーダー(覚醒モデル)。試合前に2体選ぶ。通常↔覚醒で攻撃/回避が切替' },
+  { name: 'スペル', color: '#3878c8', builtin: true, kind: 'touhou-spell', meaning: 'スペルカード。デッキ80枚を構成。PP/BOM コスト・トリガー・回収P・効果' }
 ];
 
-// kind の意味:
-// - 'touhou-char':  Lv + 攻撃力/回避力(通常+覚醒) + 覚醒コスト + 効果
-// - 'touhou-spell': 使用者 + 種類 + PP/BOM + トリガー + 回収P + 効果
-// - 'touhou-shoot': 使用者 + 種類 + PP/BOM + トリガー + 回収P + 効果(スペルと同フィールド)
+// kind の意味 (v3.1: カードタイプはキャラ/スペルの2種):
+// - 'touhou-char':  リーダー。Lv + 攻撃力/回避力(通常+覚醒) + 覚醒コスト + 効果
+// - 'touhou-spell': スペル。種類 + PP/BOM + トリガー + 回収P + 効果
 // カスタム追加されたタイプはデフォルトで 'touhou-char' kind を持つ
 
 let state = {
@@ -3231,6 +3423,8 @@ function loadData() {
     }
   } catch(e) { console.error(e); }
 
+  // 旧「シューティング」タイプを「スペル」へ統合 (v3.1)
+  migrateShootingCards();
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
   // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
@@ -3268,6 +3462,12 @@ function migrateDecks() {
     }
     if (!d.cards) d.cards = [];
   });
+}
+
+// 旧「シューティング」タイプを「スペル」へ統合 (v3.1: カードタイプはキャラ/スペルの2種)
+function migrateShootingCards() {
+  state.cards.forEach(c => { if (c.type === 'シューティング') c.type = 'スペル'; });
+  state.types = state.types.filter(t => t.name !== 'シューティング');
 }
 
 // カードの「何枚でも入れられる」フラグの初期化(自動推測)
@@ -3530,6 +3730,576 @@ function switchTab(tabName, btn) {
   if (tabName === 'settings') renderSettings();
   if (tabName === 'decks') renderDeckList();
   if (tabName === 'play') renderPlay();
+  if (tabName === 'aibattle') renderAiBattle();
+}
+
+// ====================================================================
+// 🤖 AI対戦エンジン (balance_sim.py の JS移植 / v3.2・カードv1.4)
+// ====================================================================
+const AIB_LD = {
+  '霊夢':        {atk:20,eva:11,awc:3,aatk:26,aeva:14,ab:'oharai'},
+  '魔理沙':      {atk:21,eva:11,awc:3,aatk:29,aeva:12,ab:'koi'},
+  'レミリア':     {atk:20,eva:10,awc:4,aatk:26,aeva:14,ab:'charisma'},
+  'フランドール': {atk:21,eva:9, awc:4,aatk:30,aeva:11,ab:'four'},
+};
+const AIB_PAIRS = {
+  '博麗(霊夢+魔理沙)':           ['霊夢','魔理沙'],
+  '紅魔(レミリア+フランドール)': ['レミリア','フランドール'],
+  '魔理沙+フランドール':         ['魔理沙','フランドール'],
+  '魔理沙+レミリア':             ['魔理沙','レミリア'],
+  '霊夢+フランドール':           ['霊夢','フランドール'],
+  '霊夢+レミリア':               ['霊夢','レミリア'],
+};
+// スペル24種: k=種別, v=値, pp=コスト, q=QUICK, rec=回収P, lv=発動条件Lv
+const AIB_POOL = [
+  {k:'atk',v:6,pp:2,q:0,rec:2,lv:1},{k:'atk',v:9,pp:3,q:0,rec:1,lv:1},
+  {k:'atk',v:14,pp:5,q:0,rec:0,lv:2},{k:'atk',v:12,pp:4,q:0,rec:0,lv:2},
+  {k:'atk',v:7,pp:3,q:0,rec:1,lv:1},{k:'def',v:10,pp:2,q:1,rec:2,lv:1},
+  {k:'def',v:12,pp:3,q:1,rec:1,lv:1},{k:'def',v:5,pp:1,q:1,rec:3,lv:1},
+  {k:'def',v:20,pp:4,q:1,rec:0,lv:2},{k:'util',v:2,pp:1,q:0,rec:2,lv:1},
+  {k:'util',v:2,pp:2,q:0,rec:1,lv:1},{k:'util',v:1,pp:2,q:0,rec:0,lv:1},
+  {k:'disrupt',v:3,pp:3,q:0,rec:0,lv:2},{k:'mill',v:16,pp:5,q:0,rec:0,lv:2},
+  {k:'def',v:10,pp:3,q:0,rec:1,lv:1},{k:'def',v:6,pp:3,q:1,rec:1,lv:1},
+  {k:'atk',v:7,pp:2,q:0,rec:1,lv:1},{k:'def',v:16,pp:4,q:1,rec:0,lv:2},
+  {k:'atk',v:16,pp:5,q:0,rec:0,lv:2},{k:'disrupt',v:2,pp:3,q:0,rec:1,lv:1},
+  {k:'atk',v:11,pp:4,q:0,rec:0,lv:2},{k:'util',v:1,pp:1,q:0,rec:1,lv:1},
+  {k:'def',v:8,pp:2,q:1,rec:2,lv:1},{k:'util',v:0,pp:2,q:0,rec:0,lv:1},
+];
+const AIB_COUNTS = [5,5,4,3,4,4,3,3,2,3,4,3,3,2,3,4,5,2,3,2,3,3,4,3];
+const AIB_NM = ['夢想妙珠','ノンディレ','マスタースパーク','ブレイジングスター','不夜城レッド',
+  '封魔陣','生と死の境界','八方鬼縛陣','スターボウブレイク','ミルキーウェイ','ヴァンピリッシュナイト',
+  'ミゼラブルフェイト','夢想封印','QED495','博麗弾幕結界','スターダスト','アグニシャイン',
+  'プライベートスクウェア','サイレントセレナ','夜霧の幻影','カタディオプトリック','アーティフルチャンター',
+  '夢と現の呪','グレイソーマタージ'];
+function aibSpellDesc(c){
+  const sp=AIB_POOL[c];
+  if(sp.k==='atk')return '削り+'+sp.v;
+  if(sp.k==='mill')return '相手直接'+sp.v+'削り';
+  if(sp.k==='def')return sp.q?('防御 軽減-'+sp.v):'防御(特殊)';
+  if(sp.k==='util')return 'ドロー';
+  if(sp.k==='disrupt')return '相手P-'+sp.v;
+  return '';
+}
+
+function aibShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function aibBuildDeck(){const d=[];AIB_COUNTS.forEach((c,i)=>{for(let k=0;k<c;k++)d.push(i);});return aibShuffle(d);}
+function aibMakeSide(pair,isFirst,name){
+  const s={deck:aibBuildDeck(),isFirst:isFirst,name:name,life:3,bomb:3,hand:[],trash:[],turn:0,dead:false};
+  s.lifeCards=[s.deck.pop(),s.deck.pop(),s.deck.pop()];
+  s.P=isFirst?0:6;
+  for(let i=0;i<4+(isFirst?0:1);i++) if(s.deck.length) s.hand.push(s.deck.shift());
+  s.leaders=pair.map(k=>({k:k,aw:false,rested:false,awThis:false}));
+  return s;
+}
+function aibRefresh(s){s.deck=aibShuffle(s.trash);s.trash=[];s.life--;if(s.lifeCards.length)s.hand.push(s.lifeCards.pop());if(s.life<=0)s.dead=true;}
+function aibDraw(s,n){for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return;}if(s.deck.length)s.hand.push(s.deck.shift());}}
+function aibMill(s,n){const m=[];for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return m;}if(!s.deck.length)break;const c=s.deck.shift();s.trash.push(c);m.push(c);}return m;}
+function aibLvOk(s,lv){return lv<=1||s.leaders.some(L=>L.aw);}
+function aibHasQuickDef(s){return s.hand.some(c=>AIB_POOL[c].k==='def'&&AIB_POOL[c].q);}
+function aibEva(L){const d=AIB_LD[L.k];return L.aw?d.aeva:d.eva;}
+
+function aibAwaken(s,o,log,L){
+  const cost=AIB_LD[L.k].awc;
+  if(s.P<cost)return false;
+  s.P-=cost;L.aw=true;L.awThis=true;
+  const ab=AIB_LD[L.k].ab;let extra='';
+  if(ab==='oharai'){if(o.hand.length)o.trash.push(o.hand.splice(Math.floor(Math.random()*o.hand.length),1)[0]);aibDraw(s,1);extra='(夢想封印: 相手手札-1)';}
+  else if(ab==='charisma'){aibMill(o,5);extra='(グングニル: 相手デッキ5削り)';}
+  else if(ab==='four'){aibMill(o,8);for(let i=0;i<2;i++)if(s.hand.length)s.trash.push(s.hand.pop());extra='(レーヴァテイン: 相手8削り)';}
+  log.push('　🌟 '+L.k+' 覚醒 '+extra);
+  return true;
+}
+function aibCovenant(s,o,log){
+  const cand=s.leaders.filter(L=>!L.aw&&s.P>=AIB_LD[L.k].awc);
+  if(!cand.length)return;
+  cand.sort((a,b)=>AIB_LD[b.k].aatk-AIB_LD[a.k].aatk);
+  aibAwaken(s,o,log,cand[0]);
+}
+
+function aibLval(L,o){
+  const d=AIB_LD[L.k];let base=L.aw?d.aatk:d.atk;
+  if(d.ab==='koi')base+=4;
+  if(d.ab==='four')base+=6;
+  if(d.ab==='koi'&&L.awThis)base+=8;
+  let virt=0;
+  if(d.ab==='oharai')virt=o.P>0?3:0;
+  if(d.ab==='charisma')virt=2;
+  return {base:base,virt:virt,ab:d.ab};
+}
+// 攻撃宣言: 攻撃リーダーとボーナスを確定。humanBonus を渡すと atkスペルの自動詠唱をしない
+function aibComputeAttack(s,o,forced,humanBonus){
+  let atkL,base,ab;
+  if(forced){const v=aibLval(forced,o);atkL=forced;base=v.base;ab=v.ab;}
+  else{
+    const sc=s.leaders.map(L=>({v:aibLval(L,o),L:L}));
+    sc.sort((a,b)=>(b.v.base+b.v.virt)-(a.v.base+a.v.virt));
+    atkL=sc[0].L;base=sc[0].v.base;ab=sc[0].v.ab;
+  }
+  let spellBonus=0,direct=0;
+  if(humanBonus===undefined){
+    const reserve=aibHasQuickDef(s)?2:0;
+    let budget=Math.max(0,s.P-reserve);
+    const cards=s.hand.filter(c=>(AIB_POOL[c].k==='atk'||AIB_POOL[c].k==='mill')&&aibLvOk(s,AIB_POOL[c].lv))
+      .sort((a,b)=>AIB_POOL[b].pp-AIB_POOL[a].pp);
+    for(const c of cards){const sp=AIB_POOL[c];
+      if(sp.pp<=budget){budget-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
+        if(sp.k==='atk')spellBonus+=sp.v;else direct+=sp.v;}}
+    s.P=budget+reserve;
+  } else { spellBonus=humanBonus; }
+  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct};
+}
+// 防御側 o の自動防御判断
+function aibAutoDefense(o,raw){
+  const ready=o.leaders.filter(L=>!L.rested);
+  const dL=(ready.length?ready:o.leaders).slice().sort((a,b)=>aibEva(b)-aibEva(a))[0];
+  const dval=aibEva(dL);
+  let incoming=Math.max(1,raw-dval),spellIdx=-1;
+  const q=o.hand.map((c,i)=>({c:c,i:i}))
+    .filter(x=>AIB_POOL[x.c].k==='def'&&AIB_POOL[x.c].q&&aibLvOk(o,AIB_POOL[x.c].lv)&&AIB_POOL[x.c].pp<=o.P)
+    .sort((a,b)=>AIB_POOL[b.c].v-AIB_POOL[a.c].v);
+  if(q.length&&incoming>16)spellIdx=q[0].i;
+  const reduce=spellIdx>=0?AIB_POOL[o.hand[spellIdx]].v:0;
+  incoming=Math.max(1,raw-dval-reduce);
+  return {spellIdx:spellIdx,bomb:(o.bomb>=2&&incoming>=o.deck.length&&o.life<=1)};
+}
+// 攻撃解決: atk=宣言結果, def={spellIdx,bomb}(防御側 o の応答)
+function aibResolveAttack(s,o,log,atk,def){
+  const ready=o.leaders.filter(L=>!L.rested);
+  const dL=(ready.length?ready:o.leaders).slice().sort((a,b)=>aibEva(b)-aibEva(a))[0];
+  const dval=aibEva(dL);
+  let reduce=0;
+  if(def&&def.spellIdx>=0&&def.spellIdx<o.hand.length){
+    const c=o.hand[def.spellIdx];o.P-=AIB_POOL[c].pp;o.hand.splice(def.spellIdx,1);o.trash.push(c);reduce=AIB_POOL[c].v;
+  }
+  let useBomb=false;
+  if(def&&def.bomb&&o.bomb>=2){useBomb=true;o.bomb-=2;}
+  const final=useBomb?0:Math.max(1,atk.raw-dval-reduce);
+  if(final>0){const m=aibMill(o,final);s.P+=Math.min(m.reduce((x,c)=>x+AIB_POOL[c].rec,0),3);}
+  if(atk.direct>0&&!o.dead)aibMill(o,atk.direct);
+  if(atk.ab==='four')aibMill(s,2);
+  else if(atk.ab==='oharai')o.P=Math.max(0,o.P-2);
+  else if(atk.ab==='charisma'){if(s.trash.length)s.P+=1;}
+  atk.atkL.rested=true;
+  log.push('　⚔ '+atk.atkL.k+(atk.atkL.aw?'(覚醒)':'')+' 攻撃 → '+(useBomb?'BOMBで無効化':final+'削り')
+    +(reduce?' [防御-'+reduce+']':'')+(atk.spellBonus?' [スペル+'+atk.spellBonus+']':'')+(atk.direct?' [直接'+atk.direct+']':''));
+}
+// 攻撃後の余りPで util を自動詠唱(AI用)+ 手札上限7
+function aibAutoUtil(s){
+  for(const c of s.hand.slice()){
+    const sp=AIB_POOL[c];
+    if(sp.k==='util'&&sp.pp<=s.P&&aibLvOk(s,sp.lv)){s.P-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);aibDraw(s,Math.max(1,sp.v));break;}
+  }
+  while(s.hand.length>7)s.trash.push(s.hand.pop());
+}
+// 旧API: 自動で攻撃を1回(観戦/AI同士で使用)
+function aibDoAttack(s,o,log,forced){
+  const atk=aibComputeAttack(s,o,forced);
+  aibResolveAttack(s,o,log,atk,aibAutoDefense(o,atk.raw));
+  aibAutoUtil(s);
+}
+
+function aibTakeTurn(s,o,log){
+  s.turn++;
+  s.leaders.forEach(L=>{L.rested=false;L.awThis=false;});
+  log.push('【'+s.name+' ターン'+s.turn+'】 ライフ '+s.life+' / デッキ '+s.deck.length+' / P '+s.P);
+  if(!(s.isFirst&&s.turn===1))aibDraw(s,1);
+  if(s.dead)return;
+  if(s.hand.length){
+    s.P+=1;
+    let wi=0,wv=1e9;
+    s.hand.forEach((c,i)=>{const sc=(AIB_POOL[c].k==='util'?0:10)+AIB_POOL[c].v;if(sc<wv){wv=sc;wi=i;}});
+    s.hand.splice(wi,1);aibDraw(s,1);
+    if(s.dead)return;
+  }
+  if(s.turn>=2){aibCovenant(s,o,log);if(s.dead||o.dead)return;}
+  aibDoAttack(s,o,log);
+}
+
+function aibPlayGame(pairA,pairB){
+  const A=aibMakeSide(pairA,true,'先攻'),B=aibMakeSide(pairB,false,'後攻');
+  const log=[];let cur=A,opp=B;
+  for(let t=0;t<160;t++){
+    aibTakeTurn(cur,opp,log);
+    if(opp.dead){log.push('🏆 '+cur.name+' の勝利!(相手ライフ 0)');return{winner:cur===A?'A':'B',log:log};}
+    if(cur.dead){log.push('🏆 '+opp.name+' の勝利!');return{winner:cur===A?'B':'A',log:log};}
+    var tmp=cur;cur=opp;opp=tmp;
+  }
+  const w=A.life>=B.life?'A':'B';
+  log.push('🏆 時間切れ → '+(w==='A'?'先攻':'後攻')+' の勝利(ライフ判定)');
+  return{winner:w,log:log};
+}
+
+function renderAiBattle(){
+  ['aib-deckA','aib-deckB'].forEach(function(id,idx){
+    const sel=document.getElementById(id);
+    if(!sel||sel.options.length)return;
+    Object.keys(AIB_PAIRS).forEach(function(nm){
+      const o=document.createElement('option');o.value=nm;o.textContent=nm;sel.appendChild(o);
+    });
+    sel.selectedIndex=idx;
+  });
+}
+function aibWatchOne(){
+  const an=document.getElementById('aib-deckA').value,bn=document.getElementById('aib-deckB').value;
+  const r=aibPlayGame(AIB_PAIRS[an],AIB_PAIRS[bn]);
+  const wn=r.winner==='A'?an:bn;
+  document.getElementById('aib-result').textContent='🏆 '+(r.winner==='A'?'先攻':'後攻')+'「'+wn+'」の勝利!';
+  document.getElementById('aib-log').textContent=r.log.join('\n');
+  document.getElementById('aib-mat').innerHTML='';
+}
+function aibRunMany(n){
+  const an=document.getElementById('aib-deckA').value,bn=document.getElementById('aib-deckB').value;
+  let aw=0;
+  for(let i=0;i<n;i++)if(aibPlayGame(AIB_PAIRS[an],AIB_PAIRS[bn]).winner==='A')aw++;
+  document.getElementById('aib-result').textContent=
+    '📊 '+n+'試合 ── 先攻「'+an+'」'+(100*aw/n).toFixed(1)+'%　vs　後攻「'+bn+'」'+(100*(n-aw)/n).toFixed(1)+'%';
+  document.getElementById('aib-log').textContent='(勝率テストのためログは省略。「▶ 観戦」でターン進行が見られます)';
+  document.getElementById('aib-mat').innerHTML='';
+}
+
+// ===== Stage 3: あなた vs AI(演出強化版) =====
+let aibGame = null;
+let aibSync = false;                       // true でアニメ無効(テスト用)
+const AIB_STEP_DELAY = 1000;
+const AIB_FACE = {'霊夢':'⛩️','魔理沙':'🧹','レミリア':'🦇','フランドール':'💎'};
+const AIB_KICON = {atk:'💥',mill:'🌀',def:'🛡️',util:'🔮',disrupt:'💢'};
+const AIB_KCOLOR = {atk:'#c8324c',mill:'#b0683c',def:'#3878c8',util:'#3b9c6a',disrupt:'#8552b8'};
+const AIB_STEPNAMES = ['','①ドロー','②チャージ','③覚醒','④メイン','⑤バトル','⑥エンド'];
+function aibNext(fn){ if(aibSync) fn(); else setTimeout(fn, AIB_STEP_DELAY); }
+
+function aibStartGame(){
+  const an=document.getElementById('aib-deckA').value, bn=document.getElementById('aib-deckB').value;
+  const humanFirst=document.getElementById('aib-humanfirst').checked;
+  const human=aibMakeSide(AIB_PAIRS[an],humanFirst,'あなた');
+  const ai=aibMakeSide(AIB_PAIRS[bn],!humanFirst,'AI');
+  aibGame={human:human,ai:ai,humanName:an,aiName:bn,log:[],over:false,winner:null,
+           turnOf:null,humanPhase:null,atkBonus:0,pendingAtk:null,action:'対戦開始!',stepHi:[]};
+  aibGame.log.push('=== 対戦開始 ── あなた「'+an+'」 vs AI「'+bn+'」('+(humanFirst?'あなた先攻':'AI先攻')+') ===');
+  document.getElementById('aib-result').textContent='';
+  aibCloseZoom();
+  if(humanFirst) aibBeginHumanTurn();
+  else aibAiTurnStart();
+}
+function aibFinish(winner){
+  const g=aibGame;
+  g.over=true;g.winner=winner;g.humanPhase=null;g.stepHi=[];
+  g.action=winner==='human'?'🏆 あなたの勝利!':'💀 AI の勝利…';
+  g.log.push(g.action);
+  aibRenderGame();
+}
+// ---- 人間のターン ----
+function aibBeginHumanTurn(){
+  const g=aibGame,h=g.human;
+  h.turn++;h.leaders.forEach(L=>{L.rested=false;L.awThis=false;});
+  g.atkBonus=0;g.turnOf='human';
+  g.log.push('【あなた ターン'+h.turn+'】 ライフ'+h.life+' / デッキ'+h.deck.length+' / P'+h.P);
+  if(!(h.isFirst&&h.turn===1)){ aibDraw(h,1); g.action='① ドロー ── カードを1枚引きました'; }
+  else g.action='① ドロー ── 先攻の初ターンはドローなし';
+  if(h.dead){aibFinish('ai');return;}
+  g.humanPhase='charge';g.stepHi=[2];
+  aibRenderGame();
+}
+function aibCharge(idx){
+  const g=aibGame,h=g.human;
+  if(g.humanPhase!=='charge'||idx<0||idx>=h.hand.length)return;
+  const c=h.hand[idx];
+  h.P++;h.hand.splice(idx,1);aibDraw(h,1);
+  g.log.push('　② チャージ: '+AIB_NM[c]+' を P へ(P'+h.P+')+1ドロー');
+  g.action='② チャージ ── '+AIB_NM[c]+' を P に置きました(P'+h.P+')';
+  aibCloseZoom();
+  if(h.dead){aibFinish('ai');return;}
+  aibAfterCharge();
+}
+function aibSkipCharge(){
+  const g=aibGame;
+  if(g.humanPhase!=='charge')return;
+  g.action='② チャージ ── チャージしませんでした';
+  aibAfterCharge();
+}
+function aibAfterCharge(){
+  const g=aibGame,h=g.human;
+  const canAw=h.turn>=2&&h.leaders.some(L=>!L.aw&&h.P>=AIB_LD[L.k].awc);
+  g.humanPhase=canAw?'awaken':'play';
+  g.stepHi=canAw?[3]:[4,5];
+  aibRenderGame();
+}
+function aibChooseAwaken(idx){
+  const g=aibGame,L=g.human.leaders[idx];
+  if(aibAwaken(g.human,g.ai,g.log,L)) g.action='③ 覚醒 ── '+L.k+' が覚醒しました!';
+  if(g.ai.dead){aibFinish('human');return;}
+  g.humanPhase='play';g.stepHi=[4,5];
+  aibRenderGame();
+}
+function aibSkipAwaken(){
+  const g=aibGame;
+  g.action='③ 覚醒 ── 覚醒しませんでした';
+  g.humanPhase='play';g.stepHi=[4,5];
+  aibRenderGame();
+}
+function aibCastSpell(idx){
+  const g=aibGame,h=g.human;
+  if(g.humanPhase!=='play'||idx<0||idx>=h.hand.length)return;
+  const c=h.hand[idx],sp=AIB_POOL[c];
+  if(sp.k==='def'||sp.pp>h.P||!aibLvOk(h,sp.lv))return;
+  h.P-=sp.pp;h.hand.splice(idx,1);h.trash.push(c);
+  if(sp.k==='atk'){g.atkBonus+=sp.v;g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!攻撃ボーナス +'+sp.v;}
+  else if(sp.k==='mill'){aibMill(g.ai,sp.v);g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!相手デッキ'+sp.v+'削り';}
+  else if(sp.k==='util'){aibDraw(h,Math.max(1,sp.v));g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!カードを引いた';}
+  else if(sp.k==='disrupt'){g.ai.P=Math.max(0,g.ai.P-sp.v);g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!相手P-'+sp.v;}
+  g.log.push('　'+g.action);
+  aibCloseZoom();
+  if(g.ai.dead){aibFinish('human');return;}
+  aibRenderGame();
+}
+function aibChooseAttack(idx){
+  const g=aibGame,h=g.human;
+  if(g.humanPhase!=='play')return;
+  const atk=aibComputeAttack(h,g.ai,h.leaders[idx],g.atkBonus);
+  aibResolveAttack(h,g.ai,g.log,atk,aibAutoDefense(g.ai,atk.raw));
+  while(h.hand.length>7)h.trash.push(h.hand.pop());
+  g.action='⑤ バトル ── '+(g.log[g.log.length-1]||'').trim();
+  g.atkBonus=0;g.humanPhase=null;g.stepHi=[6];
+  if(g.ai.dead){aibFinish('human');return;}
+  if(h.dead){aibFinish('ai');return;}
+  aibRenderGame();
+  aibNext(aibAiTurnStart);
+}
+// ---- AIのターン(ステップ表示) ----
+function aibAiTurnStart(){
+  const g=aibGame,s=g.ai;
+  s.turn++;s.leaders.forEach(L=>{L.rested=false;L.awThis=false;});
+  g.turnOf='ai';g.humanPhase=null;
+  g.log.push('【AI ターン'+s.turn+'】 ライフ'+s.life+' / デッキ'+s.deck.length+' / P'+s.P);
+  g.action='🤖 AI のターン開始';g.stepHi=[1];
+  aibRenderGame();
+  aibNext(aibAiDrawStep);
+}
+function aibAiDrawStep(){
+  const g=aibGame,s=g.ai;
+  g.stepHi=[1,2];
+  if(!(s.isFirst&&s.turn===1)) aibDraw(s,1);
+  if(s.dead){aibFinish('human');return;}
+  if(s.hand.length){
+    s.P++;
+    let wi=0,wv=1e9;
+    s.hand.forEach((c,i)=>{const sc=(AIB_POOL[c].k==='util'?0:10)+AIB_POOL[c].v;if(sc<wv){wv=sc;wi=i;}});
+    s.hand.splice(wi,1);aibDraw(s,1);
+  }
+  if(s.dead){aibFinish('human');return;}
+  g.action='🤖 AI ── ① ドロー & ② チャージ(P'+s.P+')';
+  aibRenderGame();
+  aibNext(aibAiAwakenStep);
+}
+function aibAiAwakenStep(){
+  const g=aibGame,s=g.ai,o=g.human;
+  g.stepHi=[3];
+  if(s.turn>=2){
+    aibCovenant(s,o,g.log);
+    if(o.dead){aibFinish('ai');return;}
+    if(s.dead){aibFinish('human');return;}
+    const awL=s.leaders.find(L=>L.awThis);
+    g.action=awL?('🤖 AI ── ③ '+awL.k+' が覚醒!'):'🤖 AI ── ③ 覚醒なし';
+  } else g.action='🤖 AI ── 初ターン(覚醒なし)';
+  aibRenderGame();
+  aibNext(aibAiBattleStep);
+}
+function aibAiBattleStep(){
+  const g=aibGame,s=g.ai,o=g.human;
+  g.stepHi=[5];
+  const atk=aibComputeAttack(s,o,undefined);
+  g.pendingAtk=atk;
+  g.log.push('　🤖 AI が '+atk.atkL.k+' で攻撃宣言(実効'+atk.raw+')');
+  g.action='🤖 AI ── ⑤ '+atk.atkL.k+' で攻撃宣言!(実効攻撃力 '+atk.raw+')';
+  const canDef=o.bomb>=2||o.hand.some(c=>AIB_POOL[c].k==='def'&&AIB_POOL[c].q&&AIB_POOL[c].pp<=o.P&&aibLvOk(o,AIB_POOL[c].lv));
+  if(canDef){
+    g.humanPhase='defend';g.stepHi=[5];
+    aibRenderGame();
+  } else {
+    aibRenderGame();
+    aibNext(function(){aibResolveAiAttack({spellIdx:-1,bomb:false});});
+  }
+}
+function aibResolveAiAttack(def){
+  const g=aibGame;
+  aibResolveAttack(g.ai,g.human,g.log,g.pendingAtk,def);
+  aibAutoUtil(g.ai);
+  g.action='🤖 AI の攻撃 → '+(g.log[g.log.length-1]||'').trim();
+  g.pendingAtk=null;g.humanPhase=null;g.stepHi=[6];
+  aibRenderGame();
+  if(g.human.dead){aibFinish('ai');return;}
+  if(g.ai.dead){aibFinish('human');return;}
+  aibNext(aibBeginHumanTurn);
+}
+function aibHumanDefend(kind,idx){
+  const g=aibGame;
+  if(g.humanPhase!=='defend')return;
+  aibCloseZoom();
+  if(kind==='bomb') aibResolveAiAttack({spellIdx:-1,bomb:true});
+  else if(kind==='spell') aibResolveAiAttack({spellIdx:idx,bomb:false});
+  else aibResolveAiAttack({spellIdx:-1,bomb:false});
+}
+// ---- 描画 ----
+function aibPips(cur,max,type){
+  let h='<span class="aib-pips">';
+  for(let i=0;i<max;i++) h+='<span class="aib-pip '+type+(i<cur?'':' spent')+'"></span>';
+  return h+'</span>';
+}
+function aibLeaderCard(L,isAtk){
+  const d=AIB_LD[L.k];
+  const atk=L.aw?d.aatk:d.atk, eva=L.aw?d.aeva:d.eva;
+  const tag=L.rested?'<div class="aib-ltag rs">💤 行動済み</div>'
+    :(L.aw?'<div class="aib-ltag aw">🌟 覚醒中</div>':'<div class="aib-ltag nm">通常</div>');
+  return '<div class="aib-leader'+(L.aw?' awakened':'')+(L.rested?' rested':'')+(isAtk?' attacker':'')+'">'
+    +'<div class="aib-lname">'+L.k+'</div>'
+    +'<div class="aib-lface">'+(AIB_FACE[L.k]||'★')+'</div>'
+    +'<div class="aib-lbody">'
+    +'<div class="aib-lstat"><span class="v">'+atk+'</span><span class="k">⚔ 攻撃</span></div>'
+    +'<div class="aib-lstat"><span class="v">'+eva+'</span><span class="k">🛡 回避</span></div>'
+    +'</div>'+tag+'</div>';
+}
+function aibSideMat(s,isHuman){
+  const g=aibGame;
+  const cls=isHuman?'you':'ai';
+  const active=!g.over&&((g.turnOf==='human')===isHuman);
+  const atkName=(g.pendingAtk&&!isHuman&&g.humanPhase==='defend')?g.pendingAtk.atkL.k:null;
+  return '<div class="aib-side '+cls+(active?' active':'')+'">'
+    +'<div class="aib-row">'
+    +'<span class="aib-name '+cls+'">'+(isHuman?'🧑 あなた':'🤖 AI')+'</span>'
+    +'<span style="font-size:.74rem;color:#b9a98a;">ライフ</span>'+aibPips(s.life,3,'life')
+    +'<span style="font-size:.74rem;color:#b9a98a;">BOMB</span>'+aibPips(s.bomb,3,'bomb')
+    +'</div>'
+    +'<div class="aib-leaders">'+s.leaders.map(L=>aibLeaderCard(L,L.k===atkName)).join('')+'</div>'
+    +'<div class="aib-zones">'
+    +'<span class="aib-zone">🃏デッキ <b>'+s.deck.length+'</b></span>'
+    +'<span class="aib-zone">🗑トラッシュ <b>'+s.trash.length+'</b></span>'
+    +'<span class="aib-zone">✨P <b>'+s.P+'</b></span>'
+    +'<span class="aib-zone">✋手札 <b>'+s.hand.length+'</b></span>'
+    +'</div></div>';
+}
+function aibStepsHtml(g){
+  let h='<div class="aib-steps">';
+  for(let i=1;i<=6;i++)
+    h+='<span class="aib-step'+((g.stepHi||[]).indexOf(i)>=0?' on':'')+'">'+AIB_STEPNAMES[i]+'</span>';
+  return h+'</div>';
+}
+function aibBannerHtml(g){
+  if(g.over) return '<div class="aib-banner '+(g.winner==='human'?'you':'ai')+'">⚔ 対戦終了 ⚔</div>';
+  return g.turnOf==='human'
+    ? '<div class="aib-banner you">🧑 あなたのターン</div>'
+    : '<div class="aib-banner ai">🤖 AI のターン</div>';
+}
+function aibCenterHtml(g){
+  let h='<div class="aib-center">';
+  if(g.over){
+    h+='<div class="aib-phase">対戦終了</div>'
+      +'<div style="font-size:1.3rem;font-weight:700;color:#e6c878;margin:6px 0 9px;">'
+      +(g.winner==='human'?'🏆 あなたの勝利!':'💀 AI の勝利…')+'</div>'
+      +'<button class="btn-primary" onclick="aibStartGame()">🔄 もう一度</button>';
+  } else if(g.turnOf==='ai'&&g.humanPhase!=='defend'){
+    h+='<div class="aib-phase">🤖 AI のターン進行中…</div>'
+      +'<div class="aib-hint">AI の行動は上の「📣」欄に表示されます</div>';
+  } else if(g.humanPhase==='charge'){
+    h+='<div class="aib-phase">② チャージフェイズ</div>'
+      +'<div class="aib-hint">下の手札を1枚クリック → P に置けます(置くと1ドロー)。任意です。</div>'
+      +'<button class="btn-small" onclick="aibSkipCharge()">チャージしないで進む →</button>';
+  } else if(g.humanPhase==='awaken'){
+    h+='<div class="aib-phase">③ 覚醒フェイズ</div>'
+      +'<div class="aib-hint">P を払ってリーダーを覚醒(攻撃・回避UP+強力な技)。1ターン1体まで。</div>';
+    g.human.leaders.forEach((L,i)=>{
+      if(!L.aw&&g.human.P>=AIB_LD[L.k].awc)
+        h+='<button class="btn-primary" onclick="aibChooseAwaken('+i+')" style="margin:3px;">🌟 '+L.k+' を覚醒(P'+AIB_LD[L.k].awc+')</button>';
+    });
+    h+='<button class="btn-small" onclick="aibSkipAwaken()" style="margin:3px;">覚醒しないで進む →</button>';
+  } else if(g.humanPhase==='play'){
+    h+='<div class="aib-phase">④ メイン / ⑤ バトル</div>'
+      +'<div class="aib-hint">手札のスペルをクリックで詠唱(任意)→ 攻撃するリーダーを選択</div>'
+      +'<div style="margin-bottom:7px;">攻撃ボーナス <b style="color:#e6c878;font-size:1.2rem;">+'+g.atkBonus+'</b></div>';
+    g.human.leaders.forEach((L,i)=>{
+      const d=AIB_LD[L.k],a=(L.aw?d.aatk:d.atk);
+      h+='<button class="btn-primary" onclick="aibChooseAttack('+i+')" style="margin:3px;">⚔ '+L.k+' で攻撃(実効 '+(a+g.atkBonus)+')</button>';
+    });
+  } else if(g.humanPhase==='defend'){
+    const atk=g.pendingAtk;
+    h+='<div class="aib-phase" style="color:#ff8a6a;">🛡 防御 ── 割り込み!</div>'
+      +'<div class="aib-hint">AI の <b style="color:#ff8da0;">'+atk.atkL.k+'</b> が攻撃!実効攻撃力 <b style="color:#ff8a6a;font-size:1.1rem;">'+atk.raw+'</b> ── 防御しますか?</div>';
+    g.human.hand.forEach((c,i)=>{
+      const sp=AIB_POOL[c];
+      if(sp.k==='def'&&sp.q&&sp.pp<=g.human.P&&aibLvOk(g.human,sp.lv))
+        h+='<button class="btn-primary" onclick="aibHumanDefend(\'spell\','+i+')" style="margin:3px;">🛡 '+AIB_NM[c]+'(P'+sp.pp+' / 軽減-'+sp.v+')</button>';
+    });
+    if(g.human.bomb>=2)
+      h+='<button class="btn-primary" onclick="aibHumanDefend(\'bomb\')" style="margin:3px;">💣 BOMB2個で無効化</button>';
+    h+='<button class="btn-small" onclick="aibHumanDefend(\'none\')" style="margin:3px;">そのまま受ける</button>';
+  }
+  return h+'</div>';
+}
+function aibCardInner(c){
+  const sp=AIB_POOL[c];
+  return '<div class="aib-chead" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+AIB_NM[c]+'</div>'
+    +'<div class="aib-cart">'+(AIB_KICON[sp.k]||'❓')+'</div>'
+    +'<div class="aib-cbody"><div class="aib-cef">'+aibSpellDesc(c)+(sp.k==='def'?'<br><span style="color:#ff8a6a;">※防御フェイズ用</span>':'')+'</div>'
+    +'<div class="aib-cfoot"><span class="aib-cpp">P'+sp.pp+'</span><span class="aib-clv">Lv'+sp.lv+'</span></div></div>';
+}
+function aibHandMat(g){
+  const h=g.human,ph=g.humanPhase;
+  let s='<div class="aib-hand-wrap"><div class="aib-hand-label">🃏 あなたの手札('+h.hand.length+'枚)'
+    +(ph==='charge'?' ── カードをクリック → P に置く':(ph==='play'?' ── カードをクリック → 詳細・詠唱':''))+'</div>'
+    +'<div class="aib-hand">';
+  if(!h.hand.length) s+='<span style="color:#8b8270;font-size:.8rem;">手札なし</span>';
+  h.hand.forEach((c,i)=>{
+    const sp=AIB_POOL[c];
+    const aff=sp.pp<=h.P&&aibLvOk(h,sp.lv);
+    const hot=(ph==='charge')||(ph==='play'&&aff&&sp.k!=='def');
+    s+='<div class="aib-card '+(hot?'castable':'dim')+'" onclick="aibCardZoom('+i+')">'+aibCardInner(c)+'</div>';
+  });
+  return s+'</div></div>';
+}
+function aibRenderGame(){
+  const g=aibGame;if(!g)return;
+  document.getElementById('aib-mat').innerHTML=
+    '<div class="aib-mat">'
+    +aibBannerHtml(g)+aibStepsHtml(g)
+    +'<div class="aib-action">📣 '+(g.action||'')+'</div>'
+    +aibSideMat(g.ai,false)+aibCenterHtml(g)+aibSideMat(g.human,true)+aibHandMat(g)
+    +'</div>';
+  const lg=document.getElementById('aib-log');
+  lg.textContent=g.log.join('\n');
+  lg.scrollTop=lg.scrollHeight;
+}
+function aibCardZoom(idx){
+  const g=aibGame;if(!g)return;
+  const c=g.human.hand[idx];if(c===undefined)return;
+  const sp=AIB_POOL[c],ph=g.humanPhase;
+  let act='';
+  if(!g.over&&ph==='charge'){
+    act='<button class="btn-primary" onclick="aibCharge('+idx+')">✨ このカードを P に置く</button>';
+  } else if(!g.over&&ph==='play'){
+    if(sp.k==='def') act='<div style="color:#ff8a6a;font-size:.82rem;">防御フェイズ専用 ── 自分のターンでは使えません</div>';
+    else if(sp.pp>g.human.P) act='<div style="color:#ff8a6a;font-size:.82rem;">P が足りません(必要 P'+sp.pp+')</div>';
+    else if(!aibLvOk(g.human,sp.lv)) act='<div style="color:#ff8a6a;font-size:.82rem;">発動には Lv'+sp.lv+'(リーダー覚醒)が必要</div>';
+    else act='<button class="btn-primary" onclick="aibCastSpell('+idx+')">🔮 このカードを詠唱する</button>';
+  }
+  document.getElementById('aib-zoom-inner').innerHTML=
+    '<div class="aib-zoom-card">'
+    +'<div class="aib-zoom-head" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+AIB_NM[c]+'</div>'
+    +'<div class="aib-zoom-art">'+(AIB_KICON[sp.k]||'❓')+'</div>'
+    +'<div class="aib-zoom-body">'
+    +'<div class="aib-zoom-ef">'+aibSpellDesc(c)+'</div>'
+    +'<div class="aib-zoom-meta">コスト P'+sp.pp+' ／ 発動条件 Lv'+sp.lv+' ／ '+(sp.q?'QUICK(割込可)':'通常')+'</div>'
+    +'</div>'
+    +'<div class="aib-zoom-act">'+act+'<div style="margin-top:8px;"><button class="btn-small" onclick="aibCloseZoom()">閉じる</button></div></div>'
+    +'</div>';
+  document.getElementById('aib-zoom').classList.add('show');
+}
+function aibCloseZoom(){
+  const z=document.getElementById('aib-zoom');
+  if(z) z.classList.remove('show');
+}
+function showRules(mode){
+  document.getElementById('rule-easy').style.display = mode==='full'?'none':'block';
+  document.getElementById('rule-full').style.display = mode==='full'?'block':'none';
+  document.getElementById('rule-btn-easy').className = mode==='full'?'btn-small':'btn-primary';
+  document.getElementById('rule-btn-full').className = mode==='full'?'btn-primary':'btn-small';
 }
 
 // ============ EDITOR (動的フィールド) ============
@@ -3538,7 +4308,7 @@ function onTypeChange() {
   const kind = getTypeKind(typeName);
   document.getElementById('fields-char').style.display  = (kind === 'touhou-char')  ? '' : 'none';
   // スペル / シューティング は同じフィールド構成を共有
-  const isSpellLike = (kind === 'touhou-spell' || kind === 'touhou-shoot');
+  const isSpellLike = (kind === 'touhou-spell');
   document.getElementById('fields-spell').style.display = isSpellLike ? '' : 'none';
 }
 
@@ -3564,7 +4334,7 @@ function readForm() {
     data.awakenEffect   = document.getElementById('f-awakenEffect').value.trim();
     data.unlimited      = document.getElementById('f-unlimited-char').checked;
   }
-  if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+  if (kind === 'touhou-spell') {
     data.spellKind         = document.getElementById('f-spellKind').value.trim();
     data.requiredCharLevel = document.getElementById('f-requiredCharLevel').value || '';
     data.ppCost            = normalizeNumStr(document.getElementById('f-ppCost').value);
@@ -3786,7 +4556,7 @@ function buildCardHTML(c, idx, opts) {
         </div>
       ` : ''}
     `;
-  } else if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+  } else if (kind === 'touhou-spell') {
     // ============ スペル / シューティング カード(東方版) ============
     // [Lv] [カード名 / 種類] のヘッダ → イラスト → コスト(PP/BOM)+トリガー → 効果文 → 回収P(左) / 使用者(右下)
     const costParts = [];
@@ -4085,6 +4855,65 @@ function createDeck() {
     toast(`「${name}」を作成`);
   });
 }
+
+// ============ デッキ一括作成(カードID/名リストから) ============
+function openBulkDeckModal() {
+  document.getElementById('deckCodeTitle').textContent = '📋 リストからデッキ作成';
+  document.getElementById('deckCodeDesc').textContent = '1行目にデッキ名、2行目以降に「カードID または カード名 + 枚数」を1行ずつ。例: TH-001 5 。docs/cards.md §3 の表をそのまま貼り付けても可。';
+  const ta = document.getElementById('deckCodeText');
+  ta.value = '';
+  ta.readOnly = false;
+  document.getElementById('deckCodeActions').innerHTML = `
+    <button onclick="closeDeckCodeModal()">キャンセル</button>
+    <button class="btn-primary" onclick="bulkCreateDeck()">デッキ作成</button>`;
+  document.getElementById('deckCodeModal').classList.add('show');
+  setTimeout(() => { ta.focus(); }, 50);
+}
+
+function bulkCreateDeck() {
+  const raw = document.getElementById('deckCodeText').value || '';
+  const lines = raw.split(/\r?\n/);
+  // 最初の非空行 = デッキ名
+  let deckName = '', startIdx = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].replace(/[|｜*#]/g, ' ').trim();
+    if (t) { deckName = t; startIdx = i + 1; break; }
+  }
+  if (!deckName) { toast('1行目にデッキ名を入力してください'); return; }
+  const entries = [], unmatched = [];
+  for (let i = startIdx; i < lines.length; i++) {
+    let line = lines[i].replace(/[|｜*#]/g, ' ').trim();
+    if (!line) continue;
+    // ヘッダ行・合計行・区切り線はスキップ
+    if (/^(コード|ＩＤ|ID|カード名|名前|合計|計|種類)/.test(line) || line.indexOf('---') >= 0) continue;
+    const m = line.match(/(\d+)\s*$/);
+    const count = m ? parseInt(m[1], 10) : 1;
+    const ident = (m ? line.slice(0, line.length - m[0].length) : line).trim();
+    if (!ident || count <= 0) continue;
+    const tokens = ident.split(/\s+/);
+    let card = state.cards.find(c => c.cardCode && tokens.some(t => t.toUpperCase() === String(c.cardCode).toUpperCase()));
+    if (!card) card = state.cards.find(c => c.name && c.name === ident);
+    if (!card) card = state.cards.find(c => c.name && ident.includes(c.name));
+    if (!card) card = state.cards.find(c => c.name && ident.length >= 2 && c.name.includes(ident));
+    if (!card) { unmatched.push(lines[i].trim()); continue; }
+    const cap = getMaxCopies(card);
+    const ex = entries.find(e => e.cardId === card.id);
+    if (ex) ex.count = Math.min(ex.count + count, cap);
+    else entries.push({ cardId: card.id, count: Math.min(count, cap) });
+  }
+  if (entries.length === 0) { toast('一致するカードが1枚もありませんでした'); return; }
+  const total = entries.reduce((s, e) => s + e.count, 0);
+  const newDeck = { id: 'd' + Date.now(), name: deckName, description: 'リストから一括作成', cards: entries, dondengCards: [] };
+  state.decks.push(newDeck);
+  closeDeckCodeModal();
+  selectDeck(newDeck.id);
+  renderDeckDetail();
+  toast(`「${deckName}」を作成: ${total}枚 / ${entries.length}種${unmatched.length ? ` (未一致${unmatched.length}行)` : ''}`);
+  if (unmatched.length) {
+    showModal('一部の行が未一致', '次の行はカードに一致せずスキップしました:\n\n' + unmatched.join('\n'), () => {});
+  }
+}
+
 function renameDeck() {
   const deck = state.decks.find(d => d.id === state.currentDeckId);
   if (!deck) return;
@@ -4268,7 +5097,7 @@ async function importDeckCode() {
   toast(`「${newDeck.name}」を取込(カード${addedCards}枚追加)`);
 }
 // デッキ枚数ゲージ(東方版: 50枚目安)
-const DECK_TARGET = 50, DECK_GAUGE_SCALE = 60;
+const DECK_TARGET = 82, DECK_GAUGE_SCALE = 100;  // v3.1: スペル80 + リーダー2
 function renderDeckSizeGauge(total, deck) {
   const targetPct = (DECK_TARGET / DECK_GAUGE_SCALE) * 100;
   const fillPct = Math.min(100, (total / DECK_GAUGE_SCALE) * 100);
@@ -4385,16 +5214,16 @@ function renderAddCards(availableCards, deck) {
 function setLeaderSet(name) { /* no-op */ }
 
 // 主人公(リーダー)カードかどうか — 東方版には存在しない
-function isLeaderCard(card) { return false; }
+function isLeaderCard(card) { return !!card && getTypeKind(card.type) === 'touhou-char'; }
 // どんでん返しカードかどうか — 東方版には存在しない
 function isDondengCard(card) { return false; }
 // どんでん返しデッキ(別山) の上限 — 互換用
 const DONDENG_DECK_MAX = 5;
-// カード1種あたりの最大枚数
+// カード1種あたりの最大枚数(v3.1: 同 ID 上限 5)
 function getMaxCopies(card) {
-  if (!card) return 4;
+  if (!card) return 5;
   if (card.unlimited) return Infinity;
-  return 4; // 同 ID 上限 (rules.md §J で未確定)
+  return 5; // 同 ID 上限(rules.md §B)
 }
 // デッキ初期化(東方版では dondengCards は実質未使用、互換のため空配列で確保)
 function ensureDondengDeck(deck) {
@@ -4414,7 +5243,7 @@ function addCardToDeck(cardId) {
   // 使用者整合性チェック: スペル/シューティングは、デッキ内のキャラ(name)と
   // user/work が一致するもののみ受け入れる
   const kind = getTypeKind(card.type);
-  if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+  if (kind === 'touhou-spell') {
     const requiredUser = (card.user || card.work || '').trim();
     if (requiredUser) {
       const deckCharNames = new Set();
@@ -4810,7 +5639,7 @@ function importXLSX(ev) {
         // シート名でカードタイプを判定
         let detectedType = null;
         if (sheetName.includes('キャラ')) detectedType = 'キャラ';
-        else if (sheetName.includes('シューディング') || sheetName.includes('シューティング')) detectedType = 'シューティング';
+        else if (sheetName.includes('シューディング') || sheetName.includes('シューティング')) detectedType = 'スペル';
         else if (sheetName.includes('スペル')) detectedType = 'スペル';
 
         // ヘッダ → 列インデックスのマッピング
@@ -4850,7 +5679,7 @@ function importXLSX(ev) {
           // シート名から決まらない場合、種類列を見る
           if (!cardType && colIdx.spellKind !== undefined) {
             const k = String(row[colIdx.spellKind] || '').trim();
-            if (k.includes('シューティング')) cardType = 'シューティング';
+            if (k.includes('シューティング')) cardType = 'スペル';
             else if (k.includes('スペル')) cardType = 'スペル';
           }
           if (!cardType) cardType = 'キャラ';
@@ -4882,7 +5711,7 @@ function importXLSX(ev) {
             card.user = card.user || card.work || card.name;
             card.work = card.work || card.name;
           }
-          if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+          if (kind === 'touhou-spell') {
             card.user              = String(row[colIdx.user] || '').trim() || card.work;
             card.work              = card.work || card.user; // alias
             card.spellKind         = String(row[colIdx.spellKind] || '').trim();
@@ -4995,7 +5824,7 @@ function download(blob, filename) {
 const PLAY_INITIAL_HAND = 4;   // 東方: 手札4枚
 const PLAY_INITIAL_LIFE = 3;   // 東方: ライフ3
 const PLAY_INITIAL_BOMB = 3;   // 東方: BOMB3 (固定)
-const PLAY_FIELD_MAX = 1;      // 東方: 盤面キャラ1体のみ
+const PLAY_FIELD_MAX = 2;      // 東方v3.1: リーダー2体
 // フェーズ定義 (東方 6 フェイズ + ⓞ セットアップ)
 const PHASE_DEFS = [
   { idx: 0, name: 'セットアップ', icon: '⓪', full: '⓪ セットアップ',   desc: 'ライフ3/BOMB3/手札4/盤面1伏せ' },
@@ -5018,7 +5847,7 @@ function makePlaySide(deckId, name) {
     // 東方版ゾーン
     deck:  [],   // 山札 (上から取る、攻撃でトラッシュへ送られる戦場)
     hand:  [],   // 手札 (初期 4)
-    field: [],   // 盤面 (キャラ最大 1。{instanceId, cardId, awakened, faceDown})
+    field: [],   // リーダーゾーン (キャラ2体。{instanceId, cardId, awakened, rested, faceDown})
     trash: [],   // トラッシュ (旧称 没。スペルがあれば攻撃側に回収P)
     p:     [],   // P ゾーン (チャージ・スペル発動コスト源)
     life:  [],   // ライフ 3 (裏向き、デッキ上3枚から)
@@ -5077,46 +5906,27 @@ function shuffleArray(arr) {
   return arr;
 }
 
-// 主人公(リーダー)カードを山札から抜いて、Lv1=リーダーゾーン / Lv2以降=控え に配置 (ゲーム開始時に呼ぶ)
+// v3.1: キャラ(リーダー)カードをデッキから抜き、場(field)へ最大2体を表向きで配置 (ゲーム開始時に呼ぶ)
 // cardPool: カード参照を解決するためのプール(state.cards + 必要なら相手のカード)
 function extractLeadersToZone(side, cardPool) {
-  if (!side.leader) side.leader = [];
-  if (!side.leaderReserve) side.leaderReserve = [];
-  const heroInstIds = new Set();
-  side.deck.forEach(inst => {
-    const card = (cardPool || state.cards).find(c => c.id === inst.cardId);
-    if (card && isLeaderCard(card)) heroInstIds.add(inst.instanceId);
+  if (!side.field) side.field = [];
+  if (!side.trash) side.trash = [];
+  if (side.field.length >= 2) return side.field.length; // 既に配置済み
+  const pool = cardPool || state.cards;
+  const leaderInsts = side.deck.filter(inst => {
+    const card = pool.find(c => c.id === inst.cardId);
+    return isLeaderCard(card);
   });
-  const heroes = side.deck.filter(inst => heroInstIds.has(inst.instanceId));
-  side.deck = side.deck.filter(inst => !heroInstIds.has(inst.instanceId));
-  // レベル順(1→2→3)、同名内でレベル順、別ヒーローはまとめて
-  heroes.sort((a, b) => {
-    const ca = (cardPool || state.cards).find(c => c.id === a.cardId) || {};
-    const cb = (cardPool || state.cards).find(c => c.id === b.cardId) || {};
-    if ((ca.name || '') !== (cb.name || '')) return (ca.name || '').localeCompare(cb.name || '');
-    return (parseInt(ca.level) || 0) - (parseInt(cb.level) || 0);
+  // 先頭2体を場へ(表向き・通常時)、残りのキャラ(3体以上入っていた場合)はトラッシュへ
+  const chosen = leaderInsts.slice(0, 2);
+  const chosenIds = new Set(chosen.map(x => x.instanceId));
+  const extraIds  = new Set(leaderInsts.slice(2).map(x => x.instanceId));
+  side.deck = side.deck.filter(inst => !chosenIds.has(inst.instanceId) && !extraIds.has(inst.instanceId));
+  chosen.forEach(inst => {
+    side.field.push({ instanceId: inst.instanceId, cardId: inst.cardId, faceDown: false, awakened: false, rested: false });
   });
-  // Lv1 をリーダーゾーンへ(最初に見つかったLv1のみ。複数リーダー入れた場合の二人目以降は控え)
-  // Lv1 がなければ最も低いレベルをリーダーに
-  let leaderPlaced = false;
-  heroes.forEach(h => {
-    const c = (cardPool || state.cards).find(c => c.id === h.cardId) || {};
-    const isLv1 = parseInt(c.level) === 1;
-    if (!leaderPlaced && (isLv1 || side.leader.length === 0 && heroes.indexOf(h) === 0)) {
-      // 最初の Lv1 をリーダーゾーンへ
-      if (isLv1 && !leaderPlaced) {
-        side.leader.push(h);
-        leaderPlaced = true;
-        return;
-      }
-    }
-    side.leaderReserve.push(h);
-  });
-  // フォールバック: Lv1 が見つからずリーダーが空のままなら、控えの先頭をリーダーに
-  if (!leaderPlaced && side.leaderReserve.length > 0) {
-    side.leader.push(side.leaderReserve.shift());
-  }
-  return heroes.length;
+  leaderInsts.slice(2).forEach(inst => side.trash.push(inst));
+  return side.field.length;
 }
 
 // プレイ開始 (ソロ)
@@ -5132,6 +5942,17 @@ function startPlaySession() {
   setupPlaySide(sideA, deckIdA);
   setupPlaySide(sideB, deckIdB);
 
+  // v3.1: リーダー(キャラ)はデッキに2枚含めておく必要がある(開始時に場へ抽出される)
+  if (sideA.field.length < 2 || sideB.field.length < 2) {
+    toast('⚠ デッキにキャラ(リーダー)カードを2枚入れてください。場のリーダーが不足しています。');
+  }
+  // v3.1: 後攻補正 ── 後攻(B)は初期手札+1枚 & P を 6 個持って開始(先攻有利の緩和。シミュレーション検証済み)
+  if (sideB.deck.length) sideB.hand.push(sideB.deck.shift());
+  sideB.p = sideB.p || [];
+  for (let i = 0; i < 6; i++) {
+    if (sideB.deck.length) sideB.p.push(sideB.deck.shift());
+  }
+
   state.playSession = {
     active: true,
     turn: 1,
@@ -5143,8 +5964,8 @@ function startPlaySession() {
     network: { mode: 'solo' }
   };
   playLog(null, `ゲーム開始 (${nameA} vs ${nameB})`);
-  playLog('A', `ライフ ${sideA.life.length} / BOMB ${sideA.bomb.length} / 手札 ${sideA.hand.length} / 盤面 ${sideA.field.length}`);
-  playLog('B', `ライフ ${sideB.life.length} / BOMB ${sideB.bomb.length} / 手札 ${sideB.hand.length} / 盤面 ${sideB.field.length}`);
+  playLog('A', `ライフ ${sideA.life.length} / BOMB ${sideA.bomb.length} / 手札 ${sideA.hand.length} / リーダー ${sideA.field.length}`);
+  playLog('B', `ライフ ${sideB.life.length} / BOMB ${sideB.bomb.length} / 手札 ${sideB.hand.length} / リーダー ${sideB.field.length}`);
   saveData();
   renderPlay();
 }
@@ -5153,16 +5974,14 @@ function startPlaySession() {
 function setupPlaySide(side, deckId) {
   // デッキ構築 + シャッフル
   side.deck = shuffleArray(buildDeckInstances(deckId));
+  // リーダー(キャラ)2体をデッキから抜いて場へ(表向き) ── v3.1
+  extractLeadersToZone(side);
   // ライフ: デッキ上 3 枚を裏向きで取る
   side.life = side.deck.splice(0, PLAY_INITIAL_LIFE).map(inst => ({...inst, faceDown: true}));
   // BOMB: 抽象プレースホルダを 3 個
   side.bomb = [];
   for (let i = 0; i < PLAY_INITIAL_BOMB; i++) {
     side.bomb.push({ instanceId: pInst(), placeholder: 'bomb', faceDown: true });
-  }
-  // 盤面: 次の 1 枚を裏向きで設置(キャラなら fine、それ以外なら…とりあえず置く。要ルール確認)
-  if (side.deck.length > 0) {
-    side.field = [{...side.deck.shift(), faceDown: true}];
   }
   // 手札: 4 枚ドロー
   for (let i = 0; i < PLAY_INITIAL_HAND; i++) {
@@ -5227,6 +6046,9 @@ function endTurn() {
   const oldSide = ps.activeSide;
   ps.activeSide = ps.activeSide === 'A' ? 'B' : 'A';
   if (ps.activeSide === 'A') ps.turn++; // BからAに戻ったらターン++
+  // v3.1: 新ターンのプレイヤーは行動済みリーダーを通常向きに戻す(§E ドローフェイズ)
+  const _nb = ps.sides[ps.activeSide];
+  if (_nb && _nb.field) _nb.field.forEach(l => { l.rested = false; });
   // 新ターンの開始は ① ドローフェイズから
   ps.phaseIdx = 1;
   playLog(oldSide, `ターン終了 → ${ps.activeSide}のターン (${ps.turn})`);
@@ -5270,150 +6092,8 @@ function nextPhase() {
 // 互換: 旧 changePhase(phase) は無視 (古いネットワークメッセージ用)
 function changePhase(_phase) { /* 旧API、何もしない */ }
 
-// ============ カウンタ ============
-function adjustCounter(side, key, delta) {
-  if (!state.playSession) return;
-  const s = state.playSession.sides[side];
-  if (!s) return;
-  if (!s.manuscriptCards) s.manuscriptCards = [];
-
-  // 原稿カウンタは物理ゾーンに変換: +は山の上から原稿へ、-は原稿の最後を山の上へ戻す
-  if (key === 'manuscript') {
-    const oldCount = s.manuscriptCards.length;
-    if (delta > 0) {
-      for (let i = 0; i < delta; i++) {
-        if (s.deck.length === 0) break;
-        s.manuscriptCards.push(s.deck.shift());
-      }
-    } else if (delta < 0) {
-      for (let i = 0; i < -delta; i++) {
-        if (s.manuscriptCards.length === 0) break;
-        s.deck.unshift(s.manuscriptCards.pop());
-      }
-    }
-    const newCount = s.manuscriptCards.length;
-    if (newCount !== oldCount) {
-      playLog(side, `原稿 ${oldCount} → ${newCount} 枚 (山残 ${s.deck.length})`);
-      checkVictory();
-    }
-    saveData(); renderPlay();
-    netSendOp({ type: 'counter', side, key, delta });
-    return;
-  }
-
-  // IP などその他のカウンタは従来通り
-  const oldVal = s[key];
-  s[key] = Math.max(0, (s[key] || 0) + delta);
-  if (s[key] !== oldVal) {
-    const labels = { ip: 'IP' };
-    playLog(side, `${labels[key] || key} ${oldVal} → ${s[key]}`);
-  }
-  saveData(); renderPlay();
-  netSendOp({ type: 'counter', side, key, delta });
-}
-
-// 持ち込みバトル: 攻撃側が敵フィールドのキャラを没にし、自分の山から N枚 を原稿へ
-function startBattle(attackerSide, defenderSide, defenderInstId, manuscriptCount) {
-  if (!state.playSession) return;
-  const ps = state.playSession;
-  const att = ps.sides[attackerSide];
-  const def = ps.sides[defenderSide];
-  if (!att || !def) return;
-  const dIdx = def.field.findIndex(x => x.instanceId === defenderInstId);
-  if (dIdx < 0) { toast('対象カードが見つかりません'); return; }
-  if (!att.manuscriptCards) att.manuscriptCards = [];
-
-  // 防御側カードを没案へ
-  const [defInst] = def.field.splice(dIdx, 1);
-  def.discard.push(defInst);
-  const defCard = findPlayCard(defInst.cardId);
-
-  // 攻撃側の山トップから N 枚を原稿へ
-  let sent = 0;
-  for (let i = 0; i < manuscriptCount; i++) {
-    if (att.deck.length === 0) break;
-    att.manuscriptCards.push(att.deck.shift());
-    sent++;
-  }
-
-  playLog(attackerSide, `⚔ ${defCard?.name || '?'} を没にし、原稿+${sent} (原稿計 ${att.manuscriptCards.length}, 山残 ${att.deck.length})`);
-  checkVictory();
-  saveData(); renderPlay();
-  closePlayPopover();
-  netSendOp({ type: 'battle', attackerSide, defenderSide, defenderInstId, manuscriptCount });
-}
-
-// 泣きの一回: 没案ゾーンの脇役 (Lv1キャラ) を場へ戻す、HP上乗せ、1試合1回限定
-function useNaki(side, instanceId, hpBonus) {
-  if (!state.playSession) return;
-  const s = state.playSession.sides[side];
-  if (!s || s.nakiUsed) { toast('泣きの一回は1試合に1回までです'); return; }
-  if (s.field.length > 0) { toast('場のキャラがいるので泣きの一回は使えません'); return; }
-  const dIdx = s.discard.findIndex(x => x.instanceId === instanceId);
-  if (dIdx < 0) { toast('カードが見つかりません'); return; }
-  const card = findPlayCard(s.discard[dIdx].cardId);
-  if (!card || getTypeKind(card.type) !== 'character' || (parseInt(card.level) || 0) !== 1) {
-    toast('泣きの一回で戻せるのは脇役(Lv1キャラ)のみです');
-    return;
-  }
-  const [inst] = s.discard.splice(dIdx, 1);
-  // HP上乗せ
-  const baseHp = parseInt(card.hp) || 0;
-  inst.hp = baseHp + hpBonus;
-  inst.nakiNoAttack = true; // 次の自分ターンに持ち込み不可フラグ
-  s.field.push(inst);
-  s.nakiUsed = true;
-  playLog(side, `💧 泣きの一回: ${card.name} を場に戻す (HP+${hpBonus} = ${inst.hp})`);
-  saveData(); renderPlay();
-  closePlayPopover();
-  netSendOp({ type: 'naki', side, instanceId, hpBonus });
-}
-
-// 勝敗判定
-function checkVictory() {
-  if (!state.playSession) return;
-  const ps = state.playSession;
-  ['A', 'B'].forEach(k => {
-    const s = ps.sides[k];
-    if (!s) return;
-    const count = (s.manuscriptCards?.length || 0);
-    if (count >= PLAY_VICTORY_MANUSCRIPT && !s.victoryAnnounced) {
-      s.victoryAnnounced = true;
-      playLog(k, `🏆 勝利! 原稿 ${PLAY_VICTORY_MANUSCRIPT} 枚達成`);
-      showModal('🏆 作品完成!', `${s.name} が原稿 ${PLAY_VICTORY_MANUSCRIPT} 枚を完成させました!`, () => {});
-    }
-    // 場全没 + 泣き使用済み = 敗北
-    if (s.nakiUsed && s.field.length === 0 && !s.defeatAnnounced) {
-      s.defeatAnnounced = true;
-      playLog(k, '💧 敗北 (泣きの一回後に場が全没)');
-      showModal('💧 敗北', `${s.name} は泣きの一回を使った後、場のキャラクターが全て没になりました`, () => {});
-    }
-  });
-}
-
-function adjustFieldHP(side, instanceId, delta) {
-  if (!state.playSession) return;
-  const s = state.playSession.sides[side];
-  const inst = s.field.find(x => x.instanceId === instanceId);
-  if (!inst) return;
-  const oldHp = inst.hp || 0;
-  inst.hp = Math.max(0, oldHp + delta);
-  const card = findPlayCard(inst.cardId);
-  playLog(side, `${card?.name || '?'} HP ${oldHp} → ${inst.hp}`);
-  netSendOp({ type: 'hp', side, instanceId, delta });
-  // HP 0 で自動的にインスピレーションゾーンへ移動 (進化スタックも合算してIP化)
-  if (inst.hp === 0 && oldHp > 0) {
-    playLog(side, `${card?.name || '?'} のHPが0 → インスピレーションへ自動移動`);
-    closePlayPopover();
-    moveInstance(side, instanceId, 'field', 'inspiration');
-    return; // moveInstance 内で saveData/renderPlay/netSendOp(move) が走る
-  }
-  saveData(); renderPlay();
-  // ポップオーバーが開いていれば最新のHP値で再描画
-  if (document.getElementById('playPopoverBg').classList.contains('show')) {
-    openPlayPopover(side, instanceId, 'field');
-  }
-}
+// ============ (旧手塚版の カウンタ / 持ち込みバトル / 泣きの一回 / 勝敗判定 / HP処理 は v3.1 で廃止) ============
+// 東方版のバトルは performAttack / executeAttack、勝敗は executeAttack 内のライフ0判定で行う。
 
 // ============ ゾーン移動 ============
 function moveInstance(side, instanceId, fromZone, toZone, toTop) {
@@ -5678,8 +6358,9 @@ function openPlayPopover(side, instanceId, fromZone) {
   } else if (fromZone === 'field') {
     if (card && getTypeKind(card.type) === 'touhou-char' && !inst.faceDown) {
       const oppSide = side === 'A' ? 'B' : 'A';
-      actions.push({ label: '⚔ このキャラで攻撃 (相手デッキ削り)', fn: `performAttack('${side}','${oppSide}')` });
+      actions.push({ label: '⚔ このリーダーで攻撃 (相手デッキ削り)', fn: `performAttack('${side}','${oppSide}','${instanceId}')` });
       actions.push({ label: inst.awakened ? '🔙 覚醒解除' : '🌟 覚醒する', fn: `togglePlayAwaken('${side}','${instanceId}')`, keep: true });
+      actions.push({ label: inst.rested ? '↩ 行動済みを解除' : '💤 行動済みにする', fn: `togglePlayRested('${side}','${instanceId}')`, keep: true });
     }
     actions.push({ label: inst.faceDown ? '🔍 表にする' : '🙈 裏にする', fn: `togglePlayFaceDown('${side}','${instanceId}')`, keep: true });
     actions.push({ label: '➡ 手札に戻す', fn: `moveInstance('${side}','${instanceId}','field','hand')` });
@@ -5734,6 +6415,22 @@ function togglePlayAwaken(side, instanceId) {
   }
 }
 
+// v3.1: 行動済み(レスト)トグル ── 攻撃済みリーダーは次の自分のターンまで迎撃不可
+function togglePlayRested(side, instanceId) {
+  if (!state.playSession) return;
+  const s = state.playSession.sides[side];
+  const inst = (s.field || []).find(x => x.instanceId === instanceId);
+  if (!inst) return;
+  inst.rested = !inst.rested;
+  const card = findPlayCard(inst.cardId);
+  playLog(side, `${card?.name || '?'} ${inst.rested ? '💤 行動済み' : '↩ 行動済み解除'}`);
+  saveData(); renderPlay();
+  netSendOp({ type: 'rested', side, instanceId, rested: inst.rested });
+  if (document.getElementById('playPopoverBg').classList.contains('show')) {
+    openPlayPopover(side, instanceId, 'field');
+  }
+}
+
 // 表/裏トグル(盤面・ライフ等)
 function togglePlayFaceDown(side, instanceId) {
   if (!state.playSession) return;
@@ -5763,44 +6460,56 @@ function closePlayPopover() {
 
 // ============ バトル / リフレッシュ (東方版) ============
 // 攻撃: 攻撃力 − 相手回避力 = 相手デッキ削り枚数
-function performAttack(attackerSide, defenderSide) {
+function performAttack(attackerSide, defenderSide, attackerInstId) {
   if (!state.playSession) return;
   const ps = state.playSession;
   const atkS = ps.sides[attackerSide];
   const defS = ps.sides[defenderSide];
-  const atkInst = atkS.field[0];
-  if (!atkInst) { toast('攻撃側に盤面キャラがいません'); return; }
+  // 攻撃リーダー: クリックされたリーダー(指定なしは先頭)
+  const atkInst = atkS.field.find(x => x.instanceId === attackerInstId) || atkS.field[0];
+  if (!atkInst) { toast('攻撃するリーダーがいません'); return; }
   const atkCard = findPlayCard(atkInst.cardId);
   if (!atkCard) { toast('攻撃側のカード情報が見つかりません'); return; }
-  if (getTypeKind(atkCard.type) !== 'touhou-char') { toast('盤面のカードがキャラではありません'); return; }
+  if (getTypeKind(atkCard.type) !== 'touhou-char') { toast('リーダーで攻撃してください'); return; }
   const useAwaken = !!atkInst.awakened;
   const atkValue = parseInt(useAwaken && atkCard.awakenAttack ? atkCard.awakenAttack : atkCard.attack) || 0;
 
-  let defName = '(盤面なし)', defValue = 0;
-  const defInst = defS.field[0];
+  // 迎撃リーダー: 行動済みでないリーダーのうち回避力が高い方(v3.1)
+  let defName = '(リーダー不在)', defValue = 0;
+  const _evaOf = (inst) => {
+    const c = findPlayCard(inst.cardId);
+    if (!c) return -1;
+    return parseInt(inst.awakened && c.awakenEvasion ? c.awakenEvasion : c.evasion) || 0;
+  };
+  const _readyDef = (defS.field || []).filter(x => !x.rested);
+  const _defPool = _readyDef.length ? _readyDef : (defS.field || []);
+  const defInst = _defPool.slice().sort((a, b) => _evaOf(b) - _evaOf(a))[0];
   if (defInst) {
     const defCard = findPlayCard(defInst.cardId);
     if (defCard) {
-      defName = defCard.name;
+      defName = defCard.name + (defInst.rested ? '(行動済み)' : '');
       const useDefAwaken = !!defInst.awakened;
       defValue = parseInt(useDefAwaken && defCard.awakenEvasion ? defCard.awakenEvasion : defCard.evasion) || 0;
     }
   }
 
-  const damage = Math.max(0, atkValue - defValue);
+  const damage = Math.max(1, atkValue - defValue); // v3.1: 最低1保証
   closePlayPopover();
   showModal('⚔ 攻撃確認',
     `${atkCard.name} (攻撃 ${atkValue}${useAwaken ? '・覚醒中' : ''}) → ${defName} (回避 ${defValue})\n\n` +
-    `相手のデッキを ${damage} 枚トラッシュへ送ります。デッキ 0 でリフレッシュ(=ライフ -1)。\n\n実行しますか?`,
+    `相手のデッキを ${damage} 枚トラッシュへ送ります(最低 1 保証)。デッキ 0 でリフレッシュ(=ライフ -1)。\n\n実行しますか?`,
     () => {
-      executeAttack(attackerSide, defenderSide, damage, atkCard.name);
+      executeAttack(attackerSide, defenderSide, damage, atkCard.name, atkInst.instanceId);
     });
 }
 
-function executeAttack(attackerSide, defenderSide, damage, atkName) {
+function executeAttack(attackerSide, defenderSide, damage, atkName, attackerInstId) {
   const ps = state.playSession;
   const atkS = ps.sides[attackerSide];
   const defS = ps.sides[defenderSide];
+  // v3.1: 攻撃したリーダーを行動済みに(次の自分のターンまで迎撃に使えない)
+  const _atkInst = atkS.field.find(x => x.instanceId === attackerInstId);
+  if (_atkInst) _atkInst.rested = true;
   if (damage === 0) {
     playLog(attackerSide, `${atkName} の攻撃 → ダメージ 0(回避)`);
     saveData(); renderPlay();
@@ -5817,7 +6526,7 @@ function executeAttack(attackerSide, defenderSide, damage, atkName) {
     const c = findPlayCard(inst.cardId);
     if (!c) return;
     const k = getTypeKind(c.type);
-    if (k === 'touhou-spell' || k === 'touhou-shoot') {
+    if (k === 'touhou-spell') {
       recoverTotal += parseInt(c.recoverP) || 0;
     }
   });
@@ -5837,7 +6546,7 @@ function executeAttack(attackerSide, defenderSide, damage, atkName) {
     toast(`🏆 ${atkS.name} の勝利!(相手ライフ 0)`);
   }
   saveData(); renderPlay();
-  netSendOp({ type: 'attack', attackerSide, defenderSide, damage, atkName });
+  netSendOp({ type: 'attack', attackerSide, defenderSide, damage, atkName, attackerInstId });
 }
 
 // デッキを amount 枚トラッシュへ削る(リフレッシュ自動)
@@ -5861,30 +6570,22 @@ function millDeck(side, amount) {
   }
 }
 
-// リフレッシュ: トラッシュをシャッフルしてデッキへ。新デッキ上3枚を新ライフに。旧ライフはトラッシュへ
+// リフレッシュ (v3.1 §G.4): トラッシュをシャッフルしてデッキへ戻し、ライフを1枚手札へ。ライフ0で敗北
 function refreshDeck(side) {
   if (!state.playSession) return;
   const s = state.playSession.sides[side];
-  if (s.trash.length === 0) {
-    // トラッシュも空 → リフレッシュできない、ライフを 1 枚だけ消費するしかない
-    if (s.life.length > 0) {
-      const lost = s.life.pop();
-      s.trash.push({...lost, faceDown: false});
-      playLog(side, `⚠ デッキ・トラッシュ枯渇 → ライフ 1 枚消費 (残${s.life.length})`);
-    }
-    return;
+  // トラッシュをすべてシャッフルしてデッキへ戻す
+  if (s.trash.length > 0) {
+    s.deck = shuffleArray(s.deck.concat(s.trash.splice(0, s.trash.length)));
   }
-  // 旧ライフ → トラッシュ
+  // ライフを 1 枚、表向きにして手札へ加える(被弾の救済)
   if (s.life.length > 0) {
-    s.life.forEach(inst => s.trash.push({...inst, faceDown: false}));
-    playLog(side, `旧ライフ ${s.life.length} 枚をトラッシュへ`);
-    s.life = [];
+    const lifeCard = s.life.pop();
+    s.hand.push({ instanceId: lifeCard.instanceId, cardId: lifeCard.cardId });
+    playLog(side, `🔄 リフレッシュ: ライフ -1 (残 ${s.life.length}) / デッキ ${s.deck.length} 枚で再構築、ライフ 1 枚を手札へ`);
+  } else {
+    playLog(side, `🔄 リフレッシュ: ライフ 0 → 敗北`);
   }
-  // トラッシュ → デッキ + シャッフル
-  s.deck = shuffleArray(s.trash.splice(0, s.trash.length));
-  // デッキ上 3 枚を新ライフへ(裏向き)
-  s.life = s.deck.splice(0, Math.min(PLAY_INITIAL_LIFE, s.deck.length)).map(inst => ({...inst, faceDown: true}));
-  playLog(side, `🔄 リフレッシュ完了: デッキ ${s.deck.length} / 新ライフ ${s.life.length}`);
 }
 
 // BOMB を n 枚消費(2 枚で攻撃 1 回無効化など、UI 側で適切に呼ぶ)
@@ -5990,6 +6691,7 @@ function buildCardChip(inst, side, fromZone, faceDown) {
   if (lvNum === 3) classes.push('lv3');
   if (isLeaderCard(card)) classes.push('chip-hero');
   if (faceDown) classes.push('face-down');
+  if (inst.rested) classes.push('chip-rested');
   // ハイライトモード: 手札のカードのみ、場に出せないものを暗く
   if (_highlightPlayable && fromZone === 'hand' && !faceDown) {
     if (isPlayableToField(card, side)) classes.push('chip-playable');
@@ -6013,7 +6715,7 @@ function buildCardChip(inst, side, fromZone, faceDown) {
     const eva = inst.awakened && card.awakenEvasion ? card.awakenEvasion : card.evasion;
     if (atk) footMark += `<span title="攻撃力">⚔${escapeHtml(atk)}</span>`;
     if (eva) footMark += `<span title="回避力">🛡${escapeHtml(eva)}</span>`;
-  } else if (kind === 'touhou-spell' || kind === 'touhou-shoot') {
+  } else if (kind === 'touhou-spell') {
     if (card.ppCost) footMark += `<span title="PPコスト">✨${escapeHtml(card.ppCost)}</span>`;
     if (card.bomCost) footMark += `<span title="BOMコスト">💣${escapeHtml(card.bomCost)}</span>`;
   } else {
@@ -6249,8 +6951,8 @@ function renderPlaySide(sideKey) {
           </div>
         </div>
         <div class="zone-center">
-          <div class="zone-block zone-block-field ${fieldCountClass}" title="盤面 (キャラ最大 1 体)">
-            <div class="zone-block-label">⛩ 盤面 ${s.field.length}/${PLAY_FIELD_MAX}</div>
+          <div class="zone-block zone-block-field ${fieldCountClass}" title="リーダーゾーン (2体)">
+            <div class="zone-block-label">⛩ リーダー ${s.field.length}/2</div>
             <div class="zone-block-content field-grid">${fieldHtml}</div>
           </div>
           <div class="zone-block zone-block-hand" title="手札 ${s.hand.length}枚">
@@ -6744,8 +7446,6 @@ function netApplyRemoteOp(op) {
   try {
     if (op.type === 'draw') drawCard(op.side, op.n);
     else if (op.type === 'move') moveInstance(op.side, op.instanceId, op.fromZone, op.toZone, op.toTop);
-    else if (op.type === 'counter') adjustCounter(op.side, op.key, op.delta);
-    else if (op.type === 'hp') adjustFieldHP(op.side, op.instanceId, op.delta);
     else if (op.type === 'shuffle') {
       // 受信した順序にデッキを並べ直す
       const s = state.playSession.sides[op.side];
@@ -6757,8 +7457,6 @@ function netApplyRemoteOp(op) {
     }
     else if (op.type === 'endTurn') endTurn();
     else if (op.type === 'phase') setPhase(op.phaseIdx);
-    else if (op.type === 'battle') startBattle(op.attackerSide, op.defenderSide, op.defenderInstId, op.manuscriptCount);
-    else if (op.type === 'naki') useNaki(op.side, op.instanceId, op.hpBonus);
   } finally {
     _isApplyingRemoteOp = false;
   }
@@ -6815,7 +7513,7 @@ function createCardElementForPDF(card) {
     // 東方キャラ: 覚醒ブロック分のスペースを取るため中サイズ
     cardEl.querySelector('.cp-illust').style.height = '200px';
     cardEl.querySelector('.cp-illust-icon').style.fontSize = '130px';
-  } else if (cardEl.classList.contains('kind-touhou-spell') || cardEl.classList.contains('kind-touhou-shoot')) {
+  } else if (cardEl.classList.contains('kind-touhou-spell')) {
     // スペル/シューティング: 効果テキストが本体
     cardEl.querySelector('.cp-illust').style.height = '170px';
     cardEl.querySelector('.cp-illust-icon').style.fontSize = '115px';

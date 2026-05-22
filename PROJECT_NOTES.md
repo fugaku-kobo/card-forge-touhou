@@ -3,56 +3,37 @@
 ## プロジェクト概要
 
 「東方カードゲーム」(株式会社 Shangri-La 企画、2024 年 7 月仕様書)を題材にした自作 TCG 制作 Web アプリ。
-**手塚カードゲーム向けの `card-forge` をフォークして** 東方版に作り替え中。
+手塚カードゲーム向けの `card-forge` をフォークして東方版に作り替え、現在は **v3.1(2リーダー制)** で運用。
 
 - **メインファイル:** `index.html`(1 ファイル完結)
 - **公開:** GitHub Pages 予定(リモート未設定)
 - **フォーク元:** [fugaku-kobo/card-forge](https://github.com/fugaku-kobo/card-forge)(手塚版)
-- **使用技術:** HTML + CSS + JavaScript(バニラ)、jsPDF、html2canvas、SheetJS(xlsx)、PeerJS(二台対戦の WebRTC)
+- **使用技術:** HTML + CSS + JavaScript(バニラ)、jsPDF、html2canvas、SheetJS(xlsx)、PeerJS
 
 ---
 
-## 現在の状態(2026-05-19)
+## 現在の状態(2026-05-22 / v3.1)
 
-| Phase | 内容 | 状態 |
+| 区分 | 内容 | 状態 |
 |---|---|---|
-| 0 | 計画・ルール把握(PDF + xlsx) | ✅ |
-| 1 | docs 整備(legacy 退避+東方版 docs 新規) | ✅ |
-| 2 | カードデータ構造の入れ替え(`BUILTIN_TYPES`/`STORAGE_KEY`) | ✅ |
-| 3 | カード制作フォーム+`buildCardHTML`+ **東方テーマ**(夜空/朱/金) | ✅ |
-| 4 | デッキ構築タブクリーンアップ(50 枚目安・主人公/別山ナシ) | ✅ |
-| 5a | PLAY タブ データ構造(ライフ3/BOMB3/盤面1/手札4/P/トラッシュ) | ✅ |
-| 5b | PLAY タブ UI 描画(東方ゾーン構造、覚醒バッジ等) | ✅ |
-| 5c | Excel インポート(東方フォーマット) | ✅ |
-| 6 | バトル/デッキリフレッシュ処理(攻撃力−回避力・回収P・BOMB無効化) | ✅ |
-| 7 | ネット対戦同期更新(host/guest 初期化を東方版に) | ⏸ 未着手 |
-
-主要な変更点(累積):
-- カードタイプ: 3 種(キャラ/スペル/シューティング)
-- localStorage キー: `touhou_card_forge_v1`
-- カードモデル: 覚醒モデル(1 枚で通常↔覚醒の 2 状態)
-- PLAY ゾーン: デッキ・手札・盤面1・トラッシュ・P・ライフ3・BOMB3
-- バトル: 攻撃 → 攻撃力−回避力 = 相手デッキ削り、回収P 自動集計、デッキ0 でリフレッシュ
-- 用語: 「没」→「トラッシュ」統一
-- テーマ: 夜空の博麗神社(濃紺 + 朱赤 + 金)
+| ルール | `docs/rules.md` v3.1(2リーダー制・行動済み・弾幕モデル) | ✅ |
+| カード設計 | `docs/cards.md` v1.2(リーダー4体・スペル24種・スターター2種) | ✅ |
+| カード制作 / デッキ構築タブ | キャラ / スペルの 2 タイプ対応 | ✅ |
+| PLAY タブ | 2リーダー制・覚醒・行動済み・バトル(攻撃力−回避力)・リフレッシュ | ✅ |
+| Excel インポート | 東方フォーマット | ✅ |
+| ネット対戦同期 | 2リーダー版への追従 | ⏸ 未着手 |
 
 ---
 
 ## ゲーム仕様サマリ(詳細は `docs/rules.md`)
 
-### カードタイプ(2 種)
-- **キャラカード**: 盤面に 1 体、進化あり、攻撃力・回避力(進化で変動)
-- **スペルカード**: 魔法相当、発動条件 Lv あり、P/BOMB コスト、バトル中も割り込み可
-
-### ゾーン(8 種)
-デッキ(50) / 手札(初期 4) / 盤面(1 体) / トラッシュ / P ゾーン / ライフ(3 裏) / BOMB(3 裏・固定) / 進化ゾーン
-
-### コアループ
-攻撃 = **相手デッキを削る**(攻撃力 − 回避力 = 削り枚数)。デッキ 0 でリフレッシュ→ライフ −1。ライフ 0 で敗北。
-HP 削り合いではない **弾幕モデル**。
-
-### ターン(6 フェイズ)
-1. ドロー → 2. チャージ → 3. 進化 → 4. メイン → 5. バトル → 6. エンド
+- **カードタイプ 2 種:** キャラ(リーダー)/ スペル
+- **リーダー:** 試合前に 2 体選択。覚醒モデル(通常↔覚醒で攻撃/回避が切替)。攻撃したリーダーは「**行動済み**」になり、次の自分のターンまで迎撃に使えない
+- **デッキ:** 80 枚(全スペル)、同 ID 上限 5
+- **ゾーン(7 種):** デッキ / 手札(初期 4)/ リーダー(2 体)/ トラッシュ / P / ライフ(3)/ BOMB(3 固定)
+- **コアループ:** 攻撃 = 相手デッキを削る(削り量 = max(1, 攻撃力 − 回避力))。デッキ 0 でリフレッシュ → ライフ −1。ライフ 0 で敗北
+- **ターン(6 フェイズ):** ドロー → チャージ → 覚醒 → メイン → バトル → エンド
+- **試合時間:** 約 15〜20 分
 
 ### 用語
 「没」は使わず **「トラッシュ」** で統一。
@@ -63,59 +44,42 @@ HP 削り合いではない **弾幕モデル**。
 
 ```
 touhou-card-forge/
-├── index.html              # 単一ファイル本体(手塚版のまま、Phase 2 以降書き換え)
+├── index.html              # 単一ファイル本体
 ├── PROJECT_NOTES.md        # 本書
 ├── docs/
-│   ├── rules.md            # 東方版ルール仕様(現行)
+│   ├── rules.md            # ルール仕様(v3.1)
+│   ├── cards.md            # カードリスト(リーダー4体・スペル24種・スターター2種)
 │   ├── card_specs.md       # カードフィールド定義
-│   └── legacy/             # フォーク元(手塚版)の旧 docs、参照用
-│       ├── rule_status.md
-│       ├── game_design.md
-│       ├── draft_rules_v4.md
-│       ├── tcg_research.md
-│       └── playtest_demos.md
-└── .tmp/                   # 一時スクリプト(gitignore)
+│   └── legacy/             # フォーク元(手塚版)の旧 docs、12 TCG 研究を含む
 ```
 
 ---
 
 ## 開発環境
 
-- **OS**: Windows
-- **エディタ**: VS Code + Git
-- **ローカルパス**: `C:\Users\fd557\projects\touhou-card-forge\`
+- **OS**: Windows / **エディタ**: VS Code + Git
 - **ローカルプレビュー**: `python -m http.server 8765` → http://localhost:8765/index.html
-  - `file://` でも開けるが、PeerJS や一部 API のため localhost 推奨
 - **ハードリロード**: `Ctrl+Shift+R`
-
----
 
 ## localStorage キー
 
-- **東方版**: `touhou_card_forge_v1`(Phase 2 で導入)
-- **手塚版**: `card_forge_data_v4_tezuka`(マイグレーションせず、ブラウザに残るが無視)
+- **東方版**: `touhou_card_forge_v1`
+- 手塚版 `card_forge_data_v4_tezuka` からはマイグレーションしない(別ゲーム扱い)
 
 ---
 
-## 旧手塚版のコードマップ(参考)
+## 既知の残課題
 
-`index.html` 内の主要関数(現状は手塚版そのまま、Phase 2-6 で大半が書き換え対象):
-
-- `buildCardHTML(c, idx, opts)` — カード描画(タイプ別レイアウト)
-- `buildCardChip(inst, side, fromZone, faceDown)` — プレイマット用 63×88px チップ
-- `importXLSX(ev)` — Excel 読み込み
-- `generatePDF(mode)` — PDF 生成
-- `renderPlay()` / `renderPlaySide()` / `renderTurnBar()` — PLAY タブ描画
-- `startPlaySession()` / `endTurn()` / `moveInstance()` — プレイ進行
-- `showPlayHoverPreview()` — ホバー原寸プレビュー
-
-詳細は `docs/legacy/rule_status.md` および旧 PROJECT_NOTES のスナップショット
-(git log を `05fb368^` まで遡れば手塚版そのまま)を参照。
+- **ネット対戦(PeerJS)** は v3.1 の 2リーダー / 覚醒 / 行動済みに未追従(`netApplyRemoteOp` に attack/awaken/rested/flip ハンドラが無い)
+- **プレイ用デッキ** は「キャラ 2 枚 + スペル」で組む必要あり(開始時に場へ自動抽出)。デッキ外でリーダーを選ぶ専用 UI は未実装
+- `index.html` に手塚版由来の死にコードが一部残存(dondeng 関連スタブ等。動作には無害)
+- `docs/cards.md` の数値はプレイテスト中の暫定値(机上テスト 2 回実施済み)
 
 ---
 
 ## 関連ドキュメント
 
-- `docs/rules.md` — 確定ルール
+- `docs/rules.md` — 確定ルール(v3.1)
+- `docs/cards.md` — カード設計(リーダー・スペル・スターターデッキ)
 - `docs/card_specs.md` — カードデータ仕様
-- `docs/legacy/` — 手塚版アーカイブ
+- `docs/legacy/` — 手塚版アーカイブ(12 TCG 研究・プレイテスト資料)

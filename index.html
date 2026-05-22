@@ -2949,6 +2949,15 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 @keyframes aib-steppulse{0%,100%{box-shadow:0 0 5px rgba(216,178,90,.4);}50%{box-shadow:0 0 13px rgba(216,178,90,.85);}}
 .aib-step.on{animation:aib-steppulse 1.3s ease-in-out infinite;}
 .brand-ver{font-size:.46em;color:#d8b25a;opacity:.85;vertical-align:super;letter-spacing:.04em;font-weight:600;}
+.aib-combat{border-radius:9px;padding:8px 10px;margin-bottom:7px;}
+.aib-combat.you{background:rgba(216,178,90,.16);border:1px solid rgba(216,178,90,.5);}
+.aib-combat.ai{background:rgba(200,50,76,.18);border:1px solid rgba(200,50,76,.5);}
+.aib-combat.bomb{background:rgba(122,79,176,.18);border:1px solid rgba(122,79,176,.5);}
+.aib-combat-head{font-weight:700;font-size:.92rem;color:#fff;text-align:center;}
+.aib-combat-head b{font-size:1.5rem;color:#ffe6a8;}
+.aib-usedrow{margin-top:5px;font-size:.78rem;color:#c9bb9c;display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
+.aib-mini{display:inline-block;color:#fff;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.25);}
+.aib-mini:hover{filter:brightness(1.25);transform:translateY(-1px);}
 </style>
 </head>
 <body>
@@ -3926,7 +3935,7 @@ function aibComputeAttack(s,o,forced,humanBonus){
     atkL=sc[0].L;base=sc[0].v.base;ab=sc[0].v.ab;
   }
   let spellBonus=0,direct=0;
-  const spellNames=[];
+  const spellNames=[],spellCards=[];
   if(humanBonus===undefined){
     const reserve=aibHasQuickDef(s)?2:0;
     let budget=Math.max(0,s.P-reserve);
@@ -3934,11 +3943,11 @@ function aibComputeAttack(s,o,forced,humanBonus){
       .sort((a,b)=>AIB_POOL[b].pp-AIB_POOL[a].pp);
     for(const c of cards){const sp=AIB_POOL[c];
       if(sp.pp<=budget){budget-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
-        spellNames.push(AIB_NM[c]);
+        spellNames.push(AIB_NM[c]);spellCards.push(c);
         if(sp.k==='atk')spellBonus+=sp.v;else direct+=sp.v;}}
     s.P=budget+reserve;
   } else { spellBonus=humanBonus; }
-  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct,spellNames:spellNames};
+  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct,spellNames:spellNames,spellCards:spellCards};
 }
 // 防御側 o の自動防御判断
 function aibAutoDefense(o,raw){
@@ -3959,9 +3968,9 @@ function aibResolveAttack(s,o,log,atk,def){
   const ready=o.leaders.filter(L=>!L.rested);
   const dL=(ready.length?ready:o.leaders).slice().sort((a,b)=>aibEva(b)-aibEva(a))[0];
   const dval=aibEva(dL);
-  let reduce=0,defName='';
+  let reduce=0,defName='',defCard=-1;
   if(def&&def.spellIdx>=0&&def.spellIdx<o.hand.length){
-    const c=o.hand[def.spellIdx];defName=AIB_NM[c];
+    const c=o.hand[def.spellIdx];defName=AIB_NM[c];defCard=c;
     o.P-=AIB_POOL[c].pp;o.hand.splice(def.spellIdx,1);o.trash.push(c);reduce=AIB_POOL[c].v;
   }
   let useBomb=false;
@@ -3975,12 +3984,13 @@ function aibResolveAttack(s,o,log,atk,def){
   atk.atkL.rested=true;
   log.push('　⚔ '+atk.atkL.k+(atk.atkL.aw?'(覚醒)':'')+' が攻撃(迎撃 '+dL.k+'・回避'+dval+')'
     +(atk.spellBonus?' スペル+'+atk.spellBonus:''));
+  if(AIB_ABILFIRE[atk.ab]) log.push('　　✨ '+atk.atkL.k+' の通常技 ── '+AIB_ABILFIRE[atk.ab]);
   if(useBomb) log.push('　　💣 '+o.name+' は BOMB2個で無効化(トラッシュ 0 枚)');
   else {
     if(defName) log.push('　　🛡 '+o.name+' は『'+defName+'』で防御 → 削り '+reduce+' 軽減');
     log.push('　　→ '+o.name+' のデッキ '+final+' 枚をトラッシュへ'+(atk.direct?'(直接削り +'+atk.direct+'枚)':''));
   }
-  return {final:final,useBomb:useBomb,reduce:reduce,defName:defName,defLeader:dL.k};
+  return {final:final,useBomb:useBomb,reduce:reduce,defName:defName,defCard:defCard,defLeader:dL.k,abil:(AIB_ABILFIRE[atk.ab]||'')};
 }
 // 攻撃後の余りPで util を自動詠唱(AI用)+ 手札上限7
 function aibAutoUtil(s){
@@ -4067,6 +4077,12 @@ const AIB_ABIL = {
   charisma:['【カリスマ】攻撃したとき、トラッシュからカード1枚をPゾーンへ','【スピア・ザ・グングニル】覚醒した時、相手デッキを5枚トラッシュ'],
   four:['【フォーオブアカインド】攻撃したとき削り量+6、その後 自デッキ2枚トラッシュ','【レーヴァテイン】覚醒した時 相手デッキ8枚トラッシュ、その後 自手札2枚トラッシュ'],
 };
+const AIB_ABILFIRE = {
+  koi:'恋符 ▶ 削り量 +4',
+  oharai:'お祓い ▶ 相手の P を 2 個トラッシュ',
+  charisma:'カリスマ ▶ トラッシュから 1 枚を P へ',
+  four:'フォーオブアカインド ▶ 削り量 +6・自デッキ 2 枚トラッシュ',
+};
 const AIB_KICON = {atk:'💥',mill:'🌀',def:'🛡️',util:'🔮',disrupt:'💢'};
 const AIB_KCOLOR = {atk:'#c8324c',mill:'#b0683c',def:'#3878c8',util:'#3b9c6a',disrupt:'#8552b8'};
 const AIB_STEPNAMES = ['','①ドロー','②チャージ','③覚醒','④メイン','⑤バトル','⑥エンド'];
@@ -4078,7 +4094,7 @@ function aibStartGame(){
   const human=aibMakeSide(AIB_PAIRS[an],humanFirst,'あなた');
   const ai=aibMakeSide(AIB_PAIRS[bn],!humanFirst,'AI');
   aibGame={human:human,ai:ai,humanName:an,aiName:bn,log:[],over:false,winner:null,
-           turnOf:null,humanPhase:null,atkBonus:0,pendingAtk:null,action:'対戦開始!',stepHi:[]};
+           turnOf:null,humanPhase:null,atkBonus:0,pendingAtk:null,action:'対戦開始!',stepHi:[],lastCombat:null};
   aibGame.log.push('=== 対戦開始 ── あなた「'+an+'」 vs AI「'+bn+'」('+(humanFirst?'あなた先攻':'AI先攻')+') ===');
   document.getElementById('aib-result').textContent='';
   aibCloseZoom();
@@ -4175,6 +4191,7 @@ function aibChooseAttack(idx){
   const atk=aibComputeAttack(h,g.ai,h.leaders[idx],g.atkBonus);
   const res=aibResolveAttack(h,g.ai,g.log,atk,aibAutoDefense(g.ai,atk.raw));
   while(h.hand.length>7)h.trash.push(h.hand.pop());
+  g.lastCombat={by:'you',atkLeader:atk.atkL.k,atkSpells:[],defCard:res.defCard,dmg:res.final,bomb:res.useBomb,abil:res.abil};
   g.action='⑤ '+atk.atkL.k+'で攻撃! '+(res.useBomb?'🤖 AIがBOMBで無効化':
     (res.defName?'🤖 AIが『'+res.defName+'』で防御(-'+res.reduce+') → ':'')+'相手デッキ '+res.final+' 枚トラッシュ');
   g.atkBonus=0;g.humanPhase=null;g.stepHi=[6];
@@ -4236,8 +4253,10 @@ function aibAiBattleStep(){
 }
 function aibResolveAiAttack(def){
   const g=aibGame;
-  const res=aibResolveAttack(g.ai,g.human,g.log,g.pendingAtk,def);
+  const pa=g.pendingAtk;
+  const res=aibResolveAttack(g.ai,g.human,g.log,pa,def);
   aibAutoUtil(g.ai);
+  g.lastCombat={by:'ai',atkLeader:pa.atkL.k,atkSpells:pa.spellCards||[],defCard:res.defCard,dmg:res.final,bomb:res.useBomb,abil:res.abil};
   g.action='🤖 AIの攻撃! '+(res.useBomb?'あなたがBOMBで無効化':
     (res.defName?'あなたが『'+res.defName+'』で防御(-'+res.reduce+') → ':'')+'あなたのデッキ '+res.final+' 枚トラッシュ');
   g.pendingAtk=null;g.humanPhase=null;g.stepHi=[6];
@@ -4387,12 +4406,48 @@ function aibHandMat(g){
   });
   return s+'</div></div>';
 }
+function aibMiniCard(c){
+  const sp=AIB_POOL[c];
+  return '<span class="aib-mini" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'"'
+    +' onclick="aibCardZoomByPool('+c+')" title="クリックで拡大">'+(AIB_KICON[sp.k]||'❓')+' '+AIB_NM[c]+'</span>';
+}
+function aibCombatHtml(g){
+  const lc=g.lastCombat;
+  if(!lc) return '';
+  const cls=lc.bomb?'bomb':(lc.by==='you'?'you':'ai');
+  const dmg=lc.bomb?'🛡 BOMBで無効化(ダメージ 0)'
+    :(lc.by==='you'?'💥 相手デッキに <b>'+lc.dmg+'</b> ダメージ!':'💥 あなたのデッキに <b>'+lc.dmg+'</b> ダメージ');
+  let h='<div class="aib-combat '+cls+'">'
+    +'<div class="aib-combat-head">'+(lc.by==='you'?'⚔ あなたの ':'⚔ AIの ')+lc.atkLeader+' が攻撃 ── '+dmg+'</div>';
+  if(lc.abil)
+    h+='<div class="aib-usedrow">✨ '+lc.atkLeader+' の通常技発動: <b style="color:#ffe6a8;">'+lc.abil+'</b></div>';
+  if(lc.by==='ai'&&lc.atkSpells&&lc.atkSpells.length)
+    h+='<div class="aib-usedrow">🤖 AIが使ったスペル: '+lc.atkSpells.map(aibMiniCard).join('')+'</div>';
+  if(lc.defCard>=0)
+    h+='<div class="aib-usedrow">'+(lc.by==='you'?'🛡 AIが使った防御カード: ':'🛡 あなたの防御カード: ')+aibMiniCard(lc.defCard)+'</div>';
+  return h+'</div>';
+}
+function aibCardZoomByPool(c){
+  const sp=AIB_POOL[c];
+  document.getElementById('aib-zoom-inner').innerHTML=
+    '<div class="aib-zoom-card">'
+    +'<div class="aib-zoom-head" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+AIB_NM[c]+'</div>'
+    +'<div class="aib-zoom-art">'+(AIB_KICON[sp.k]||'❓')+'</div>'
+    +'<div class="aib-zoom-body">'
+    +'<div class="aib-zoom-ef">'+aibSpellDesc(c)+'</div>'
+    +'<div class="aib-zoom-meta">コスト P'+sp.pp+' ／ 発動条件 Lv'+sp.lv+' ／ '+(sp.q?'QUICK(割込可)':'通常')+'</div>'
+    +'</div>'
+    +'<div class="aib-zoom-act"><button class="btn-small" onclick="aibCloseZoom()">閉じる</button></div>'
+    +'</div>';
+  document.getElementById('aib-zoom').classList.add('show');
+}
 function aibRenderGame(){
   const g=aibGame;if(!g)return;
   document.getElementById('aib-mat').innerHTML=
     '<div class="aib-mat">'
     +aibBannerHtml(g)+aibStepsHtml(g)
     +'<div class="aib-action">📣 '+(g.action||'')+'</div>'
+    +aibCombatHtml(g)
     +aibSideMat(g.ai,false)+aibCenterHtml(g)+aibSideMat(g.human,true)+aibHandMat(g)
     +'</div>';
   const lg=document.getElementById('aib-log');

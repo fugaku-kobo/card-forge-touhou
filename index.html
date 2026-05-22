@@ -3926,6 +3926,7 @@ function aibComputeAttack(s,o,forced,humanBonus){
     atkL=sc[0].L;base=sc[0].v.base;ab=sc[0].v.ab;
   }
   let spellBonus=0,direct=0;
+  const spellNames=[];
   if(humanBonus===undefined){
     const reserve=aibHasQuickDef(s)?2:0;
     let budget=Math.max(0,s.P-reserve);
@@ -3933,10 +3934,11 @@ function aibComputeAttack(s,o,forced,humanBonus){
       .sort((a,b)=>AIB_POOL[b].pp-AIB_POOL[a].pp);
     for(const c of cards){const sp=AIB_POOL[c];
       if(sp.pp<=budget){budget-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
+        spellNames.push(AIB_NM[c]);
         if(sp.k==='atk')spellBonus+=sp.v;else direct+=sp.v;}}
     s.P=budget+reserve;
   } else { spellBonus=humanBonus; }
-  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct};
+  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct,spellNames:spellNames};
 }
 // 防御側 o の自動防御判断
 function aibAutoDefense(o,raw){
@@ -4225,8 +4227,9 @@ function aibAiBattleStep(){
   g.stepHi=[5];
   const atk=aibComputeAttack(s,o,undefined);
   g.pendingAtk=atk;
-  g.log.push('　🤖 AI が '+atk.atkL.k+' で攻撃宣言(実効'+atk.raw+')');
-  g.action='🤖 AI ── ⑤ '+atk.atkL.k+' で攻撃宣言!(実効攻撃力 '+atk.raw+')';
+  const spIn=(atk.spellNames&&atk.spellNames.length)?' / 使用スペル: '+atk.spellNames.join('、'):' / スペル未使用';
+  g.log.push('　🤖 AI が '+atk.atkL.k+' で攻撃宣言(実効攻撃力'+atk.raw+')'+spIn);
+  g.action='🤖 AI ── ⑤ '+atk.atkL.k+' で攻撃宣言!(実効攻撃力 '+atk.raw+')'+spIn;
   const canDef=o.bomb>=2||o.hand.some(c=>AIB_POOL[c].k==='def'&&AIB_POOL[c].q&&AIB_POOL[c].pp<=o.P&&aibLvOk(o,AIB_POOL[c].lv));
   if(canDef){
     g.humanPhase='defend';g.stepHi=[5];
@@ -4344,7 +4347,9 @@ function aibCenterHtml(g){
   } else if(g.humanPhase==='defend'){
     const atk=g.pendingAtk;
     h+='<div class="aib-phase" style="color:#ff8a6a;">🛡 防御 ── 割り込み!</div>'
-      +'<div class="aib-hint">AI の <b style="color:#ff8da0;">'+atk.atkL.k+'</b> が攻撃!実効攻撃力 <b style="color:#ff8a6a;font-size:1.1rem;">'+atk.raw+'</b> ── 防御しますか?</div>';
+      +'<div class="aib-hint">AI の <b style="color:#ff8da0;">'+atk.atkL.k+'</b> が攻撃!実効攻撃力 <b style="color:#ff8a6a;font-size:1.1rem;">'+atk.raw+'</b>'
+      +((atk.spellNames&&atk.spellNames.length)?'<br>🤖 AIの使用スペル: <b style="color:#cfe0ff;">'+atk.spellNames.join('、')+'</b>':'<br>🤖 AIはスペル未使用')
+      +' ── 防御しますか?</div>';
     g.human.hand.forEach((c,i)=>{
       const sp=AIB_POOL[c];
       if(sp.k==='def'&&sp.q&&sp.pp<=g.human.P&&aibLvOk(g.human,sp.lv))

@@ -4230,14 +4230,9 @@ function aibAiBattleStep(){
   const spIn=(atk.spellNames&&atk.spellNames.length)?' / 使用スペル: '+atk.spellNames.join('、'):' / スペル未使用';
   g.log.push('　🤖 AI が '+atk.atkL.k+' で攻撃宣言(実効攻撃力'+atk.raw+')'+spIn);
   g.action='🤖 AI ── ⑤ '+atk.atkL.k+' で攻撃宣言!(実効攻撃力 '+atk.raw+')'+spIn;
-  const canDef=o.bomb>=2||o.hand.some(c=>AIB_POOL[c].k==='def'&&AIB_POOL[c].q&&AIB_POOL[c].pp<=o.P&&aibLvOk(o,AIB_POOL[c].lv));
-  if(canDef){
-    g.humanPhase='defend';g.stepHi=[5];
-    aibRenderGame();
-  } else {
-    aibRenderGame();
-    aibNext(function(){aibResolveAiAttack({spellIdx:-1,bomb:false});});
-  }
+  // 防御に使えるカードが無くても自動で進めず、必ず防御フェイズを表示する
+  g.humanPhase='defend';g.stepHi=[5];
+  aibRenderGame();
 }
 function aibResolveAiAttack(def){
   const g=aibGame;
@@ -4346,18 +4341,28 @@ function aibCenterHtml(g){
     });
   } else if(g.humanPhase==='defend'){
     const atk=g.pendingAtk;
-    h+='<div class="aib-phase" style="color:#ff8a6a;">🛡 防御 ── 割り込み!</div>'
+    const rdy=g.human.leaders.filter(L=>!L.rested);
+    const dL=(rdy.length?rdy:g.human.leaders).slice().sort((a,b)=>aibEva(b)-aibEva(a))[0];
+    const expDmg=Math.max(1,atk.raw-aibEva(dL));
+    h+='<div class="aib-phase" style="color:#ff8a6a;">🛡 防御フェイズ ── 割り込み!</div>'
       +'<div class="aib-hint">AI の <b style="color:#ff8da0;">'+atk.atkL.k+'</b> が攻撃!実効攻撃力 <b style="color:#ff8a6a;font-size:1.1rem;">'+atk.raw+'</b>'
       +((atk.spellNames&&atk.spellNames.length)?'<br>🤖 AIの使用スペル: <b style="color:#cfe0ff;">'+atk.spellNames.join('、')+'</b>':'<br>🤖 AIはスペル未使用')
-      +' ── 防御しますか?</div>';
+      +'<br>迎撃 '+dL.k+'(回避'+aibEva(dL)+') ── 防御しなければ <b style="color:#ff8a6a;">'+expDmg+' 枚</b> トラッシュ</div>';
+    let defBtns='';
     g.human.hand.forEach((c,i)=>{
       const sp=AIB_POOL[c];
       if(sp.k==='def'&&sp.q&&sp.pp<=g.human.P&&aibLvOk(g.human,sp.lv))
-        h+='<button class="btn-primary" onclick="aibHumanDefend(\'spell\','+i+')" style="margin:3px;">🛡 '+AIB_NM[c]+'(P'+sp.pp+' / 軽減-'+sp.v+')</button>';
+        defBtns+='<button class="btn-primary" onclick="aibHumanDefend(\'spell\','+i+')" style="margin:3px;">🛡 '+AIB_NM[c]+'(P'+sp.pp+' / 軽減-'+sp.v+')</button>';
     });
     if(g.human.bomb>=2)
-      h+='<button class="btn-primary" onclick="aibHumanDefend(\'bomb\')" style="margin:3px;">💣 BOMB2個で無効化</button>';
-    h+='<button class="btn-small" onclick="aibHumanDefend(\'none\')" style="margin:3px;">そのまま受ける</button>';
+      defBtns+='<button class="btn-primary" onclick="aibHumanDefend(\'bomb\')" style="margin:3px;">💣 BOMB2個で無効化</button>';
+    if(defBtns){
+      h+=defBtns+'<div style="margin-top:6px;"><button class="btn-small" onclick="aibHumanDefend(\'none\')">防御せずに受ける</button></div>';
+    } else {
+      h+='<div style="color:#ff8a6a;font-weight:700;margin:8px 0 4px;">⚠ 防御に使えるカードがありません</div>'
+        +'<div class="aib-hint">手札に QUICK スペルが無く、BOMB も 2 個未満です。</div>'
+        +'<button class="btn-primary" onclick="aibHumanDefend(\'none\')">攻撃を受ける( '+expDmg+' 枚トラッシュ )</button>';
+    }
   }
   return h+'</div>';
 }

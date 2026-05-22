@@ -2938,6 +2938,17 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
   .rule-box .rule-step{font-size:.86rem;}
   #tab-aibattle > div,#tab-rules > div{padding:4px !important;}
 }
+/* === AI対戦 モーション(CSSのみ・軽量) === */
+.aib-leader{cursor:pointer;}
+@keyframes aib-pop{0%{transform:scale(.93);opacity:.35;}60%{transform:scale(1.03);}100%{transform:scale(1);opacity:1;}}
+.aib-action{animation:aib-pop .34s ease;}
+@keyframes aib-zoomin{0%{transform:scale(.8);opacity:0;}100%{transform:scale(1);opacity:1;}}
+.aib-zoom-card{animation:aib-zoomin .2s ease;}
+@keyframes aib-atkpulse{0%,100%{box-shadow:0 0 10px rgba(255,120,90,.55);}50%{box-shadow:0 0 22px rgba(255,120,90,1);}}
+.aib-leader.attacker{animation:aib-atkpulse 1s ease-in-out infinite;}
+@keyframes aib-steppulse{0%,100%{box-shadow:0 0 5px rgba(216,178,90,.4);}50%{box-shadow:0 0 13px rgba(216,178,90,.85);}}
+.aib-step.on{animation:aib-steppulse 1.3s ease-in-out infinite;}
+.brand-ver{font-size:.46em;color:#d8b25a;opacity:.85;vertical-align:super;letter-spacing:.04em;font-weight:600;}
 </style>
 </head>
 <body>
@@ -2945,7 +2956,7 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 <header>
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-mark">TOUHOU CARD FORGE</div>
+      <div class="brand-mark">TOUHOU CARD FORGE <span class="brand-ver">v3.2</span></div>
       <div class="brand-tag">— 東方カード制作ツール —</div>
     </div>
     <div class="actions">
@@ -3946,9 +3957,10 @@ function aibResolveAttack(s,o,log,atk,def){
   const ready=o.leaders.filter(L=>!L.rested);
   const dL=(ready.length?ready:o.leaders).slice().sort((a,b)=>aibEva(b)-aibEva(a))[0];
   const dval=aibEva(dL);
-  let reduce=0;
+  let reduce=0,defName='';
   if(def&&def.spellIdx>=0&&def.spellIdx<o.hand.length){
-    const c=o.hand[def.spellIdx];o.P-=AIB_POOL[c].pp;o.hand.splice(def.spellIdx,1);o.trash.push(c);reduce=AIB_POOL[c].v;
+    const c=o.hand[def.spellIdx];defName=AIB_NM[c];
+    o.P-=AIB_POOL[c].pp;o.hand.splice(def.spellIdx,1);o.trash.push(c);reduce=AIB_POOL[c].v;
   }
   let useBomb=false;
   if(def&&def.bomb&&o.bomb>=2){useBomb=true;o.bomb-=2;}
@@ -3959,8 +3971,14 @@ function aibResolveAttack(s,o,log,atk,def){
   else if(atk.ab==='oharai')o.P=Math.max(0,o.P-2);
   else if(atk.ab==='charisma'){if(s.trash.length)s.P+=1;}
   atk.atkL.rested=true;
-  log.push('　⚔ '+atk.atkL.k+(atk.atkL.aw?'(覚醒)':'')+' 攻撃 → '+(useBomb?'BOMBで無効化':final+'削り')
-    +(reduce?' [防御-'+reduce+']':'')+(atk.spellBonus?' [スペル+'+atk.spellBonus+']':'')+(atk.direct?' [直接'+atk.direct+']':''));
+  log.push('　⚔ '+atk.atkL.k+(atk.atkL.aw?'(覚醒)':'')+' が攻撃(迎撃 '+dL.k+'・回避'+dval+')'
+    +(atk.spellBonus?' スペル+'+atk.spellBonus:''));
+  if(useBomb) log.push('　　💣 '+o.name+' は BOMB2個で無効化(トラッシュ 0 枚)');
+  else {
+    if(defName) log.push('　　🛡 '+o.name+' は『'+defName+'』で防御 → 削り '+reduce+' 軽減');
+    log.push('　　→ '+o.name+' のデッキ '+final+' 枚をトラッシュへ'+(atk.direct?'(直接削り +'+atk.direct+'枚)':''));
+  }
+  return {final:final,useBomb:useBomb,reduce:reduce,defName:defName,defLeader:dL.k};
 }
 // 攻撃後の余りPで util を自動詠唱(AI用)+ 手札上限7
 function aibAutoUtil(s){
@@ -4041,6 +4059,12 @@ let aibGame = null;
 let aibSync = false;                       // true でアニメ無効(テスト用)
 const AIB_STEP_DELAY = 1000;
 const AIB_FACE = {'霊夢':'⛩️','魔理沙':'🧹','レミリア':'🦇','フランドール':'💎'};
+const AIB_ABIL = {
+  oharai:['【お祓い】攻撃したとき、相手のPゾーンからPを2個トラッシュ','【夢想封印】覚醒した時、相手の手札を1枚捨てさせ1枚ドロー'],
+  koi:['【恋符】攻撃したとき、その攻撃の削り量+4','【マスタースパーク】覚醒したターン、攻撃の削り量+8'],
+  charisma:['【カリスマ】攻撃したとき、トラッシュからカード1枚をPゾーンへ','【スピア・ザ・グングニル】覚醒した時、相手デッキを5枚トラッシュ'],
+  four:['【フォーオブアカインド】攻撃したとき削り量+6、その後 自デッキ2枚トラッシュ','【レーヴァテイン】覚醒した時 相手デッキ8枚トラッシュ、その後 自手札2枚トラッシュ'],
+};
 const AIB_KICON = {atk:'💥',mill:'🌀',def:'🛡️',util:'🔮',disrupt:'💢'};
 const AIB_KCOLOR = {atk:'#c8324c',mill:'#b0683c',def:'#3878c8',util:'#3b9c6a',disrupt:'#8552b8'};
 const AIB_STEPNAMES = ['','①ドロー','②チャージ','③覚醒','④メイン','⑤バトル','⑥エンド'];
@@ -4072,8 +4096,21 @@ function aibBeginHumanTurn(){
   h.turn++;h.leaders.forEach(L=>{L.rested=false;L.awThis=false;});
   g.atkBonus=0;g.turnOf='human';
   g.log.push('【あなた ターン'+h.turn+'】 ライフ'+h.life+' / デッキ'+h.deck.length+' / P'+h.P);
-  if(!(h.isFirst&&h.turn===1)){ aibDraw(h,1); g.action='① ドロー ── カードを1枚引きました'; }
-  else g.action='① ドロー ── 先攻の初ターンはドローなし';
+  if(h.isFirst&&h.turn===1){
+    g.action='あなたのターン ── 先攻の初ターンはドローなし。② チャージへ';
+    g.humanPhase='charge';g.stepHi=[2];
+  } else {
+    g.action='🧑 あなたのターン開始 ── ① ドローしてください';
+    g.humanPhase='draw';g.stepHi=[1];
+  }
+  aibRenderGame();
+}
+function aibHumanDraw(){
+  const g=aibGame,h=g.human;
+  if(g.humanPhase!=='draw')return;
+  aibDraw(h,1);
+  g.log.push('　① ドロー ── カードを1枚引いた(手札'+h.hand.length+'枚)');
+  g.action='① ドロー ── カードを1枚引きました(手札 '+h.hand.length+'枚)';
   if(h.dead){aibFinish('ai');return;}
   g.humanPhase='charge';g.stepHi=[2];
   aibRenderGame();
@@ -4134,9 +4171,10 @@ function aibChooseAttack(idx){
   const g=aibGame,h=g.human;
   if(g.humanPhase!=='play')return;
   const atk=aibComputeAttack(h,g.ai,h.leaders[idx],g.atkBonus);
-  aibResolveAttack(h,g.ai,g.log,atk,aibAutoDefense(g.ai,atk.raw));
+  const res=aibResolveAttack(h,g.ai,g.log,atk,aibAutoDefense(g.ai,atk.raw));
   while(h.hand.length>7)h.trash.push(h.hand.pop());
-  g.action='⑤ バトル ── '+(g.log[g.log.length-1]||'').trim();
+  g.action='⑤ '+atk.atkL.k+'で攻撃! '+(res.useBomb?'🤖 AIがBOMBで無効化':
+    (res.defName?'🤖 AIが『'+res.defName+'』で防御(-'+res.reduce+') → ':'')+'相手デッキ '+res.final+' 枚トラッシュ');
   g.atkBonus=0;g.humanPhase=null;g.stepHi=[6];
   if(g.ai.dead){aibFinish('human');return;}
   if(h.dead){aibFinish('ai');return;}
@@ -4200,9 +4238,10 @@ function aibAiBattleStep(){
 }
 function aibResolveAiAttack(def){
   const g=aibGame;
-  aibResolveAttack(g.ai,g.human,g.log,g.pendingAtk,def);
+  const res=aibResolveAttack(g.ai,g.human,g.log,g.pendingAtk,def);
   aibAutoUtil(g.ai);
-  g.action='🤖 AI の攻撃 → '+(g.log[g.log.length-1]||'').trim();
+  g.action='🤖 AIの攻撃! '+(res.useBomb?'あなたがBOMBで無効化':
+    (res.defName?'あなたが『'+res.defName+'』で防御(-'+res.reduce+') → ':'')+'あなたのデッキ '+res.final+' 枚トラッシュ');
   g.pendingAtk=null;g.humanPhase=null;g.stepHi=[6];
   aibRenderGame();
   if(g.human.dead){aibFinish('ai');return;}
@@ -4223,12 +4262,13 @@ function aibPips(cur,max,type){
   for(let i=0;i<max;i++) h+='<span class="aib-pip '+type+(i<cur?'':' spent')+'"></span>';
   return h+'</span>';
 }
-function aibLeaderCard(L,isAtk){
+function aibLeaderCard(L,isAtk,side,idx){
   const d=AIB_LD[L.k];
   const atk=L.aw?d.aatk:d.atk, eva=L.aw?d.aeva:d.eva;
   const tag=L.rested?'<div class="aib-ltag rs">💤 行動済み</div>'
     :(L.aw?'<div class="aib-ltag aw">🌟 覚醒中</div>':'<div class="aib-ltag nm">通常</div>');
-  return '<div class="aib-leader'+(L.aw?' awakened':'')+(L.rested?' rested':'')+(isAtk?' attacker':'')+'">'
+  return '<div class="aib-leader'+(L.aw?' awakened':'')+(L.rested?' rested':'')+(isAtk?' attacker':'')+'"'
+    +' onclick="aibLeaderZoom(\''+side+'\','+idx+')" title="クリックでカード詳細">'
     +'<div class="aib-lname">'+L.k+'</div>'
     +'<div class="aib-lface">'+(AIB_FACE[L.k]||'★')+'</div>'
     +'<div class="aib-lbody">'
@@ -4247,7 +4287,7 @@ function aibSideMat(s,isHuman){
     +'<span style="font-size:.74rem;color:#b9a98a;">ライフ</span>'+aibPips(s.life,3,'life')
     +'<span style="font-size:.74rem;color:#b9a98a;">BOMB</span>'+aibPips(s.bomb,3,'bomb')
     +'</div>'
-    +'<div class="aib-leaders">'+s.leaders.map(L=>aibLeaderCard(L,L.k===atkName)).join('')+'</div>'
+    +'<div class="aib-leaders">'+s.leaders.map((L,i)=>aibLeaderCard(L,L.k===atkName,isHuman?'human':'ai',i)).join('')+'</div>'
     +'<div class="aib-zones">'
     +'<span class="aib-zone">🃏デッキ <b>'+s.deck.length+'</b></span>'
     +'<span class="aib-zone">🗑トラッシュ <b>'+s.trash.length+'</b></span>'
@@ -4277,6 +4317,10 @@ function aibCenterHtml(g){
   } else if(g.turnOf==='ai'&&g.humanPhase!=='defend'){
     h+='<div class="aib-phase">🤖 AI のターン進行中…</div>'
       +'<div class="aib-hint">AI の行動は上の「📣」欄に表示されます</div>';
+  } else if(g.humanPhase==='draw'){
+    h+='<div class="aib-phase">① ドローフェイズ</div>'
+      +'<div class="aib-hint">山札からカードを1枚引いてターンを始めます。</div>'
+      +'<button class="btn-primary" onclick="aibHumanDraw()">🃏 カードを引く</button>';
   } else if(g.humanPhase==='charge'){
     h+='<div class="aib-phase">② チャージフェイズ</div>'
       +'<div class="aib-hint">下の手札を1枚クリック → P に置けます(置くと1ドロー)。任意です。</div>'
@@ -4344,6 +4388,32 @@ function aibRenderGame(){
   const lg=document.getElementById('aib-log');
   lg.textContent=g.log.join('\n');
   lg.scrollTop=lg.scrollHeight;
+}
+function aibLeaderAbil(ab,aw){ return (AIB_ABIL[ab]||['',''])[aw?1:0]; }
+function aibLeaderZoom(side,idx){
+  const g=aibGame;if(!g)return;
+  const s=(side==='human')?g.human:g.ai;
+  const L=s.leaders[idx];if(!L)return;
+  const d=AIB_LD[L.k];
+  document.getElementById('aib-zoom-inner').innerHTML=
+    '<div class="aib-zoom-card">'
+    +'<div class="aib-zoom-head" style="background:'+(L.aw?'linear-gradient(90deg,#c8324c,#e0a83e)':'#c8324c')+'">'
+    +L.k+(L.aw?' 🌟覚醒中':'')+'</div>'
+    +'<div class="aib-zoom-art">'+(AIB_FACE[L.k]||'★')+'</div>'
+    +'<div class="aib-zoom-body">'
+    +'<div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:11px;">'
+    +'<div><div style="font-size:.7rem;color:#b9a98a;">通常</div>'
+    +'<span style="font-size:1.15rem;font-weight:700;color:'+(L.aw?'#9a8e72':'#fff')+';">⚔'+d.atk+' 🛡'+d.eva+'</span></div>'
+    +'<div><div style="font-size:.7rem;color:#b9a98a;">覚醒(コストP'+d.awc+')</div>'
+    +'<span style="font-size:1.15rem;font-weight:700;color:'+(L.aw?'#ffe6a8':'#9a8e72')+';">⚔'+d.aatk+' 🛡'+d.aeva+'</span></div>'
+    +'</div>'
+    +'<div class="aib-zoom-ef" style="margin-bottom:6px;"><b style="color:#ff8da0;">通常技</b><br>'+aibLeaderAbil(d.ab,false)+'</div>'
+    +'<div class="aib-zoom-ef"><b style="color:#e6c878;">覚醒技</b><br>'+aibLeaderAbil(d.ab,true)+'</div>'
+    +'<div class="aib-zoom-meta" style="margin-top:8px;">現在: '+(L.aw?'覚醒中':'通常')+(L.rested?' ・ 💤行動済み':'')+'</div>'
+    +'</div>'
+    +'<div class="aib-zoom-act"><button class="btn-small" onclick="aibCloseZoom()">閉じる</button></div>'
+    +'</div>';
+  document.getElementById('aib-zoom').classList.add('show');
 }
 function aibCardZoom(idx){
   const g=aibGame;if(!g)return;

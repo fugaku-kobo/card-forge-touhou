@@ -3965,8 +3965,11 @@ const AIB_NM = ['夢想妙珠','ノンディレ','マスタースパーク','ブ
   'ミゼラブルフェイト','夢想封印','QED495','博麗弾幕結界','スターダスト','アグニシャイン',
   'プライベートスクウェア','サイレントセレナ','夜霧の幻影','カタディオプトリック','アーティフルチャンター',
   '夢と現の呪','グレイソーマタージ'];
+// AIB_POOL を card-shaped に enrich(name/idx/bom を付与してエンジンを ref ベースに)
+AIB_POOL.forEach((sp,i)=>{ sp.name=AIB_NM[i]; sp.idx=i; if(sp.bom===undefined) sp.bom=Math.max(1,Math.ceil(sp.pp/3)); });
+
 function aibSpellDesc(c){
-  const sp=AIB_POOL[c];
+  const sp=c;
   if(sp.k==='atk')return '削り+'+sp.v;
   if(sp.k==='mill')return '相手直接'+sp.v+'削り';
   if(sp.k==='def')return sp.q?('防御 軽減-'+sp.v):'防御(特殊)';
@@ -3976,7 +3979,7 @@ function aibSpellDesc(c){
 }
 
 function aibShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function aibBuildDeck(){const d=[];AIB_COUNTS.forEach((c,i)=>{for(let k=0;k<c;k++)d.push(i);});return aibShuffle(d);}
+function aibBuildDeck(){const d=[];AIB_COUNTS.forEach((c,i)=>{for(let k=0;k<c;k++)d.push(AIB_POOL[i]);});return aibShuffle(d);}
 function aibMakeSide(pair,isFirst,name){
   const s={deck:aibBuildDeck(),isFirst:isFirst,name:name,life:3,bomb:3,hand:[],trash:[],turn:0,dead:false};
   s.lifeCards=[s.deck.pop(),s.deck.pop(),s.deck.pop()];
@@ -3989,7 +3992,7 @@ function aibRefresh(s){s.deck=aibShuffle(s.trash);s.trash=[];s.life--;if(s.lifeC
 function aibDraw(s,n){for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return;}if(s.deck.length)s.hand.push(s.deck.shift());}}
 function aibMill(s,n){const m=[];for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return m;}if(!s.deck.length)break;const c=s.deck.shift();s.trash.push(c);m.push(c);}return m;}
 function aibLvOk(s,lv){return lv<=1||s.leaders.some(L=>L.aw);}
-function aibHasQuickDef(s){return s.hand.some(c=>AIB_POOL[c].k==='def'&&AIB_POOL[c].q);}
+function aibHasQuickDef(s){return s.hand.some(c=>c.k==='def'&&c.q);}
 function aibEva(L){const d=AIB_LD[L.k];return L.aw?d.aeva:d.eva;}
 
 function aibAwaken(s,o,log,L){
@@ -4034,11 +4037,11 @@ function aibComputeAttack(s,o,forced,humanBonus){
   if(humanBonus===undefined){
     const reserve=aibHasQuickDef(s)?2:0;
     let budget=Math.max(0,s.P-reserve);
-    const cards=s.hand.filter(c=>(AIB_POOL[c].k==='atk'||AIB_POOL[c].k==='mill')&&aibLvOk(s,AIB_POOL[c].lv))
-      .sort((a,b)=>AIB_POOL[b].pp-AIB_POOL[a].pp);
-    for(const c of cards){const sp=AIB_POOL[c];
+    const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibLvOk(s,c.lv))
+      .sort((a,b)=>b.pp-a.pp);
+    for(const c of cards){const sp=c;
       if(sp.pp<=budget){budget-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
-        spellNames.push(AIB_NM[c]);spellCards.push(c);
+        spellNames.push(c.name);spellCards.push(c);
         if(sp.k==='atk')spellBonus+=sp.v;else direct+=sp.v;}}
     s.P=budget+reserve;
   } else { spellBonus=humanBonus; }
@@ -4051,10 +4054,10 @@ function aibAutoDefense(o,raw){
   const dval=aibEva(dL);
   let incoming=Math.max(1,raw-dval),spellIdx=-1;
   const q=o.hand.map((c,i)=>({c:c,i:i}))
-    .filter(x=>AIB_POOL[x.c].k==='def'&&AIB_POOL[x.c].q&&aibLvOk(o,AIB_POOL[x.c].lv)&&AIB_POOL[x.c].pp<=o.P)
-    .sort((a,b)=>AIB_POOL[b.c].v-AIB_POOL[a.c].v);
+    .filter(x=>x.c.k==='def'&&x.c.q&&aibLvOk(o,x.c.lv)&&x.c.pp<=o.P)
+    .sort((a,b)=>b.c.v-a.c.v);
   if(q.length&&incoming>16)spellIdx=q[0].i;
-  const reduce=spellIdx>=0?AIB_POOL[o.hand[spellIdx]].v:0;
+  const reduce=spellIdx>=0?(o.hand[spellIdx]).v:0;
   incoming=Math.max(1,raw-dval-reduce);
   return {spellIdx:spellIdx,bomb:(o.bomb>=2&&incoming>=o.deck.length&&o.life<=1)};
 }
@@ -4065,13 +4068,13 @@ function aibResolveAttack(s,o,log,atk,def){
   const dval=aibEva(dL);
   let reduce=0,defName='',defCard=-1;
   if(def&&def.spellIdx>=0&&def.spellIdx<o.hand.length){
-    const c=o.hand[def.spellIdx];defName=AIB_NM[c];defCard=c;
-    o.P-=AIB_POOL[c].pp;o.hand.splice(def.spellIdx,1);o.trash.push(c);reduce=AIB_POOL[c].v;
+    const c=o.hand[def.spellIdx];defName=c.name;defCard=c;
+    o.P-=c.pp;o.hand.splice(def.spellIdx,1);o.trash.push(c);reduce=c.v;
   }
   let useBomb=false;
   if(def&&def.bomb&&o.bomb>=2){useBomb=true;o.bomb-=2;}
   const final=useBomb?0:Math.max(1,atk.raw-dval-reduce);
-  if(final>0){const m=aibMill(o,final);s.P+=Math.min(m.reduce((x,c)=>x+AIB_POOL[c].rec,0),3);}
+  if(final>0){const m=aibMill(o,final);s.P+=Math.min(m.reduce((x,c)=>x+c.rec,0),3);}
   if(atk.direct>0&&!o.dead)aibMill(o,atk.direct);
   if(atk.ab==='four')aibMill(s,2);
   else if(atk.ab==='oharai')o.P=Math.max(0,o.P-2);
@@ -4090,7 +4093,7 @@ function aibResolveAttack(s,o,log,atk,def){
 // 攻撃後の余りPで util を自動詠唱(AI用)+ 手札上限7
 function aibAutoUtil(s){
   for(const c of s.hand.slice()){
-    const sp=AIB_POOL[c];
+    const sp=c;
     if(sp.k==='util'&&sp.pp<=s.P&&aibLvOk(s,sp.lv)){s.P-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);aibDraw(s,Math.max(1,sp.v));break;}
   }
   while(s.hand.length>7)s.trash.push(s.hand.pop());
@@ -4111,7 +4114,7 @@ function aibTakeTurn(s,o,log){
   if(s.hand.length){
     s.P+=1;
     let wi=0,wv=1e9;
-    s.hand.forEach((c,i)=>{const sc=(AIB_POOL[c].k==='util'?0:10)+AIB_POOL[c].v;if(sc<wv){wv=sc;wi=i;}});
+    s.hand.forEach((c,i)=>{const sc=(c.k==='util'?0:10)+c.v;if(sc<wv){wv=sc;wi=i;}});
     s.hand.splice(wi,1);aibDraw(s,1);
     if(s.dead)return;
   }
@@ -4233,8 +4236,8 @@ function aibCharge(idx){
   if(g.humanPhase!=='charge'||idx<0||idx>=h.hand.length)return;
   const c=h.hand[idx];
   h.P++;h.hand.splice(idx,1);aibDraw(h,1);
-  g.log.push('　② チャージ: '+AIB_NM[c]+' を P へ(P'+h.P+')+1ドロー');
-  g.action='② チャージ ── '+AIB_NM[c]+' を P に置きました(P'+h.P+')';
+  g.log.push('　② チャージ: '+c.name+' を P へ(P'+h.P+')+1ドロー');
+  g.action='② チャージ ── '+c.name+' を P に置きました(P'+h.P+')';
   aibCloseZoom();
   if(h.dead){aibFinish('ai');return;}
   aibAfterCharge();
@@ -4268,13 +4271,13 @@ function aibSkipAwaken(){
 function aibCastSpell(idx){
   const g=aibGame,h=g.human;
   if(g.humanPhase!=='play'||idx<0||idx>=h.hand.length)return;
-  const c=h.hand[idx],sp=AIB_POOL[c];
+  const c=h.hand[idx],sp=c;
   if(sp.k==='def'||sp.pp>h.P||!aibLvOk(h,sp.lv))return;
   h.P-=sp.pp;h.hand.splice(idx,1);h.trash.push(c);
-  if(sp.k==='atk'){g.atkBonus+=sp.v;g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!攻撃ボーナス +'+sp.v;}
-  else if(sp.k==='mill'){aibMill(g.ai,sp.v);g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!相手デッキ'+sp.v+'削り';}
-  else if(sp.k==='util'){aibDraw(h,Math.max(1,sp.v));g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!カードを引いた';}
-  else if(sp.k==='disrupt'){g.ai.P=Math.max(0,g.ai.P-sp.v);g.action='④ メイン ── '+AIB_NM[c]+' 詠唱!相手P-'+sp.v;}
+  if(sp.k==='atk'){g.atkBonus+=sp.v;g.action='④ メイン ── '+c.name+' 詠唱!攻撃ボーナス +'+sp.v;}
+  else if(sp.k==='mill'){aibMill(g.ai,sp.v);g.action='④ メイン ── '+c.name+' 詠唱!相手デッキ'+sp.v+'削り';}
+  else if(sp.k==='util'){aibDraw(h,Math.max(1,sp.v));g.action='④ メイン ── '+c.name+' 詠唱!カードを引いた';}
+  else if(sp.k==='disrupt'){g.ai.P=Math.max(0,g.ai.P-sp.v);g.action='④ メイン ── '+c.name+' 詠唱!相手P-'+sp.v;}
   g.log.push('　'+g.action);
   aibCloseZoom();
   if(g.ai.dead){aibFinish('human');return;}
@@ -4313,7 +4316,7 @@ function aibAiDrawStep(){
   if(s.hand.length){
     s.P++;
     let wi=0,wv=1e9;
-    s.hand.forEach((c,i)=>{const sc=(AIB_POOL[c].k==='util'?0:10)+AIB_POOL[c].v;if(sc<wv){wv=sc;wi=i;}});
+    s.hand.forEach((c,i)=>{const sc=(c.k==='util'?0:10)+c.v;if(sc<wv){wv=sc;wi=i;}});
     s.hand.splice(wi,1);aibDraw(s,1);
   }
   if(s.dead){aibFinish('human');return;}
@@ -4476,9 +4479,9 @@ function aibCenterHtml(g){
       +'<br>迎撃 '+dL.k+'(回避'+aibEva(dL)+') ── 防御しなければ <b style="color:#ff8a6a;">'+expDmg+' 枚</b> トラッシュ</div>';
     let defBtns='';
     g.human.hand.forEach((c,i)=>{
-      const sp=AIB_POOL[c];
+      const sp=c;
       if(sp.k==='def'&&sp.q&&sp.pp<=g.human.P&&aibLvOk(g.human,sp.lv))
-        defBtns+='<button class="btn-primary" onclick="aibHumanDefend(\'spell\','+i+')" style="margin:3px;">🛡 '+AIB_NM[c]+'(P'+sp.pp+' / 軽減-'+sp.v+')</button>';
+        defBtns+='<button class="btn-primary" onclick="aibHumanDefend(\'spell\','+i+')" style="margin:3px;">🛡 '+c.name+'(P'+sp.pp+' / 軽減-'+sp.v+')</button>';
     });
     if(g.human.bomb>=2)
       defBtns+='<button class="btn-primary" onclick="aibHumanDefend(\'bomb\')" style="margin:3px;">💣 BOMB2個で無効化</button>';
@@ -4493,8 +4496,8 @@ function aibCenterHtml(g){
   return h+'</div>';
 }
 function aibCardInner(c){
-  const sp=AIB_POOL[c];
-  return '<div class="aib-chead" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+AIB_NM[c]+'</div>'
+  const sp=c;
+  return '<div class="aib-chead" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+c.name+'</div>'
     +'<div class="aib-cart">'+(AIB_KICON[sp.k]||'❓')+'</div>'
     +'<div class="aib-cbody"><div class="aib-cef">'+aibSpellDesc(c)+(sp.k==='def'?'<br><span style="color:#ff8a6a;">※防御フェイズ用</span>':'')+'</div>'
     +'<div class="aib-cfoot"><span class="aib-cpp">P'+sp.pp+'</span><span class="aib-clv">Lv'+sp.lv+'</span></div></div>';
@@ -4506,7 +4509,7 @@ function aibHandMat(g){
     +'<div class="aib-hand">';
   if(!h.hand.length) s+='<span style="color:#8b8270;font-size:.8rem;">手札なし</span>';
   h.hand.forEach((c,i)=>{
-    const sp=AIB_POOL[c];
+    const sp=c;
     const aff=sp.pp<=h.P&&aibLvOk(h,sp.lv);
     const hot=(ph==='charge')||(ph==='play'&&aff&&sp.k!=='def');
     s+='<div class="aib-card '+(hot?'castable':'dim')+'" onclick="aibCardZoom('+i+')">'+aibCardInner(c)+'</div>';
@@ -4514,9 +4517,9 @@ function aibHandMat(g){
   return s+'</div></div>';
 }
 function aibMiniCard(c){
-  const sp=AIB_POOL[c];
+  const sp=c;
   return '<span class="aib-mini" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'"'
-    +' onclick="aibCardZoomByPool('+c+')" title="クリックで拡大">'+(AIB_KICON[sp.k]||'❓')+' '+AIB_NM[c]+'</span>';
+    +' onclick="aibCardZoomByPool('+c+')" title="クリックで拡大">'+(AIB_KICON[sp.k]||'❓')+' '+c.name+'</span>';
 }
 function aibCombatHtml(g){
   const lc=g.lastCombat;
@@ -4550,10 +4553,10 @@ function aibShowTrash(side){
   document.getElementById('aib-zoom').classList.add('show');
 }
 function aibCardZoomByPool(c){
-  const sp=AIB_POOL[c];
+  const sp=c;
   document.getElementById('aib-zoom-inner').innerHTML=
     '<div class="aib-zoom-card">'
-    +'<div class="aib-zoom-head" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+AIB_NM[c]+'</div>'
+    +'<div class="aib-zoom-head" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+c.name+'</div>'
     +'<div class="aib-zoom-art">'+(AIB_KICON[sp.k]||'❓')+'</div>'
     +'<div class="aib-zoom-body">'
     +'<div class="aib-zoom-ef">'+aibSpellDesc(c)+'</div>'
@@ -4605,7 +4608,7 @@ function aibLeaderZoom(side,idx){
 function aibCardZoom(idx){
   const g=aibGame;if(!g)return;
   const c=g.human.hand[idx];if(c===undefined)return;
-  const sp=AIB_POOL[c],ph=g.humanPhase;
+  const sp=c,ph=g.humanPhase;
   let act='';
   if(!g.over&&ph==='charge'){
     act='<button class="btn-primary" onclick="aibCharge('+idx+')">✨ このカードを P に置く</button>';
@@ -4617,7 +4620,7 @@ function aibCardZoom(idx){
   }
   document.getElementById('aib-zoom-inner').innerHTML=
     '<div class="aib-zoom-card">'
-    +'<div class="aib-zoom-head" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+AIB_NM[c]+'</div>'
+    +'<div class="aib-zoom-head" style="background:'+(AIB_KCOLOR[sp.k]||'#555')+'">'+c.name+'</div>'
     +'<div class="aib-zoom-art">'+(AIB_KICON[sp.k]||'❓')+'</div>'
     +'<div class="aib-zoom-body">'
     +'<div class="aib-zoom-ef">'+aibSpellDesc(c)+'</div>'

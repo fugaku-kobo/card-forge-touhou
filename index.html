@@ -3277,7 +3277,6 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
       <div id="aib-result" style="font-weight:bold; color:#d8b25a; margin-bottom:8px; min-height:1.2em;"></div>
       <div id="aib-mat" style="margin-bottom:10px;"></div>
       <div id="aib-log" style="background:rgba(0,0,0,0.32); border:1px solid rgba(212,175,110,0.25); border-radius:8px; padding:12px; max-height:460px; overflow-y:auto; font-size:0.82rem; line-height:1.65; white-space:pre-wrap;"></div>
-      <div id="aib-zoom" class="aib-zoom-bg" onclick="if(event.target===this)aibCloseZoom()"><div id="aib-zoom-inner"></div></div>
     </div>
   </section>
 
@@ -4198,6 +4197,69 @@ function aibStartGame(){
   aibCloseZoom();
   if(humanFirst) aibBeginHumanTurn();
   else aibAiTurnStart();
+}
+// ===== Stage 1c: 実デッキ(state.decks)から AI 対戦を起動 =====
+function expandDeckCards(deck){
+  const out=[];
+  (deck.cards||[]).forEach(e=>{
+    const card=state.cards.find(c=>c.id===e.cardId);
+    if(card) for(let i=0;i<(e.count||0);i++) out.push(card);
+  });
+  return out;
+}
+function splitLeadersAndSpells(deck){
+  const lead=[],sp=[];
+  expandDeckCards(deck).forEach(c=>{
+    if(isLeaderCard(c)) lead.push(c); else sp.push(c);
+  });
+  return {leaders:lead, spells:sp};
+}
+function aibMakeSideFromCards(leaderCards,deckRefs,isFirst,name){
+  const s={deck:aibShuffle(deckRefs.slice()),isFirst:isFirst,name:name,life:3,bomb:3,hand:[],trash:[],turn:0,dead:false};
+  s.lifeCards=[s.deck.pop(),s.deck.pop(),s.deck.pop()].filter(x=>x);
+  s.P=isFirst?0:6;
+  const n=4+(isFirst?0:1);
+  for(let i=0;i<n;i++) if(s.deck.length) s.hand.push(s.deck.shift());
+  s.leaders=leaderCards.slice(0,2).map(card=>({k:card.name,aw:false,rested:false,awThis:false,card:card}));
+  return s;
+}
+function aibStartGameFromDecks(opt){
+  // opt: {humanLeaders, humanDeck, aiLeaders, aiDeck, humanFirst, humanName, aiName}
+  const human=aibMakeSideFromCards(opt.humanLeaders,opt.humanDeck,opt.humanFirst,opt.humanName||'あなた');
+  const ai=aibMakeSideFromCards(opt.aiLeaders,opt.aiDeck,!opt.humanFirst,opt.aiName||'AI');
+  aibGame={human:human,ai:ai,humanName:opt.humanName||'あなた',aiName:opt.aiName||'AI',log:[],over:false,winner:null,
+           turnOf:null,humanPhase:null,atkBonus:0,pendingAtk:null,action:'対戦開始!',stepHi:[],lastCombat:null};
+  aibGame.log.push('=== 対戦開始 ── '+aibGame.humanName+' vs '+aibGame.aiName+' ('+(opt.humanFirst?'あなた先攻':'AI先攻')+') ===');
+  aibCloseZoom();
+  if(opt.humanFirst) aibBeginHumanTurn();
+  else aibAiTurnStart();
+}
+function startAiPlaySession(){
+  const myId=document.getElementById('play-deckAI-mine').value;
+  const aiId=document.getElementById('play-deckAI-opp').value;
+  const humanFirst=document.getElementById('play-aiHumanFirst').checked;
+  if(!myId||!aiId){ toast('両方のデッキを選んでください'); return; }
+  const myDeck=state.decks.find(d=>d.id===myId);
+  const aiDeck=state.decks.find(d=>d.id===aiId);
+  if(!myDeck||!aiDeck){ toast('デッキが見つかりません'); return; }
+  const my=splitLeadersAndSpells(myDeck), ai=splitLeadersAndSpells(aiDeck);
+  if(my.leaders.length<2||ai.leaders.length<2){ toast('各デッキにリーダー(キャラ)2体が必要です'); return; }
+  // 不足カード(engineKind未設定)があれば警告
+  const missing=[...my.spells,...ai.spells].filter(c=>!c.engineKind);
+  if(missing.length){ toast('未対応カード '+missing.length+'枚があります(engineKind未設定): '+missing.slice(0,3).map(c=>c.name).join('、')); return; }
+  // スペル→エンジン ref に変換(同カードIDは ref を共有)
+  const cache=new Map();
+  const ref=card=>{ if(!cache.has(card.id)) cache.set(card.id,cardToSpellInfo(card)); return cache.get(card.id); };
+  const myDeckRefs=my.spells.map(ref), aiDeckRefs=ai.spells.map(ref);
+  // セッションマーク + エンジン起動 + 再描画
+  state.playSession={mode:'ai',active:true};
+  aibStartGameFromDecks({humanLeaders:my.leaders,humanDeck:myDeckRefs,
+    aiLeaders:ai.leaders,aiDeck:aiDeckRefs,humanFirst:humanFirst,
+    humanName:'あなた('+myDeck.name+')',aiName:'AI('+aiDeck.name+')'});
+  renderPlay();
+}
+function endAiPlaySession(){
+  state.playSession=null; aibGame=null; renderPlay();
 }
 function aibFinish(winner){
   const g=aibGame;
@@ -7100,6 +7162,7 @@ function renderPlay() {
     }
     const tabs = `
       <div class="play-mode-tabs">
+        <button class="play-mode-tab ${_playSetupMode==='ai'?'active':''}" onclick="switchPlaySetupMode('ai')">🤖 AI と対戦</button>
         <button class="play-mode-tab ${_playSetupMode==='solo'?'active':''}" onclick="switchPlaySetupMode('solo')">🧍 ソロ</button>
         <button class="play-mode-tab ${_playSetupMode==='host'?'active':''}" onclick="switchPlaySetupMode('host')">🌐 ホスト</button>
         <button class="play-mode-tab ${_playSetupMode==='guest'?'active':''}" onclick="switchPlaySetupMode('guest')">🌐 ゲスト</button>
@@ -7107,7 +7170,24 @@ function renderPlay() {
       </div>`;
 
     let body = '';
-    if (_playSetupMode === 'solo') {
+    if (_playSetupMode === 'ai') {
+      body = `
+        <h2>🤖 AI と対戦</h2>
+        <p>あなたのデッキと AI のデッキを選んで対戦開始。エンジンが自動でルールを処理します。</p>
+        <div class="play-setup-row">
+          <div class="field"><label>あなたのデッキ</label><select id="play-deckAI-mine"><option value="">選択してください</option>${deckOptions}</select></div>
+          <div class="field"><label>AI のデッキ</label><select id="play-deckAI-opp"><option value="">選択してください</option>${deckOptions}</select></div>
+        </div>
+        <div class="play-setup-row">
+          <div class="field"><label><input type="checkbox" id="play-aiHumanFirst" checked> あなたが先攻</label></div>
+        </div>
+        <div class="play-setup-actions">
+          <button class="btn-primary" onclick="startAiPlaySession()">▶ AI と対戦開始</button>
+        </div>
+        <div style="margin-top:14px;color:var(--parchment-dim);font-size:.84rem;">
+          ※ デッキにはリーダー(キャラ)2体+スペルカードを入れてください。内蔵 TH-001〜024 のスペルカードは自動で engine 情報が設定済みです(新規作成カードは未対応)。
+        </div>`;
+    } else if (_playSetupMode === 'solo') {
       body = `
         <h2>テストプレイ — ソロモード</h2>
         <p>2デッキを選んで、初手7枚ドローでスタート。両陣営を自分で操作します。</p>
@@ -7175,6 +7255,20 @@ function renderPlay() {
           <button class="btn-danger" onclick="state.playSession=null; saveData(); renderPlay();">セッション終了</button>
         </div>
       </div>`;
+    return;
+  }
+
+  // AI モード: エンジンUI を playRoot 内に描画
+  if (state.playSession.mode === 'ai') {
+    root.innerHTML = `
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn-small" onclick="endAiPlaySession()">⬅ デッキ選択に戻る</button>
+        <span style="color:var(--parchment-dim);font-size:.82rem;">🤖 AI 対戦中 ── あなたのデッキ vs AI のデッキ</span>
+      </div>
+      <div id="aib-result" style="font-weight:bold; color:#d8b25a; margin-bottom:8px; min-height:1.2em;"></div>
+      <div id="aib-mat" style="margin-bottom:10px;"></div>
+      <div id="aib-log" style="background:rgba(0,0,0,0.32); border:1px solid rgba(212,175,110,0.25); border-radius:8px; padding:12px; max-height:460px; overflow-y:auto; font-size:0.82rem; line-height:1.65; white-space:pre-wrap;"></div>`;
+    aibRenderGame();
     return;
   }
 
@@ -8011,5 +8105,7 @@ refreshTypeSelects();
 writeForm({});  // 初期状態をフォームに反映 (動的フィールド表示)
 render();
 </script>
+<!-- AI対戦カードズーム(body直下に配置: タブ切替の影響を受けない) -->
+<div id="aib-zoom" class="aib-zoom-bg" onclick="if(event.target===this)aibCloseZoom()"><div id="aib-zoom-inner"></div></div>
 </body>
 </html>

@@ -3237,6 +3237,7 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
       <aside class="deck-list-side">
         <div class="panel-title">デッキ一覧</div>
         <button class="btn-primary" style="width:100%; margin-bottom: 8px;" onclick="createDeck()">+ 新規デッキ</button>
+        <button class="btn-small" style="width:100%; margin-bottom: 8px;" onclick="autoCreateStarterDecks()">🪄 スターターデッキ自動作成</button>
         <button class="btn-small" style="width:100%; margin-bottom: 8px;" onclick="openBulkDeckModal()">📋 リストから一括作成</button>
         <button class="btn-small" style="width:100%; margin-bottom: 12px;" onclick="openImportDeckCode()">📥 コードから取込</button>
         <div id="deckListItems"></div>
@@ -5252,6 +5253,53 @@ function openBulkDeckModal() {
   setTimeout(() => { ta.focus(); }, 50);
 }
 
+// 自動デッキ作成 ── 博麗・紅魔スターターデッキを一発生成
+function autoCreateStarterDecks(){
+  const find = code => state.cards.find(x => x.cardCode === code);
+  const need = (code, n) => {
+    const c = find(code);
+    if (!c) return null;
+    return {cardId: c.id, count: n};
+  };
+  const hakurei = [
+    ['TH-L01',1],['TH-L02',1],
+    ['TH-001',5],['TH-002',5],['TH-003',4],['TH-005',5],['TH-017',5],['TH-019',3],
+    ['TH-006',5],['TH-007',4],['TH-008',4],['TH-016',5],['TH-023',5],
+    ['TH-010',5],['TH-011',4],['TH-012',4],['TH-022',4],
+    ['TH-013',4],['TH-015',5],['TH-024',4],
+  ];
+  const koma = [
+    ['TH-L03',1],['TH-L04',1],
+    ['TH-001',3],['TH-002',3],['TH-003',3],['TH-004',5],['TH-005',5],['TH-017',2],['TH-019',4],['TH-021',5],
+    ['TH-006',3],['TH-008',3],['TH-009',4],['TH-018',4],['TH-023',3],
+    ['TH-010',3],['TH-011',5],['TH-012',3],['TH-022',3],
+    ['TH-013',5],['TH-014',4],['TH-020',4],['TH-024',3],['TH-015',3],
+  ];
+  function buildDeck(name, entries){
+    const cards = entries.map(([code,n]) => need(code,n)).filter(x => x);
+    return {id:'d'+Date.now()+Math.random().toString(36).slice(2,5), name, description:'スターターデッキ自動作成', cards, dondengCards:[]};
+  }
+  const existing = new Set(state.decks.map(d => d.name));
+  let created = 0, skipped = [];
+  if (existing.has('博麗スターター')) skipped.push('博麗');
+  else {
+    const h = buildDeck('博麗スターター', hakurei);
+    if (h.cards.length >= 20) { state.decks.push(h); created++; }
+    else { toast('カードが揃っていません(TH-001..024 / TH-L01..02)'); return; }
+  }
+  if (existing.has('紅魔スターター')) skipped.push('紅魔');
+  else {
+    const k = buildDeck('紅魔スターター', koma);
+    if (k.cards.length >= 20) { state.decks.push(k); created++; }
+    else { toast('カードが揃っていません(TH-L03..04 等)'); return; }
+  }
+  if (created === 0) { toast('スターターデッキは既に作成済みです'); return; }
+  saveData();
+  if (typeof renderDeckList === 'function') renderDeckList();
+  if (typeof renderPlay === 'function' && state.playSession === null) renderPlay();
+  const msg = created + '個のスターターデッキを作成しました' + (skipped.length ? '(' + skipped.join('・') + 'は既存のためスキップ)' : '');
+  toast(msg);
+}
 function bulkCreateDeck() {
   const raw = document.getElementById('deckCodeText').value || '';
   const lines = raw.split(/\r?\n/);
@@ -7138,7 +7186,8 @@ function renderPlay() {
     ).join('');
     if (state.decks.length === 0) {
       root.innerHTML = `<div class="empty-state"><h3>NO DECKS</h3>
-        <p>プレイにはデッキが必要です。「🃏 DECKS」タブで作成してください。</p></div>`;
+        <p>プレイにはデッキが必要です。下のボタンで博麗・紅魔のスターターデッキを自動作成するか、「🃏 DECKS」タブで作成してください。</p>
+        <div style="margin-top:14px;"><button class="btn-primary" onclick="autoCreateStarterDecks(); renderPlay();">🪄 スターターデッキ自動作成</button></div></div>`;
       return;
     }
     const tabs = `

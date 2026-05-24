@@ -12,10 +12,11 @@ import random
 
 # ===== リーダー (v1.5): atk,eva, 覚醒cost, 覚醒atk,覚醒eva, 能力 =====
 LD = {
- '霊夢':   (15,  8, 3, 20, 11, 'oharai'),
- '魔理沙': (16,  8, 3, 22,  9, 'koi'),
- 'レミリア': (15,  8, 4, 20, 11, 'charisma'),
- 'フラン': (16,  7, 4, 23,  8, 'four'),
+ # v3.4: 基礎値は v3.3 ベース(ペア幅 15pt 確認済み)、個性は能力レベルで尖らせる
+ '霊夢':   (15,  8, 3, 20, 11, 'oharai'),    # 受け担当(夢想封印+ライフ守護)
+ '魔理沙': (16,  8, 3, 22,  9, 'koi'),        # バースト型(マスタースパーク)
+ 'レミリア': (15,  8, 4, 20, 11, 'charisma'),  # 安定型(吸血+紅夜支配)
+ 'フラン': (16,  7, 4, 23,  8, 'four'),       # 代償型(フォーオブ+レーヴァテイン)
 }
 PAIRS = [
  ('魔理沙','フラン'), ('魔理沙','レミリア'), ('霊夢','フラン'),
@@ -121,11 +122,12 @@ def covenant(s, o):
         if o.hand: o.trash.append(o.hand.pop(random.randrange(len(o.hand))))
         draw(s, 1)
     elif ab == 'charisma':
+        # v3.4 スピア・ザ・グングニル: 相手のデッキを 4 枚トラッシュ
         mill(o, CFG.get('gungnir', 4))
     elif ab == 'four':
+        # v3.4 レーヴァテイン: 相手デッキ-6 / 自デッキ-2 (v3.3 維持)
         mill(o, CFG.get('four_aw_mill', 6))
-        for _ in range(2):
-            if s.hand: s.trash.append(s.hand.pop(random.randrange(len(s.hand))))
+        mill(s, CFG.get('four_aw_self_mill', 2))
 
 def best_def(o):
     ready = [L for L in o.leaders if not L['rested']]
@@ -164,6 +166,7 @@ def do_attack(s, o):
         base = aatk if L['aw'] else a
         if ab == 'koi': base += CFG.get('koi', 3)
         if ab == 'four': base += CFG.get('four', 5)
+        # v3.4: マスタースパーク覚醒ターン = +6 (v3.3 維持)
         if ab == 'koi' and L['awThis']: base += CFG.get('koi_aw_bonus', 6)
         virt = 0
         if ab == 'oharai':
@@ -213,10 +216,13 @@ def do_attack(s, o):
     if direct > 0 and not o.dead:
         mill(o, direct)
     if ab == 'four':
+        # v3.4 フォーオブアカインド: 攻撃時 自デッキ-2 (v3.3 維持)
         mill(s, 2)
     elif ab == 'oharai':
+        # 夢想封印: 相手 P -2(攻撃時に常時発動)
         o.P = max(0, o.P - 2)
     elif ab == 'charisma':
+        # 吸血: トラッシュから 1 P 回収
         if s.trash: s.P += 1
     atkL['rested'] = True
     for c in list(s.hand):

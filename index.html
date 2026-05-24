@@ -3505,18 +3505,20 @@ function buildBuiltinCards(){
     work:W,user:W,icon:'✨',art:'',spellKind:kd,requiredCharLevel:lv,ppCost:pp,
     bomCost:String(bom),trigger:'',recoverP:rec,effect:ef,engineKind:ek,engineValue:String(ev)});
   return [
+    // v3.4: 基礎値は v3.3 維持、テキストで「受け担当/バースト/支配/代償」のテーマを明示。
+    // 専用スペル(Phase C で TH-101..405)で各リーダーの戦闘軸を更に強化する。
     ch('TH-L01','霊夢','⛩️','15','8','3','20','11',
-      '【お祓い】霊夢が攻撃したとき、相手の P ゾーンから P を 2 個トラッシュする。',
+      '【夢想妙珠 ── 無敵巫女】霊夢が攻撃したとき、相手の P ゾーンから P を 2 個トラッシュする。',
       '【夢想封印】覚醒した時、相手の手札を 1 枚見て 1 枚捨てさせ、1 枚ドローする。'),
     ch('TH-L02','魔理沙','🧹','16','8','3','22','9',
-      '【恋符】魔理沙が攻撃したとき、その攻撃の削り量 +3。',
+      '【恋符 ── 普通の魔法使い】魔理沙が攻撃したとき、その攻撃の削り量 +3。',
       '【マスタースパーク】覚醒したターン、魔理沙の攻撃の削り量 +6。'),
     ch('TH-L03','レミリア','🦇','15','8','4','20','11',
-      '【カリスマ】レミリアが攻撃したとき、自分のトラッシュからカードを 1 枚 P ゾーンに置く(吸血)。',
+      '【カリスマ ── 紅夜の覇者】レミリアが攻撃したとき、自分のトラッシュからカードを 1 枚 P ゾーンに置く(吸血)。',
       '【スピア・ザ・グングニル】覚醒した時、相手のデッキを 4 枚トラッシュへ送る。'),
     ch('TH-L04','フランドール','💎','16','7','4','23','8',
-      '【フォーオブアカインド】フランドールが攻撃したとき、削り量 +5。その後、自分のデッキを 2 枚トラッシュへ送る。',
-      '【レーヴァテイン】覚醒した時、相手のデッキを 6 枚トラッシュし、その後、自分の手札を 2 枚トラッシュへ送る。'),
+      '【フォーオブアカインド ── きゅっとして…】フランドールが攻撃したとき、削り量 +5。その後、自分のデッキを 2 枚トラッシュへ送る。',
+      '【レーヴァテイン】覚醒した時、相手のデッキを 6 枚トラッシュし、その後、自分のデッキを 2 枚トラッシュへ送る。'),
     sp('TH-001','霊符「夢想妙珠」','通常','1','2','1','2','このターンの攻撃、削り量 +5。','atk',5),
     sp('TH-002','恋符「ノンディレクショナルレーザー」','通常','1','3','1','1','このターンの攻撃、削り量 +7。','atk',7),
     sp('TH-003','恋符「マスタースパーク」','通常','2','5','2','0','このターンの攻撃、削り量 +11。','atk',11),
@@ -3676,6 +3678,41 @@ function migrateRebalanceV33(){
   state.rebalanceVer = '3.3';
 }
 
+// v3.4: リーダー 4 体の能力を「無敵巫女/マスタースパーク/紅夜の覇者/きゅっとして…」に再設計。
+// 既存セーブの公式リーダー(TH-L01..L04)を v3.4 数値+効果文に強制更新する(初回のみ)。
+// スペルカード一新(共有10+専用各5)は Phase C で別マイグレーション化。
+function migrateLeaderRestrictionsV40(){
+  if (!state.cards) return;
+  // Phase B 段階: v3.3 → v3.4-leaders 中間状態。Phase C 完了で '4.0' に更新する。
+  if (state.rebalanceVer === '3.4-leaders' || state.rebalanceVer === '4.0') return;
+  const LEADER = {
+    'TH-L01':{atk:'15',eva:'8',aatk:'20',aeva:'11',awc:'3',
+      ef:'【夢想妙珠 ── 無敵巫女】霊夢が攻撃したとき、相手の P ゾーンから P を 2 個トラッシュする。',
+      aef:'【夢想封印】覚醒した時、相手の手札を 1 枚見て 1 枚捨てさせ、1 枚ドローする。'},
+    'TH-L02':{atk:'16',eva:'8',aatk:'22',aeva:'9',awc:'3',
+      ef:'【恋符 ── 普通の魔法使い】魔理沙が攻撃したとき、その攻撃の削り量 +3。',
+      aef:'【マスタースパーク】覚醒したターン、魔理沙の攻撃の削り量 +6。'},
+    'TH-L03':{atk:'15',eva:'8',aatk:'20',aeva:'11',awc:'4',
+      ef:'【カリスマ ── 紅夜の覇者】レミリアが攻撃したとき、自分のトラッシュからカードを 1 枚 P ゾーンに置く(吸血)。',
+      aef:'【スピア・ザ・グングニル】覚醒した時、相手のデッキを 4 枚トラッシュへ送る。'},
+    'TH-L04':{atk:'16',eva:'7',aatk:'23',aeva:'8',awc:'4',
+      ef:'【フォーオブアカインド ── きゅっとして…】フランドールが攻撃したとき、削り量 +5。その後、自分のデッキを 2 枚トラッシュへ送る。',
+      aef:'【レーヴァテイン】覚醒した時、相手のデッキを 6 枚トラッシュし、その後、自分のデッキを 2 枚トラッシュへ送る。'},
+  };
+  state.cards.forEach(c => {
+    if (getTypeKind(c.type) === 'touhou-char') {
+      const L = LEADER[c.cardCode];
+      if (L) {
+        c.attack = L.atk; c.evasion = L.eva;
+        c.awakenAttack = L.aatk; c.awakenEvasion = L.aeva;
+        c.awakenCost = L.awc;
+        c.effect = L.ef; c.awakenEffect = L.aef;
+      }
+    }
+  });
+  state.rebalanceVer = '3.4-leaders';
+}
+
 function loadData() {
   let loaded = false;
   try {
@@ -3708,6 +3745,8 @@ function loadData() {
   migrateEngineFields();
   // v3.3 デッキ60リバランス: 公式 TH-XXX カードを最新の数値へ強制更新(初回のみ)
   migrateRebalanceV33();
+  // v3.4 リーダー再設計: 公式 TH-L01..L04 の数値・効果文を新仕様に更新(初回のみ)
+  migrateLeaderRestrictionsV40();
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
   // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
@@ -4034,6 +4073,7 @@ function switchTab(tabName, btn) {
 // ====================================================================
 // 🤖 AI対戦エンジン (balance_sim.py の JS移植 / v3.3・カードv1.5・デッキ60)
 // ====================================================================
+// v3.4: 基礎値は v3.3 ベース(ペア幅 16pt 確認済)、個性は能力テキスト+専用スペル(Phase C)で出す
 const AIB_LD = {
   '霊夢':        {atk:15,eva:8, awc:3,aatk:20,aeva:11,ab:'oharai'},
   '魔理沙':      {atk:16,eva:8, awc:3,aatk:22,aeva:9, ab:'koi'},
@@ -4128,8 +4168,8 @@ function aibAwaken(s,o,log,L){
   s.P-=cost;L.aw=true;L.awThis=true;
   const ab=leaderInfo(L).ab;let extra='';
   if(ab==='oharai'){if(o.hand.length)o.trash.push(o.hand.splice(Math.floor(Math.random()*o.hand.length),1)[0]);aibDraw(s,1);extra='(夢想封印: 相手手札-1)';}
-  else if(ab==='charisma'){aibMill(o,4);extra='(グングニル: 相手デッキ4削り)';}
-  else if(ab==='four'){aibMill(o,6);for(let i=0;i<2;i++)if(s.hand.length)s.trash.push(s.hand.pop());extra='(レーヴァテイン: 相手6削り)';}
+  else if(ab==='charisma'){aibMill(o,4);extra='(スピア・ザ・グングニル: 相手デッキ-4)';}
+  else if(ab==='four'){aibMill(o,6);aibMill(s,2);extra='(レーヴァテイン: 相手デッキ-6 / 自デッキ-2)';}
   log.push('　🌟 '+L.k+' 覚醒 '+extra);
   return true;
 }
@@ -4188,6 +4228,7 @@ function aibResolveAttack(s,o,log,atk,def){
   const final=useBomb?0:Math.max(1,atk.raw-dval-reduce);
   if(final>0){const m=aibMill(o,final);s.P+=Math.min(m.reduce((x,c)=>x+c.rec,0),3);}
   if(atk.direct>0&&!o.dead)aibMill(o,atk.direct);
+  // v3.3 維持: フォーオブアカインド = 攻撃時 自デッキ -2
   if(atk.ab==='four')aibMill(s,2);
   else if(atk.ab==='oharai')o.P=Math.max(0,o.P-2);
   else if(atk.ab==='charisma'){if(s.trash.length)s.P+=1;}

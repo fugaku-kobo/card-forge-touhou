@@ -2832,7 +2832,93 @@ footer {
 }
 footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px; }
 /* === 🤖 AI対戦 プレイマット === */
-.aib-mat{background:linear-gradient(165deg,#0e1228,#1b1433 55%,#241430);border:1px solid rgba(212,175,110,.35);border-radius:14px;padding:12px;}
+.aib-mat{background:linear-gradient(165deg,#0e1228,#1b1433 55%,#241430);border:1px solid rgba(212,175,110,.35);border-radius:14px;padding:12px;position:relative;overflow:hidden;}
+
+/* ===== カード移動エフェクト (デッキ→トラッシュ・覚醒・攻撃命中) ===== */
+.aib-fx-layer{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:50;overflow:hidden;
+}
+.aib-fx-milled{
+  position:absolute;
+  font-family:'Cinzel',serif;font-weight:700;font-size:.78rem;
+  color:#fff;
+  background:linear-gradient(145deg,rgba(40,10,20,.95),rgba(90,20,40,.95));
+  padding:5px 11px;border-radius:8px;
+  border:1px solid rgba(255,80,120,.7);
+  box-shadow:0 0 18px rgba(220,40,80,.7), inset 0 0 8px rgba(255,150,180,.25);
+  white-space:nowrap;
+  letter-spacing:.04em;
+  transform:translate(-50%,-50%);
+  text-shadow:0 0 6px rgba(255,100,140,.8);
+}
+.aib-fx-milled.from-human{
+  animation:aib-mill-fly-up 1.6s cubic-bezier(.16,.84,.36,1) forwards;
+}
+.aib-fx-milled.from-ai{
+  animation:aib-mill-fly-down 1.6s cubic-bezier(.16,.84,.36,1) forwards;
+}
+@keyframes aib-mill-fly-up{
+  /* 自分(下) デッキ→トラッシュ: 下から舞い上がって消える */
+  0%   { opacity:0; top:78%; left:35%; transform:translate(-50%,-50%) scale(.6) rotate(-12deg); filter:blur(2px);}
+  18%  { opacity:1; top:62%; left:42%; transform:translate(-50%,-50%) scale(1.25) rotate(-3deg); filter:blur(0);}
+  60%  { opacity:1; top:48%; left:53%; transform:translate(-50%,-50%) scale(1.1) rotate(4deg);}
+  100% { opacity:0; top:78%; left:68%; transform:translate(-50%,-50%) scale(.55) rotate(18deg); filter:blur(3px);}
+}
+@keyframes aib-mill-fly-down{
+  /* 相手(上) デッキ→トラッシュ: 上から舞い降りて消える */
+  0%   { opacity:0; top:22%; left:35%; transform:translate(-50%,-50%) scale(.6) rotate(12deg); filter:blur(2px);}
+  18%  { opacity:1; top:32%; left:42%; transform:translate(-50%,-50%) scale(1.25) rotate(3deg); filter:blur(0);}
+  60%  { opacity:1; top:46%; left:53%; transform:translate(-50%,-50%) scale(1.1) rotate(-4deg);}
+  100% { opacity:0; top:22%; left:68%; transform:translate(-50%,-50%) scale(.55) rotate(-18deg); filter:blur(3px);}
+}
+/* 派手な切断エフェクト: 削り時に粒子が散る */
+.aib-fx-spark{
+  position:absolute;width:6px;height:6px;border-radius:50%;
+  background:radial-gradient(circle,#ffec88 0%,#ff8044 60%,transparent 100%);
+  pointer-events:none;
+  animation:aib-fx-spark 1.0s ease-out forwards;
+}
+@keyframes aib-fx-spark{
+  0%   { opacity:1; transform:translate(0,0) scale(1);}
+  100% { opacity:0; transform:translate(var(--dx,40px),var(--dy,30px)) scale(.2);}
+}
+/* リーダー覚醒フラッシュ */
+.aib-fx-awaken{
+  position:absolute;top:50%;left:50%;width:300px;height:300px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,220,140,.7) 0%,rgba(255,180,80,.3) 40%,transparent 70%);
+  transform:translate(-50%,-50%) scale(0);
+  pointer-events:none;
+  animation:aib-fx-awaken 1.2s ease-out forwards;
+}
+@keyframes aib-fx-awaken{
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(0);}
+  30%  { opacity:1; transform:translate(-50%,-50%) scale(1.2);}
+  100% { opacity:0; transform:translate(-50%,-50%) scale(2);}
+}
+/* 攻撃命中時のショック波 */
+.aib-fx-hit{
+  position:absolute;top:50%;left:50%;width:180px;height:180px;
+  border-radius:50%;
+  border:3px solid rgba(255,80,80,.8);
+  transform:translate(-50%,-50%) scale(0);
+  pointer-events:none;
+  animation:aib-fx-hit .9s ease-out forwards;
+}
+@keyframes aib-fx-hit{
+  0%   { opacity:1; transform:translate(-50%,-50%) scale(.3); border-width:6px;}
+  100% { opacity:0; transform:translate(-50%,-50%) scale(2.2); border-width:1px;}
+}
+/* マットを軽く揺らす */
+@keyframes aib-mat-shake{
+  0%,100% { transform:translate(0,0);}
+  20%     { transform:translate(-3px,2px);}
+  40%     { transform:translate(3px,-2px);}
+  60%     { transform:translate(-2px,3px);}
+  80%     { transform:translate(2px,-1px);}
+}
+.aib-mat.shake{ animation:aib-mat-shake .4s ease-out;}
 .aib-side{padding:9px 11px;border-radius:11px;margin:3px 0;}
 .aib-side.ai{background:rgba(150,46,70,.16);border:1px solid rgba(200,50,76,.32);}
 .aib-side.you{background:rgba(216,178,90,.10);border:1px solid rgba(212,175,110,.32);}
@@ -4210,7 +4296,65 @@ function aibMakeSide(pair,isFirst,name){
 }
 function aibRefresh(s){s.deck=aibShuffle(s.trash);s.trash=[];s.life--;if(s.lifeCards.length)s.hand.push(s.lifeCards.pop());if(s.life<=0)s.dead=true;}
 function aibDraw(s,n){for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return;}if(s.deck.length)s.hand.push(s.deck.shift());}}
-function aibMill(s,n){const m=[];for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return m;}if(!s.deck.length)break;const c=s.deck.shift();s.trash.push(c);m.push(c);}return m;}
+function aibMill(s,n){const m=[];for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return m;}if(!s.deck.length)break;const c=s.deck.shift();s.trash.push(c);m.push(c);}
+  // FX: 削られたカードのフライ・エフェクト(同期モード&非画面 では発動しない)
+  if(!aibSync && typeof document!=='undefined' && aibGame && m.length>0){
+    aibSpawnMillFx(s===aibGame.human?'human':'ai', m);
+  }
+  return m;}
+
+// FX 発火: デッキ→トラッシュ
+function aibSpawnMillFx(side, cards){
+  const mat = document.querySelector('#aib-mat .aib-mat'); if(!mat) return;
+  let layer = mat.querySelector('.aib-fx-layer');
+  if(!layer){ layer = document.createElement('div'); layer.className='aib-fx-layer'; mat.appendChild(layer); }
+  cards.slice(0, 6).forEach((c, i) => {  // 最大 6 枚まで表示(連続削りでも画面が崩壊しない)
+    const el = document.createElement('div');
+    el.className = 'aib-fx-milled from-' + side;
+    el.style.animationDelay = (i*0.12) + 's';
+    const icon = (c.k==='atk'?'⚔':c.k==='def'?'🛡':c.k==='mill'?'🌀':c.k==='util'?'🔮':c.k==='disrupt'?'💢':'❄');
+    el.textContent = icon + ' ' + (c.name||'?');
+    layer.appendChild(el);
+    setTimeout(() => el.remove(), 1700 + i*120);
+    // 同時に粒子スパーク
+    for(let k=0;k<3;k++){
+      const sp = document.createElement('div');
+      sp.className = 'aib-fx-spark';
+      sp.style.top = (side==='human'?70:30) + Math.random()*8 + '%';
+      sp.style.left = (40 + Math.random()*15) + '%';
+      sp.style.setProperty('--dx', ((Math.random()-.5)*120) + 'px');
+      sp.style.setProperty('--dy', ((Math.random()-.5)*80) + 'px');
+      sp.style.animationDelay = (i*0.12 + k*0.05) + 's';
+      layer.appendChild(sp);
+      setTimeout(() => sp.remove(), 1100 + i*120);
+    }
+  });
+}
+// FX 発火: リーダー覚醒
+function aibSpawnAwakenFx(){
+  if(aibSync || typeof document==='undefined') return;
+  const mat = document.querySelector('#aib-mat .aib-mat'); if(!mat) return;
+  let layer = mat.querySelector('.aib-fx-layer');
+  if(!layer){ layer = document.createElement('div'); layer.className='aib-fx-layer'; mat.appendChild(layer); }
+  const el = document.createElement('div');
+  el.className = 'aib-fx-awaken';
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+// FX 発火: 攻撃命中
+function aibSpawnHitFx(){
+  if(aibSync || typeof document==='undefined') return;
+  const mat = document.querySelector('#aib-mat .aib-mat'); if(!mat) return;
+  let layer = mat.querySelector('.aib-fx-layer');
+  if(!layer){ layer = document.createElement('div'); layer.className='aib-fx-layer'; mat.appendChild(layer); }
+  const el = document.createElement('div');
+  el.className = 'aib-fx-hit';
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+  // マット振動
+  mat.classList.add('shake');
+  setTimeout(() => mat.classList.remove('shake'), 450);
+}
 function aibLvOk(s,lv){return lv<=1||s.leaders.some(L=>L.aw);}
 // v3.4: リーダー専用スペルの所持判定。lr が空なら共有(true)。場に該当リーダーがいれば詠唱可。
 const AIB_LR_NAME = { 'TH-L01':'霊夢', 'TH-L02':'魔理沙', 'TH-L03':'レミリア', 'TH-L04':'フランドール' };
@@ -4241,6 +4385,8 @@ function aibAwaken(s,o,log,L){
   const cost=leaderInfo(L).awc;
   if(s.P<cost)return false;
   s.P-=cost;L.aw=true;L.awThis=true;
+  // FX: 覚醒フラッシュ
+  if(typeof aibSpawnAwakenFx==='function') aibSpawnAwakenFx();
   const ab=leaderInfo(L).ab;let extra='';
   if(ab==='oharai'){if(o.hand.length)o.trash.push(o.hand.splice(Math.floor(Math.random()*o.hand.length),1)[0]);aibDraw(s,1);extra='(夢想封印: 相手手札-1)';}
   else if(ab==='charisma'){aibMill(o,4);extra='(スピア・ザ・グングニル: 相手デッキ-4)';}
@@ -4302,7 +4448,11 @@ function aibResolveAttack(s,o,log,atk,def){
   let useBomb=false;
   if(def&&def.bomb&&o.bomb>=2){useBomb=true;o.bomb-=2;}
   const final=useBomb?0:Math.max(1,atk.raw-dval-reduce);
-  if(final>0){const m=aibMill(o,final);s.P+=Math.min(m.reduce((x,c)=>x+c.rec,0),3);}
+  if(final>0){
+    // FX: 攻撃命中時の衝撃波&振動
+    if(typeof aibSpawnHitFx==='function') aibSpawnHitFx();
+    const m=aibMill(o,final);s.P+=Math.min(m.reduce((x,c)=>x+c.rec,0),3);
+  }
   if(atk.direct>0&&!o.dead)aibMill(o,atk.direct);
   // v3.4 バランス調整: フォーオブアカインド自デッキ -2 維持
   if(atk.ab==='four')aibMill(s,2);
@@ -5079,13 +5229,17 @@ function aibCardZoomByPool(c){
 }
 function aibRenderGame(){
   const g=aibGame;if(!g)return;
-  document.getElementById('aib-mat').innerHTML=
+  const root=document.getElementById('aib-mat');
+  // FX: 再描画中も fx layer は維持する(アニメーションが切れないように)
+  const oldFx = root.querySelector('.aib-fx-layer');
+  root.innerHTML=
     '<div class="aib-mat">'
     +aibBannerHtml(g)+aibStepsHtml(g)
     +'<div class="aib-action">📣 '+(g.action||'')+'</div>'
     +aibCombatHtml(g)
     +aibSideMat(g.ai,false)+aibCenterHtml(g)+aibSideMat(g.human,true)+aibHandMat(g)
     +'</div>';
+  if(oldFx){ root.querySelector('.aib-mat').appendChild(oldFx); }
   const lg=document.getElementById('aib-log');
   lg.textContent=g.log.join('\n');
   lg.scrollTop=lg.scrollHeight;

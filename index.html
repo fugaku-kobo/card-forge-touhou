@@ -3007,7 +3007,7 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 <header>
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-mark">TOUHOU CARD FORGE <span class="brand-ver">v3.2</span></div>
+      <div class="brand-mark">TOUHOU CARD FORGE <span class="brand-ver">v3.3</span></div>
       <div class="brand-tag">— 東方カード制作ツール —</div>
     </div>
     <div class="actions">
@@ -3290,7 +3290,7 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
         <div class="rule-step">相手の <b>ライフ(3)</b> を 0 にすれば勝ち。</div>
         <h3>🎴 用意するもの</h3>
         <div class="rule-step">・<b>リーダー(キャラ)2体</b> ── デッキとは別に選ぶ</div>
-        <div class="rule-step">・<b>スペルカード 80 枚</b>のデッキ(同じカードは 5 枚まで)</div>
+        <div class="rule-step">・<b>スペルカード 60 枚</b>のデッキ(同じカードは 4 枚まで)</div>
         <h3>🔰 ゲーム開始の準備</h3>
         <div class="rule-step">1. デッキをシャッフルする</div>
         <div class="rule-step">2. リーダー 2 体を表向きで自分の前に置く</div>
@@ -3323,14 +3323,14 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
         <div class="rule-step">相手のライフを 0 にすれば勝利。ライフは 3。デッキが 0 になるたびに 1 減る。引き分けなし。試合時間の目安 約 15〜20 分。</div>
         <h3>B. デッキ構成</h3>
         <div class="rule-step">・リーダー(キャラ)2 体 ── 試合前に選ぶ。メインデッキとは別。</div>
-        <div class="rule-step">・メインデッキ 80 枚 ── すべてスペルカード。同じカードは 5 枚まで(同 ID 上限 5)。</div>
+        <div class="rule-step">・メインデッキ 60 枚 ── すべてスペルカード。同じカードは 4 枚まで(同 ID 上限 4)。</div>
         <h3>C. カードの種類(2 種)</h3>
         <div class="rule-step"><b>キャラカード(リーダー)</b> ── 通常 / 覚醒の 2 状態。覚醒コストを払うと裏返って強化。倒されない・トラッシュに送られない。</div>
-        <div class="rule-step"><b>スペルカード</b> ── デッキ 80 枚を構成。PP / BOM コストを払って使う。「通常」=自分のメインのみ /「QUICK」=バトル中も割込み可。発動条件 Lv 以上で使用可。「回収 P」=削られた時に攻撃側が獲得。</div>
+        <div class="rule-step"><b>スペルカード</b> ── デッキ 60 枚を構成。PP / BOM コストを払って使う。「通常」=自分のメインのみ /「QUICK」=バトル中も割込み可。発動条件 Lv 以上で使用可。「回収 P」=削られた時に攻撃側が獲得。</div>
         <h3>D. ゾーン(7 種)</h3>
         <div class="rule-step">デッキ / 手札(初期 4・後攻 5・上限 7)/ リーダー(2 体)/ トラッシュ / P ゾーン / ライフ(3)/ BOMB(3 固定)</div>
         <h3>E. セットアップ</h3>
-        <div class="rule-step">リーダー 2 体を表向きで配置 → デッキ 80 枚シャッフル → 上 3 枚をライフへ → BOMB 3 個 → 手札(先攻 4 / 後攻 5)→ <b>後攻は P を 6 個</b>持って開始 → マリガン(1 回だけ全引き直し可)→ 先攻・後攻を決める。</div>
+        <div class="rule-step">リーダー 2 体を表向きで配置 → デッキ 60 枚シャッフル → 上 3 枚をライフへ → BOMB 3 個 → 手札(先攻 4 / 後攻 5)→ <b>後攻は P を 6 個</b>持って開始 → マリガン(1 回だけ全引き直し可)→ 先攻・後攻を決める。</div>
         <h3>F. ターン構造(6 フェイズ)</h3>
         <div class="rule-step">① ドロー … 行動済みリーダーを戻し 1 ドロー</div>
         <div class="rule-step">② チャージ … 手札 1 枚を P ゾーンへ、1 ドロー(任意・ターン 1 回)</div>
@@ -3455,7 +3455,7 @@ const STORAGE_KEY = 'touhou_card_forge_v1';
 // 色は意味重視: キャラ=紅(博麗系)、スペル=青(夜空・弾幕)
 const BUILTIN_TYPES = [
   { name: 'キャラ', color: '#c8324c', builtin: true, kind: 'touhou-char',  meaning: 'リーダー(覚醒モデル)。試合前に2体選ぶ。通常↔覚醒で攻撃/回避が切替' },
-  { name: 'スペル', color: '#3878c8', builtin: true, kind: 'touhou-spell', meaning: 'スペルカード。デッキ80枚を構成。PP/BOM コスト・トリガー・回収P・効果' }
+  { name: 'スペル', color: '#3878c8', builtin: true, kind: 'touhou-spell', meaning: 'スペルカード。デッキ60枚を構成。PP/BOM コスト・トリガー・回収P・効果' }
 ];
 
 // kind の意味 (v3.1: カードタイプはキャラ/スペルの2種):
@@ -3494,41 +3494,41 @@ function buildBuiltinCards(){
     work:W,user:W,icon:'✨',art:'',spellKind:kd,requiredCharLevel:lv,ppCost:pp,
     bomCost:String(bom),trigger:'',recoverP:rec,effect:ef,engineKind:ek,engineValue:String(ev)});
   return [
-    ch('TH-L01','霊夢','⛩️','20','11','3','26','14',
+    ch('TH-L01','霊夢','⛩️','15','8','3','20','11',
       '【お祓い】霊夢が攻撃したとき、相手の P ゾーンから P を 2 個トラッシュする。',
       '【夢想封印】覚醒した時、相手の手札を 1 枚見て 1 枚捨てさせ、1 枚ドローする。'),
-    ch('TH-L02','魔理沙','🧹','21','11','3','29','12',
-      '【恋符】魔理沙が攻撃したとき、その攻撃の削り量 +4。',
-      '【マスタースパーク】覚醒したターン、魔理沙の攻撃の削り量 +8。'),
-    ch('TH-L03','レミリア','🦇','20','10','4','26','14',
+    ch('TH-L02','魔理沙','🧹','16','8','3','22','9',
+      '【恋符】魔理沙が攻撃したとき、その攻撃の削り量 +3。',
+      '【マスタースパーク】覚醒したターン、魔理沙の攻撃の削り量 +6。'),
+    ch('TH-L03','レミリア','🦇','15','8','4','20','11',
       '【カリスマ】レミリアが攻撃したとき、自分のトラッシュからカードを 1 枚 P ゾーンに置く(吸血)。',
-      '【スピア・ザ・グングニル】覚醒した時、相手のデッキを 5 枚トラッシュへ送る。'),
-    ch('TH-L04','フランドール','💎','21','9','4','30','11',
-      '【フォーオブアカインド】フランドールが攻撃したとき、削り量 +6。その後、自分のデッキを 2 枚トラッシュへ送る。',
-      '【レーヴァテイン】覚醒した時、相手のデッキを 8 枚トラッシュし、その後、自分の手札を 2 枚トラッシュへ送る。'),
-    sp('TH-001','霊符「夢想妙珠」','通常','1','2','1','2','このターンの攻撃、削り量 +6。','atk',6),
-    sp('TH-002','恋符「ノンディレクショナルレーザー」','通常','1','3','1','1','このターンの攻撃、削り量 +9。','atk',9),
-    sp('TH-003','恋符「マスタースパーク」','通常','2','5','2','0','このターンの攻撃、削り量 +14。','atk',14),
-    sp('TH-004','彗星「ブレイジングスター」','通常','2','4','2','0','このターンの攻撃、削り量 +12。その後、自分のデッキを 2 枚トラッシュ。','atk',12),
-    sp('TH-005','紅符「不夜城レッド」','通常','1','3','1','1','このターンの攻撃、削り量 +7。相手の P ゾーンから P を 1 個トラッシュ。','atk',7),
-    sp('TH-006','夢符「封魔陣」','QUICK','1','2','1','2','このバトル、迎撃リーダーの回避力 +10。','def',10),
-    sp('TH-007','結界「生と死の境界」','QUICK','1','3','1','1','このバトルの攻撃、削り量 −12。','def',12),
-    sp('TH-008','神技「八方鬼縛陣」','QUICK','1','1','1','3','このバトルの攻撃、削り量 −5。','def',5),
-    sp('TH-009','禁弾「スターボウブレイク」','QUICK','2','4','2','0','このバトルの攻撃、削り量 −20。','def',20),
+      '【スピア・ザ・グングニル】覚醒した時、相手のデッキを 4 枚トラッシュへ送る。'),
+    ch('TH-L04','フランドール','💎','16','7','4','23','8',
+      '【フォーオブアカインド】フランドールが攻撃したとき、削り量 +5。その後、自分のデッキを 2 枚トラッシュへ送る。',
+      '【レーヴァテイン】覚醒した時、相手のデッキを 6 枚トラッシュし、その後、自分の手札を 2 枚トラッシュへ送る。'),
+    sp('TH-001','霊符「夢想妙珠」','通常','1','2','1','2','このターンの攻撃、削り量 +5。','atk',5),
+    sp('TH-002','恋符「ノンディレクショナルレーザー」','通常','1','3','1','1','このターンの攻撃、削り量 +7。','atk',7),
+    sp('TH-003','恋符「マスタースパーク」','通常','2','5','2','0','このターンの攻撃、削り量 +11。','atk',11),
+    sp('TH-004','彗星「ブレイジングスター」','通常','2','4','2','0','このターンの攻撃、削り量 +9。その後、自分のデッキを 2 枚トラッシュ。','atk',9),
+    sp('TH-005','紅符「不夜城レッド」','通常','1','3','1','1','このターンの攻撃、削り量 +5。相手の P ゾーンから P を 1 個トラッシュ。','atk',5),
+    sp('TH-006','夢符「封魔陣」','QUICK','1','2','1','2','このバトル、迎撃リーダーの回避力 +8。','def',8),
+    sp('TH-007','結界「生と死の境界」','QUICK','1','3','1','1','このバトルの攻撃、削り量 −9。','def',9),
+    sp('TH-008','神技「八方鬼縛陣」','QUICK','1','1','1','3','このバトルの攻撃、削り量 −4。','def',4),
+    sp('TH-009','禁弾「スターボウブレイク」','QUICK','2','4','2','0','このバトルの攻撃、削り量 −15。','def',15),
     sp('TH-010','魔符「ミルキーウェイ」','通常','1','1','1','2','2 枚ドロー。','util',2),
     sp('TH-011','紅魔「ヴァンピリッシュナイト」','通常','1','2','1','1','トラッシュからカードを 2 枚選び、P ゾーンに置く。','util',2),
     sp('TH-012','運命「ミゼラブルフェイト」','通常','1','2','1','0','トラッシュからスペル 1 枚を手札に戻し、1 枚ドロー。','util',1),
     sp('TH-013','神霊「夢想封印」','通常','2','3','1','0','相手の P ゾーンから P を 3 個トラッシュ。','disrupt',3),
-    sp('TH-014','「QED『495年の波紋』」','通常','2','5','2','0','相手のデッキを直接 16 枚トラッシュへ送る(回収 P は発生しない)。','mill',16),
-    sp('TH-015','結界「博麗弾幕結界」','通常','1','3','1','1','次の相手のターン、最初の攻撃の削り量を −10 する。','def',10),
-    sp('TH-016','魔符「スターダストレヴァリエ」','QUICK','1','3','1','1','このバトル、迎撃リーダーの回避力 +6。その後 1 枚ドロー。','def',6),
-    sp('TH-017','火符「アグニシャイン」','通常','1','2','1','1','このターンの攻撃、削り量 +7。','atk',7),
-    sp('TH-018','時符「プライベートスクウェア」','QUICK','2','4','2','0','このバトル、迎撃リーダーの回避力 +16。','def',16),
-    sp('TH-019','月符「サイレントセレナ」','通常','2','5','2','0','このターンの攻撃、削り量 +16。','atk',16),
+    sp('TH-014','「QED『495年の波紋』」','通常','2','5','2','0','相手のデッキを直接 12 枚トラッシュへ送る(回収 P は発生しない)。','mill',12),
+    sp('TH-015','結界「博麗弾幕結界」','通常','1','3','1','1','次の相手のターン、最初の攻撃の削り量を −8 する。','def',8),
+    sp('TH-016','魔符「スターダストレヴァリエ」','QUICK','1','3','1','1','このバトル、迎撃リーダーの回避力 +4。その後 1 枚ドロー。','def',4),
+    sp('TH-017','火符「アグニシャイン」','通常','1','2','1','1','このターンの攻撃、削り量 +5。','atk',5),
+    sp('TH-018','時符「プライベートスクウェア」','QUICK','2','4','2','0','このバトル、迎撃リーダーの回避力 +12。','def',12),
+    sp('TH-019','月符「サイレントセレナ」','通常','2','5','2','0','このターンの攻撃、削り量 +12。','atk',12),
     sp('TH-020','幻葬「夜霧の幻影殺人鬼」','通常','1','3','1','1','相手の手札を 1 枚見て捨てさせ、1 枚ドロー。','disrupt',2),
-    sp('TH-021','禁弾「カタディオプトリック」','通常','2','4','2','0','このターンの攻撃、削り量 +11。その後、自分のデッキを 2 枚トラッシュ。','atk',11),
+    sp('TH-021','禁弾「カタディオプトリック」','通常','2','4','2','0','このターンの攻撃、削り量 +8。その後、自分のデッキを 2 枚トラッシュ。','atk',8),
     sp('TH-022','魔符「アーティフルチャンター」','通常','1','1','1','1','1 枚ドローし、自分のトラッシュからカード 1 枚を P ゾーンに置く。','util',1),
-    sp('TH-023','結界「夢と現の呪」','QUICK','1','2','1','2','このバトルの攻撃、削り量 −8。その後 1 枚ドロー。','def',8),
+    sp('TH-023','結界「夢と現の呪」','QUICK','1','2','1','2','このバトルの攻撃、削り量 −6。その後 1 枚ドロー。','def',6),
     sp('TH-024','秘術「グレイソーマタージ」','通常','1','2','1','0','リーダー 1 体の覚醒コストを、このターン −2 する。','util',0),
   ];
 }
@@ -3567,16 +3567,17 @@ function leaderInfo(L){
   return {atk:0, eva:0, awc:0, aatk:0, aeva:0, ab:'', name:(L&&L.k)||''};
 }
 // 既存セーブのスペルカードに engineKind / engineValue / BOMコストを補完(TH-001..024)
+// v3.3 スケール(デッキ60リバランス)
 function migrateEngineFields(){
   const M = {
-    'TH-001':{k:'atk',v:6,bom:'1'},'TH-002':{k:'atk',v:9,bom:'1'},'TH-003':{k:'atk',v:14,bom:'2'},
-    'TH-004':{k:'atk',v:12,bom:'2'},'TH-005':{k:'atk',v:7,bom:'1'},'TH-006':{k:'def',v:10,bom:'1'},
-    'TH-007':{k:'def',v:12,bom:'1'},'TH-008':{k:'def',v:5,bom:'1'},'TH-009':{k:'def',v:20,bom:'2'},
+    'TH-001':{k:'atk',v:5,bom:'1'},'TH-002':{k:'atk',v:7,bom:'1'},'TH-003':{k:'atk',v:11,bom:'2'},
+    'TH-004':{k:'atk',v:9,bom:'2'},'TH-005':{k:'atk',v:5,bom:'1'},'TH-006':{k:'def',v:8,bom:'1'},
+    'TH-007':{k:'def',v:9,bom:'1'},'TH-008':{k:'def',v:4,bom:'1'},'TH-009':{k:'def',v:15,bom:'2'},
     'TH-010':{k:'util',v:2,bom:'1'},'TH-011':{k:'util',v:2,bom:'1'},'TH-012':{k:'util',v:1,bom:'1'},
-    'TH-013':{k:'disrupt',v:3,bom:'1'},'TH-014':{k:'mill',v:16,bom:'2'},'TH-015':{k:'def',v:10,bom:'1'},
-    'TH-016':{k:'def',v:6,bom:'1'},'TH-017':{k:'atk',v:7,bom:'1'},'TH-018':{k:'def',v:16,bom:'2'},
-    'TH-019':{k:'atk',v:16,bom:'2'},'TH-020':{k:'disrupt',v:2,bom:'1'},'TH-021':{k:'atk',v:11,bom:'2'},
-    'TH-022':{k:'util',v:1,bom:'1'},'TH-023':{k:'def',v:8,bom:'1'},'TH-024':{k:'util',v:0,bom:'1'},
+    'TH-013':{k:'disrupt',v:3,bom:'1'},'TH-014':{k:'mill',v:12,bom:'2'},'TH-015':{k:'def',v:8,bom:'1'},
+    'TH-016':{k:'def',v:4,bom:'1'},'TH-017':{k:'atk',v:5,bom:'1'},'TH-018':{k:'def',v:12,bom:'2'},
+    'TH-019':{k:'atk',v:12,bom:'2'},'TH-020':{k:'disrupt',v:2,bom:'1'},'TH-021':{k:'atk',v:8,bom:'2'},
+    'TH-022':{k:'util',v:1,bom:'1'},'TH-023':{k:'def',v:6,bom:'1'},'TH-024':{k:'util',v:0,bom:'1'},
   };
   if (!state.cards) return;
   state.cards.forEach(c => {
@@ -3591,6 +3592,72 @@ function migrateEngineFields(){
   });
 }
 
+// v3.3 リバランス: デッキ80→60 化に伴いリーダー数値・スペル削り量を ×0.75 にスケール。
+// 既存セーブの公式カード(TH-XXX)を最新値へ強制更新する(初回のみ)。
+// 効果テキスト中の数値も差し替える(ユーザーがカスタム編集していた場合は engineValue/stat のみ反映)。
+function migrateRebalanceV33(){
+  if (!state.cards) return;
+  if (state.rebalanceVer === '3.3') return; // 既に適用済み
+  const SPELL = {
+    'TH-001':{v:5},'TH-002':{v:7},'TH-003':{v:11},'TH-004':{v:9},'TH-005':{v:5},
+    'TH-006':{v:8},'TH-007':{v:9},'TH-008':{v:4},'TH-009':{v:15},
+    'TH-010':{v:2},'TH-011':{v:2},'TH-012':{v:1},
+    'TH-013':{v:3},'TH-014':{v:12},'TH-015':{v:8},
+    'TH-016':{v:4},'TH-017':{v:5},'TH-018':{v:12},'TH-019':{v:12},
+    'TH-020':{v:2},'TH-021':{v:8},'TH-022':{v:1},'TH-023':{v:6},'TH-024':{v:0},
+  };
+  const SPELL_TEXT = {
+    'TH-001':'このターンの攻撃、削り量 +5。',
+    'TH-002':'このターンの攻撃、削り量 +7。',
+    'TH-003':'このターンの攻撃、削り量 +11。',
+    'TH-004':'このターンの攻撃、削り量 +9。その後、自分のデッキを 2 枚トラッシュ。',
+    'TH-005':'このターンの攻撃、削り量 +5。相手の P ゾーンから P を 1 個トラッシュ。',
+    'TH-006':'このバトル、迎撃リーダーの回避力 +8。',
+    'TH-007':'このバトルの攻撃、削り量 −9。',
+    'TH-008':'このバトルの攻撃、削り量 −4。',
+    'TH-009':'このバトルの攻撃、削り量 −15。',
+    'TH-014':'相手のデッキを直接 12 枚トラッシュへ送る(回収 P は発生しない)。',
+    'TH-015':'次の相手のターン、最初の攻撃の削り量を −8 する。',
+    'TH-016':'このバトル、迎撃リーダーの回避力 +4。その後 1 枚ドロー。',
+    'TH-017':'このターンの攻撃、削り量 +5。',
+    'TH-018':'このバトル、迎撃リーダーの回避力 +12。',
+    'TH-019':'このターンの攻撃、削り量 +12。',
+    'TH-021':'このターンの攻撃、削り量 +8。その後、自分のデッキを 2 枚トラッシュ。',
+    'TH-023':'このバトルの攻撃、削り量 −6。その後 1 枚ドロー。',
+  };
+  const LEADER = {
+    'TH-L01':{atk:'15',eva:'8',aatk:'20',aeva:'11',
+      ef:'【お祓い】霊夢が攻撃したとき、相手の P ゾーンから P を 2 個トラッシュする。',
+      aef:'【夢想封印】覚醒した時、相手の手札を 1 枚見て 1 枚捨てさせ、1 枚ドローする。'},
+    'TH-L02':{atk:'16',eva:'8',aatk:'22',aeva:'9',
+      ef:'【恋符】魔理沙が攻撃したとき、その攻撃の削り量 +3。',
+      aef:'【マスタースパーク】覚醒したターン、魔理沙の攻撃の削り量 +6。'},
+    'TH-L03':{atk:'15',eva:'8',aatk:'20',aeva:'11',
+      ef:'【カリスマ】レミリアが攻撃したとき、自分のトラッシュからカードを 1 枚 P ゾーンに置く(吸血)。',
+      aef:'【スピア・ザ・グングニル】覚醒した時、相手のデッキを 4 枚トラッシュへ送る。'},
+    'TH-L04':{atk:'16',eva:'7',aatk:'23',aeva:'8',
+      ef:'【フォーオブアカインド】フランドールが攻撃したとき、削り量 +5。その後、自分のデッキを 2 枚トラッシュへ送る。',
+      aef:'【レーヴァテイン】覚醒した時、相手のデッキを 6 枚トラッシュし、その後、自分の手札を 2 枚トラッシュへ送る。'},
+  };
+  state.cards.forEach(c => {
+    const kind = getTypeKind(c.type);
+    if (kind === 'touhou-spell') {
+      const m = SPELL[c.cardCode];
+      if (m) c.engineValue = String(m.v);
+      const t = SPELL_TEXT[c.cardCode];
+      if (t) c.effect = t;
+    } else if (kind === 'touhou-char') {
+      const L = LEADER[c.cardCode];
+      if (L) {
+        c.attack = L.atk; c.evasion = L.eva;
+        c.awakenAttack = L.aatk; c.awakenEvasion = L.aeva;
+        c.effect = L.ef; c.awakenEffect = L.aef;
+      }
+    }
+  });
+  state.rebalanceVer = '3.3';
+}
+
 function loadData() {
   let loaded = false;
   try {
@@ -3601,6 +3668,7 @@ function loadData() {
       state.types = data.types || [];
       state.decks = data.decks || [];
       state.playSession = data.playSession || null;
+      state.rebalanceVer = data.rebalanceVer || null;
       // ネットワークプレイは再ロード時に復元できないのでクリア(ソロのみ復元)
       if (state.playSession?.network && state.playSession.network.mode !== 'solo') {
         state.playSession = null;
@@ -3620,12 +3688,29 @@ function loadData() {
   migrateShootingCards();
   // 既存セーブカードに engineKind / engineValue / BOMコストを補完
   migrateEngineFields();
+  // v3.3 デッキ60リバランス: 公式 TH-XXX カードを最新の数値へ強制更新(初回のみ)
+  migrateRebalanceV33();
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
   // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
   migrateDecks();
+  // v3.3: 同 ID 上限 4 を超える既存デッキを 4 にクリップ
+  capDeckCopiesV33();
   // カードのunlimitedフラグを必要なら推測
   autoDetectUnlimited();
+}
+
+// v3.3: 同 ID 上限 5→4 化で既存デッキの 5 枚積みカードを 4 枚に丸める
+function capDeckCopiesV33(){
+  if (!state.decks) return;
+  state.decks.forEach(d => {
+    if (!d.cards) return;
+    d.cards.forEach(e => {
+      const c = state.cards.find(x => x.id === e.cardId);
+      if (c && c.unlimited) return;
+      if (e.count > 4) e.count = 4;
+    });
+  });
 }
 
 function ensureBuiltinTypes() {
@@ -3685,7 +3770,8 @@ function saveData() {
     types: state.types,
     decks: state.decks,
     playSession: state.playSession,
-    cardIdCounter: cardIdCounter
+    cardIdCounter: cardIdCounter,
+    rebalanceVer: state.rebalanceVer || null
   }));
   // データ変更があった可能性があるのでアイコンキャッシュをクリア
   invalidateIconCache();
@@ -3928,13 +4014,13 @@ function switchTab(tabName, btn) {
 }
 
 // ====================================================================
-// 🤖 AI対戦エンジン (balance_sim.py の JS移植 / v3.2・カードv1.4)
+// 🤖 AI対戦エンジン (balance_sim.py の JS移植 / v3.3・カードv1.5・デッキ60)
 // ====================================================================
 const AIB_LD = {
-  '霊夢':        {atk:20,eva:11,awc:3,aatk:26,aeva:14,ab:'oharai'},
-  '魔理沙':      {atk:21,eva:11,awc:3,aatk:29,aeva:12,ab:'koi'},
-  'レミリア':     {atk:20,eva:10,awc:4,aatk:26,aeva:14,ab:'charisma'},
-  'フランドール': {atk:21,eva:9, awc:4,aatk:30,aeva:11,ab:'four'},
+  '霊夢':        {atk:15,eva:8, awc:3,aatk:20,aeva:11,ab:'oharai'},
+  '魔理沙':      {atk:16,eva:8, awc:3,aatk:22,aeva:9, ab:'koi'},
+  'レミリア':     {atk:15,eva:8, awc:4,aatk:20,aeva:11,ab:'charisma'},
+  'フランドール': {atk:16,eva:7, awc:4,aatk:23,aeva:8, ab:'four'},
 };
 const AIB_PAIRS = {
   '博麗(霊夢+魔理沙)':           ['霊夢','魔理沙'],
@@ -3944,22 +4030,23 @@ const AIB_PAIRS = {
   '霊夢+フランドール':           ['霊夢','フランドール'],
   '霊夢+レミリア':               ['霊夢','レミリア'],
 };
-// スペル24種: k=種別, v=値, pp=コスト, q=QUICK, rec=回収P, lv=発動条件Lv
+// スペル24種 (v1.5: 削り量・回避力 ×0.75 スケール): k=種別, v=値, pp=コスト, q=QUICK, rec=回収P, lv=発動条件Lv
 const AIB_POOL = [
-  {k:'atk',v:6,pp:2,q:0,rec:2,lv:1},{k:'atk',v:9,pp:3,q:0,rec:1,lv:1},
-  {k:'atk',v:14,pp:5,q:0,rec:0,lv:2},{k:'atk',v:12,pp:4,q:0,rec:0,lv:2},
-  {k:'atk',v:7,pp:3,q:0,rec:1,lv:1},{k:'def',v:10,pp:2,q:1,rec:2,lv:1},
-  {k:'def',v:12,pp:3,q:1,rec:1,lv:1},{k:'def',v:5,pp:1,q:1,rec:3,lv:1},
-  {k:'def',v:20,pp:4,q:1,rec:0,lv:2},{k:'util',v:2,pp:1,q:0,rec:2,lv:1},
+  {k:'atk',v:5,pp:2,q:0,rec:2,lv:1},{k:'atk',v:7,pp:3,q:0,rec:1,lv:1},
+  {k:'atk',v:11,pp:5,q:0,rec:0,lv:2},{k:'atk',v:9,pp:4,q:0,rec:0,lv:2},
+  {k:'atk',v:5,pp:3,q:0,rec:1,lv:1},{k:'def',v:8,pp:2,q:1,rec:2,lv:1},
+  {k:'def',v:9,pp:3,q:1,rec:1,lv:1},{k:'def',v:4,pp:1,q:1,rec:3,lv:1},
+  {k:'def',v:15,pp:4,q:1,rec:0,lv:2},{k:'util',v:2,pp:1,q:0,rec:2,lv:1},
   {k:'util',v:2,pp:2,q:0,rec:1,lv:1},{k:'util',v:1,pp:2,q:0,rec:0,lv:1},
-  {k:'disrupt',v:3,pp:3,q:0,rec:0,lv:2},{k:'mill',v:16,pp:5,q:0,rec:0,lv:2},
-  {k:'def',v:10,pp:3,q:0,rec:1,lv:1},{k:'def',v:6,pp:3,q:1,rec:1,lv:1},
-  {k:'atk',v:7,pp:2,q:0,rec:1,lv:1},{k:'def',v:16,pp:4,q:1,rec:0,lv:2},
-  {k:'atk',v:16,pp:5,q:0,rec:0,lv:2},{k:'disrupt',v:2,pp:3,q:0,rec:1,lv:1},
-  {k:'atk',v:11,pp:4,q:0,rec:0,lv:2},{k:'util',v:1,pp:1,q:0,rec:1,lv:1},
-  {k:'def',v:8,pp:2,q:1,rec:2,lv:1},{k:'util',v:0,pp:2,q:0,rec:0,lv:1},
+  {k:'disrupt',v:3,pp:3,q:0,rec:0,lv:2},{k:'mill',v:12,pp:5,q:0,rec:0,lv:2},
+  {k:'def',v:8,pp:3,q:0,rec:1,lv:1},{k:'def',v:4,pp:3,q:1,rec:1,lv:1},
+  {k:'atk',v:5,pp:2,q:0,rec:1,lv:1},{k:'def',v:12,pp:4,q:1,rec:0,lv:2},
+  {k:'atk',v:12,pp:5,q:0,rec:0,lv:2},{k:'disrupt',v:2,pp:3,q:0,rec:1,lv:1},
+  {k:'atk',v:8,pp:4,q:0,rec:0,lv:2},{k:'util',v:1,pp:1,q:0,rec:1,lv:1},
+  {k:'def',v:6,pp:2,q:1,rec:2,lv:1},{k:'util',v:0,pp:2,q:0,rec:0,lv:1},
 ];
-const AIB_COUNTS = [5,5,4,3,4,4,3,3,2,3,4,3,3,2,3,4,5,2,3,2,3,3,4,3];
+// v3.3: 合計60枚・各≤4 (同 ID 上限 4)
+const AIB_COUNTS = [4,4,3,2,3,3,2,2,2,2,3,2,2,2,2,3,4,2,2,2,2,2,3,2];
 const AIB_NM = ['夢想妙珠','ノンディレ','マスタースパーク','ブレイジングスター','不夜城レッド',
   '封魔陣','生と死の境界','八方鬼縛陣','スターボウブレイク','ミルキーウェイ','ヴァンピリッシュナイト',
   'ミゼラブルフェイト','夢想封印','QED495','博麗弾幕結界','スターダスト','アグニシャイン',
@@ -4001,8 +4088,8 @@ function aibAwaken(s,o,log,L){
   s.P-=cost;L.aw=true;L.awThis=true;
   const ab=leaderInfo(L).ab;let extra='';
   if(ab==='oharai'){if(o.hand.length)o.trash.push(o.hand.splice(Math.floor(Math.random()*o.hand.length),1)[0]);aibDraw(s,1);extra='(夢想封印: 相手手札-1)';}
-  else if(ab==='charisma'){aibMill(o,5);extra='(グングニル: 相手デッキ5削り)';}
-  else if(ab==='four'){aibMill(o,8);for(let i=0;i<2;i++)if(s.hand.length)s.trash.push(s.hand.pop());extra='(レーヴァテイン: 相手8削り)';}
+  else if(ab==='charisma'){aibMill(o,4);extra='(グングニル: 相手デッキ4削り)';}
+  else if(ab==='four'){aibMill(o,6);for(let i=0;i<2;i++)if(s.hand.length)s.trash.push(s.hand.pop());extra='(レーヴァテイン: 相手6削り)';}
   log.push('　🌟 '+L.k+' 覚醒 '+extra);
   return true;
 }
@@ -4015,9 +4102,9 @@ function aibCovenant(s,o,log){
 
 function aibLval(L,o){
   const d=leaderInfo(L);let base=L.aw?d.aatk:d.atk;
-  if(d.ab==='koi')base+=4;
-  if(d.ab==='four')base+=6;
-  if(d.ab==='koi'&&L.awThis)base+=8;
+  if(d.ab==='koi')base+=3;
+  if(d.ab==='four')base+=5;
+  if(d.ab==='koi'&&L.awThis)base+=6;
   let virt=0;
   if(d.ab==='oharai')virt=o.P>0?3:0;
   if(d.ab==='charisma')virt=2;
@@ -4025,27 +4112,11 @@ function aibLval(L,o){
 }
 // 攻撃宣言: 攻撃リーダーとボーナスを確定。humanBonus を渡すと atkスペルの自動詠唱をしない
 function aibComputeAttack(s,o,forced,humanBonus){
-  let atkL,base,ab;
-  if(forced){const v=aibLval(forced,o);atkL=forced;base=v.base;ab=v.ab;}
-  else{
-    const sc=s.leaders.map(L=>({v:aibLval(L,o),L:L}));
-    sc.sort((a,b)=>(b.v.base+b.v.virt)-(a.v.base+a.v.virt));
-    atkL=sc[0].L;base=sc[0].v.base;ab=sc[0].v.ab;
-  }
-  let spellBonus=0,direct=0;
-  const spellNames=[],spellCards=[];
-  if(humanBonus===undefined){
-    const reserve=aibHasQuickDef(s)?2:0;
-    let budget=Math.max(0,s.P-reserve);
-    const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibLvOk(s,c.lv))
-      .sort((a,b)=>b.pp-a.pp);
-    for(const c of cards){const sp=c;
-      if(sp.pp<=budget){budget-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
-        spellNames.push(c.name);spellCards.push(c);
-        if(sp.k==='atk')spellBonus+=sp.v;else direct+=sp.v;}}
-    s.P=budget+reserve;
-  } else { spellBonus=humanBonus; }
-  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct,spellNames:spellNames,spellCards:spellCards};
+  // forced(人間が攻撃リーダーを指定)/ humanBonus(人間が事前にスペル詠唱済) → 貪欲ロジックで処理
+  // それ以外(AI が自律的に攻撃)→ mode で分岐
+  if(forced || humanBonus!==undefined) return aibComputeAttackGreedy(s,o,forced,humanBonus);
+  if(aibAiMode==='mcts') return aibMctsComputeAttack(s,o);
+  return aibComputeAttackGreedy(s,o,undefined,undefined);
 }
 // 防御側 o の自動防御判断
 function aibAutoDefense(o,raw){
@@ -4056,7 +4127,7 @@ function aibAutoDefense(o,raw){
   const q=o.hand.map((c,i)=>({c:c,i:i}))
     .filter(x=>x.c.k==='def'&&x.c.q&&aibLvOk(o,x.c.lv)&&x.c.pp<=o.P)
     .sort((a,b)=>b.c.v-a.c.v);
-  if(q.length&&incoming>16)spellIdx=q[0].i;
+  if(q.length&&incoming>12)spellIdx=q[0].i;
   const reduce=spellIdx>=0?(o.hand[spellIdx]).v:0;
   incoming=Math.max(1,raw-dval-reduce);
   return {spellIdx:spellIdx,bomb:(o.bomb>=2&&incoming>=o.deck.length&&o.life<=1)};
@@ -4098,6 +4169,151 @@ function aibAutoUtil(s){
   }
   while(s.hand.length>7)s.trash.push(s.hand.pop());
 }
+
+// ===== MCTS AI(攻撃手の決定にロールアウト評価を使う) =====
+let aibAiMode = 'mcts';        // 'greedy' | 'mcts'
+const AIB_MCTS_K = 40;          // 候補1つあたりのロールアウト回数
+const AIB_MCTS_DEPTH = 22;      // 1ロールアウトの最大ターン数
+
+function aibCloneSide(s){
+  return {
+    deck: s.deck.slice(), hand: s.hand.slice(), trash: s.trash.slice(),
+    lifeCards: (s.lifeCards||[]).slice(),
+    life: s.life, bomb: s.bomb, P: s.P,
+    turn: s.turn, isFirst: s.isFirst, name: s.name, dead: !!s.dead,
+    leaders: s.leaders.map(L => ({k:L.k, aw:L.aw, rested:L.rested, awThis:L.awThis, card:L.card})),
+  };
+}
+function aibRolloutScore(humanS, aiS, startCur, maxTurns){
+  // 既存の貪欲 aibTakeTurn で残りゲームをシミュ → AI 視点で 1/0/0.5 を返す
+  let cur = (startCur==='ai') ? aiS : humanS;
+  let opp = (startCur==='ai') ? humanS : aiS;
+  const dummy = [];
+  for(let t=0; t<maxTurns; t++){
+    aibTakeTurn(cur, opp, dummy);
+    if(opp.dead) return cur===aiS ? 1 : 0;
+    if(cur.dead) return cur===aiS ? 0 : 1;
+    const tmp=cur; cur=opp; opp=tmp;
+  }
+  if(aiS.life > humanS.life) return 1;
+  if(aiS.life < humanS.life) return 0;
+  return aiS.deck.length > humanS.deck.length ? 0.55 : 0.45;
+}
+function aibEnumerateAttackPlans(s, o){
+  const atkSpells = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibLvOk(s, c.lv) && c.pp<=s.P);
+  // スペル戦略(複数)
+  const strategies = [];
+  strategies.push([]);                                                    // 詠唱なし
+  // 貪欲(全部詠唱)
+  { let budget=s.P; const sorted=atkSpells.slice().sort((a,b)=>b.pp-a.pp); const sel=[];
+    for(const c of sorted){ if(c.pp<=budget){ budget-=c.pp; sel.push(c); } }
+    if(sel.length) strategies.push(sel); }
+  // 最強1枚のみ
+  if(atkSpells.length){ const best=atkSpells.slice().sort((a,b)=>b.v-a.v)[0]; if(best.pp<=s.P) strategies.push([best]); }
+  // 最安1枚のみ
+  if(atkSpells.length){ const cheap=atkSpells.slice().sort((a,b)=>a.pp-b.pp)[0]; if(cheap.pp<=s.P) strategies.push([cheap]); }
+  // 重複排除
+  const seen = new Set();
+  const uniqStrats = strategies.filter(set => {
+    const key = set.map(c=>c.name).sort().join('|');
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+  // 各リーダー × 各戦略 = プラン
+  const plans = [];
+  for(const L of s.leaders){
+    for(const set of uniqStrats){
+      let bonus=0, direct=0;
+      set.forEach(c => { if(c.k==='atk') bonus+=c.v; else direct+=c.v; });
+      plans.push({leaderK:L.k, castSpells:set, spellBonus:bonus, direct});
+    }
+  }
+  return plans;
+}
+function aibApplyAttackPlan(s, plan){
+  // s.hand から castSpells を消費、s.P を引く。返り値は aibResolveAttack 互換の atk オブジェクト
+  const spellNames=[], spellCards=[];
+  plan.castSpells.forEach(c => {
+    const i = s.hand.indexOf(c);
+    if(i>=0){
+      s.P -= c.pp; s.hand.splice(i,1); s.trash.push(c);
+      spellNames.push(c.name); spellCards.push(c);
+    }
+  });
+  const atkL = s.leaders.find(L => L.k===plan.leaderK);
+  const d = leaderInfo(atkL);
+  let base = atkL.aw ? d.aatk : d.atk;
+  if(d.ab==='koi') base += 4;
+  if(d.ab==='four') base += 6;
+  if(d.ab==='koi' && atkL.awThis) base += 8;
+  return {atkL, ab:d.ab, raw:base+plan.spellBonus, spellBonus:plan.spellBonus, direct:plan.direct, spellNames, spellCards};
+}
+function aibMctsSelectPlan(s, o, K){
+  K = K || AIB_MCTS_K;
+  const plans = aibEnumerateAttackPlans(s, o);
+  if(plans.length<=1) return plans[0] || null;
+  let bestPlan = plans[0], bestScore = -1;
+  for(const plan of plans){
+    let total = 0;
+    for(let i=0; i<K; i++){
+      const sC = aibCloneSide(s), oC = aibCloneSide(o);
+      // 候補スペルの参照を clone hand 内に対応付け(同 ref のはずなので indexOf で見つかる)
+      const handSnap = sC.hand.slice();
+      const castOk = [];
+      for(const c of plan.castSpells){
+        const idx = handSnap.indexOf(c);
+        if(idx>=0){ castOk.push(c); handSnap.splice(idx,1); }
+      }
+      // クローン側で適用
+      const planCloned = {leaderK:plan.leaderK, castSpells:castOk, spellBonus:plan.spellBonus, direct:plan.direct};
+      const atk = aibApplyAttackPlan(sC, planCloned);
+      const def = aibAutoDefense(oC, atk.raw);
+      aibResolveAttack(sC, oC, [], atk, def);
+      aibAutoUtil(sC);
+      // 相手のターンから展開
+      if(oC.dead) { total += 1; continue; }
+      if(sC.dead) { total += 0; continue; }
+      total += aibRolloutScore(oC, sC, 'human', AIB_MCTS_DEPTH-1);
+    }
+    const avg = total / K;
+    if(avg > bestScore){ bestScore = avg; bestPlan = plan; }
+  }
+  return bestPlan;
+}
+function aibMctsComputeAttack(s, o){
+  const plan = aibMctsSelectPlan(s, o);
+  if(!plan){
+    // フォールバック: 貪欲
+    return aibComputeAttackGreedy(s, o, undefined, undefined);
+  }
+  return aibApplyAttackPlan(s, plan);
+}
+// 旧 aibComputeAttack をリネーム(後方互換)
+function aibComputeAttackGreedy(s,o,forced,humanBonus){
+  let atkL,base,ab;
+  if(forced){const v=aibLval(forced,o);atkL=forced;base=v.base;ab=v.ab;}
+  else{
+    const sc=s.leaders.map(L=>({v:aibLval(L,o),L:L}));
+    sc.sort((a,b)=>(b.v.base+b.v.virt)-(a.v.base+a.v.virt));
+    atkL=sc[0].L;base=sc[0].v.base;ab=sc[0].v.ab;
+  }
+  let spellBonus=0,direct=0;
+  const spellNames=[],spellCards=[];
+  if(humanBonus===undefined){
+    const reserve=aibHasQuickDef(s)?2:0;
+    let budget=Math.max(0,s.P-reserve);
+    const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibLvOk(s,c.lv))
+      .sort((a,b)=>b.pp-a.pp);
+    for(const c of cards){
+      if(c.pp<=budget){budget-=c.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
+        spellNames.push(c.name);spellCards.push(c);
+        if(c.k==='atk')spellBonus+=c.v;else direct+=c.v;}
+    }
+    s.P=budget+reserve;
+  } else { spellBonus=humanBonus; }
+  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct,spellNames:spellNames,spellCards:spellCards};
+}
+
 // 旧API: 自動で攻撃を1回(観戦/AI同士で使用)
 function aibDoAttack(s,o,log,forced){
   const atk=aibComputeAttack(s,o,forced);
@@ -4239,6 +4455,9 @@ function startAiPlaySession(){
   const myId=document.getElementById('play-deckAI-mine').value;
   const aiId=document.getElementById('play-deckAI-opp').value;
   const humanFirst=document.getElementById('play-aiHumanFirst').checked;
+  // AI 強さモードを設定(MCTS or 貪欲)
+  const modeSel=document.getElementById('play-aiMode');
+  aibAiMode = (modeSel && modeSel.value) || 'mcts';
   if(!myId||!aiId){ toast('両方のデッキを選んでください'); return; }
   const myDeck=state.decks.find(d=>d.id===myId);
   const aiDeck=state.decks.find(d=>d.id===aiId);
@@ -5286,17 +5505,17 @@ function autoCreateStarterDecks(){
   };
   const hakurei = [
     ['TH-L01',1],['TH-L02',1],
-    ['TH-001',5],['TH-002',5],['TH-003',4],['TH-005',5],['TH-017',5],['TH-019',3],
-    ['TH-006',5],['TH-007',4],['TH-008',4],['TH-016',5],['TH-023',5],
-    ['TH-010',5],['TH-011',4],['TH-012',4],['TH-022',4],
-    ['TH-013',4],['TH-015',5],['TH-024',4],
+    ['TH-001',4],['TH-002',4],['TH-003',3],['TH-005',3],['TH-017',3],['TH-019',2],
+    ['TH-006',4],['TH-007',3],['TH-008',3],['TH-016',4],['TH-023',4],
+    ['TH-010',4],['TH-011',3],['TH-012',3],['TH-022',3],
+    ['TH-013',3],['TH-015',4],['TH-024',3],
   ];
   const koma = [
     ['TH-L03',1],['TH-L04',1],
-    ['TH-001',3],['TH-002',3],['TH-003',3],['TH-004',5],['TH-005',5],['TH-017',2],['TH-019',4],['TH-021',5],
-    ['TH-006',3],['TH-008',3],['TH-009',4],['TH-018',4],['TH-023',3],
-    ['TH-010',3],['TH-011',5],['TH-012',3],['TH-022',3],
-    ['TH-013',5],['TH-014',4],['TH-020',4],['TH-024',3],['TH-015',3],
+    ['TH-001',3],['TH-002',2],['TH-003',3],['TH-004',4],['TH-005',4],['TH-017',1],['TH-019',3],['TH-021',4],
+    ['TH-006',2],['TH-008',2],['TH-009',3],['TH-018',3],['TH-023',2],
+    ['TH-010',2],['TH-011',4],['TH-012',2],['TH-022',2],
+    ['TH-013',4],['TH-014',3],['TH-020',3],['TH-024',2],['TH-015',2],
   ];
   function buildDeck(name, entries){
     const cards = entries.map(([code,n]) => need(code,n)).filter(x => x);
@@ -5550,7 +5769,7 @@ async function importDeckCode() {
   toast(`「${newDeck.name}」を取込(カード${addedCards}枚追加)`);
 }
 // デッキ枚数ゲージ(東方版: 50枚目安)
-const DECK_TARGET = 82, DECK_GAUGE_SCALE = 100;  // v3.1: スペル80 + リーダー2
+const DECK_TARGET = 62, DECK_GAUGE_SCALE = 80;  // v3.3: スペル60 + リーダー2
 function renderDeckSizeGauge(total, deck) {
   const targetPct = (DECK_TARGET / DECK_GAUGE_SCALE) * 100;
   const fillPct = Math.min(100, (total / DECK_GAUGE_SCALE) * 100);
@@ -5672,11 +5891,11 @@ function isLeaderCard(card) { return !!card && getTypeKind(card.type) === 'touho
 function isDondengCard(card) { return false; }
 // どんでん返しデッキ(別山) の上限 — 互換用
 const DONDENG_DECK_MAX = 5;
-// カード1種あたりの最大枚数(v3.1: 同 ID 上限 5)
+// カード1種あたりの最大枚数(v3.3: 同 ID 上限 4)
 function getMaxCopies(card) {
-  if (!card) return 5;
+  if (!card) return 4;
   if (card.unlimited) return Infinity;
-  return 5; // 同 ID 上限(rules.md §B)
+  return 4; // 同 ID 上限(rules.md §B)
 }
 // デッキ初期化(東方版では dondengCards は実質未使用、互換のため空配列で確保)
 function ensureDondengDeck(deck) {
@@ -7233,6 +7452,10 @@ function renderPlay() {
         </div>
         <div class="play-setup-row">
           <div class="field"><label><input type="checkbox" id="play-aiHumanFirst" checked> あなたが先攻</label></div>
+          <div class="field"><label>AI 強さ ── <select id="play-aiMode" style="margin-left:6px;">
+            <option value="mcts" selected>🧠 MCTS(強い・推奨)</option>
+            <option value="greedy">⚡ 貪欲(高速・読みなし)</option>
+          </select></label></div>
         </div>
         <div class="play-setup-actions">
           <button class="btn-primary" onclick="startAiPlaySession()">▶ AI と対戦開始</button>

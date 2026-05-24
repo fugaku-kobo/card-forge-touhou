@@ -3656,6 +3656,12 @@ function migrateRebalanceV33(){
       }
     }
   });
+  // 既存デッキの同 ID 上限を 5→4 にトリム(v3.3 で同 ID 上限が 4 に下がった)
+  if (state.decks) {
+    state.decks.forEach(d => {
+      (d.cards||[]).forEach(e => { if (e.count > 4) e.count = 4; });
+    });
+  }
   state.rebalanceVer = '3.3';
 }
 
@@ -4202,22 +4208,34 @@ function aibRolloutScore(humanS, aiS, startCur, maxTurns){
   return aiS.deck.length > humanS.deck.length ? 0.55 : 0.45;
 }
 function aibEnumerateAttackPlans(s, o){
-  const atkSpells = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibLvOk(s, c.lv) && c.pp<=s.P);
-  // スペル戦略(複数)
-  const strategies = [];
-  strategies.push([]);                                                    // 詠唱なし
-  // 貪欲(全部詠唱)
-  { let budget=s.P; const sorted=atkSpells.slice().sort((a,b)=>b.pp-a.pp); const sel=[];
+  const atkPPCastable = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibLvOk(s, c.lv) && c.pp<=s.P);
+  const atkAll = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibLvOk(s, c.lv));
+  // PP 払いの戦略パターン
+  const ppStrats = [];
+  ppStrats.push([]);                                                      // 詠唱なし
+  { let budget=s.P; const sorted=atkPPCastable.slice().sort((a,b)=>b.pp-a.pp); const sel=[];
     for(const c of sorted){ if(c.pp<=budget){ budget-=c.pp; sel.push(c); } }
-    if(sel.length) strategies.push(sel); }
-  // 最強1枚のみ
-  if(atkSpells.length){ const best=atkSpells.slice().sort((a,b)=>b.v-a.v)[0]; if(best.pp<=s.P) strategies.push([best]); }
-  // 最安1枚のみ
-  if(atkSpells.length){ const cheap=atkSpells.slice().sort((a,b)=>a.pp-b.pp)[0]; if(cheap.pp<=s.P) strategies.push([cheap]); }
+    if(sel.length) ppStrats.push(sel); }                                  // 貪欲(全部PP詠唱)
+  if(atkPPCastable.length){ const best=atkPPCastable.slice().sort((a,b)=>b.v-a.v)[0]; if(best.pp<=s.P) ppStrats.push([best]); }
+  if(atkPPCastable.length){ const cheap=atkPPCastable.slice().sort((a,b)=>a.pp-b.pp)[0]; if(cheap.pp<=s.P) ppStrats.push([cheap]); }
+  // BOMB 拡張: 各 PP 戦略に「残りの最強 atk を BOMB で追加詠唱」バリアントを足す
+  // ただし BOMB は 2 個を防御用に温存(useable = bomb - 2)
+  const usableBomb = Math.max(0, s.bomb - 2);
+  const combos = [];
+  ppStrats.forEach(pp => {
+    combos.push({pp, bom: []});
+    if (usableBomb > 0) {
+      const remaining = atkAll.filter(c => !pp.includes(c) && (c.bom||0) > 0 && (c.bom||0) <= usableBomb);
+      if (remaining.length) {
+        const bombBest = remaining.slice().sort((a,b)=>b.v-a.v)[0];
+        combos.push({pp, bom: [bombBest]});
+      }
+    }
+  });
   // 重複排除
   const seen = new Set();
-  const uniqStrats = strategies.filter(set => {
-    const key = set.map(c=>c.name).sort().join('|');
+  const uniqStrats = combos.filter(set => {
+    const key = set.pp.map(c=>c.name).sort().join('|') + '||' + set.bom.map(c=>c.name).sort().join('|');
     if(seen.has(key)) return false;
     seen.add(key); return true;
   });
@@ -4226,14 +4244,14 @@ function aibEnumerateAttackPlans(s, o){
   for(const L of s.leaders){
     for(const set of uniqStrats){
       let bonus=0, direct=0;
-      set.forEach(c => { if(c.k==='atk') bonus+=c.v; else direct+=c.v; });
-      plans.push({leaderK:L.k, castSpells:set, spellBonus:bonus, direct});
+      [...set.pp, ...set.bom].forEach(c => { if(c.k==='atk') bonus+=c.v; else direct+=c.v; });
+      plans.push({leaderK:L.k, castSpells:set.pp, castWithBom:set.bom, spellBonus:bonus, direct});
     }
   }
   return plans;
 }
 function aibApplyAttackPlan(s, plan){
-  // s.hand から castSpells を消費、s.P を引く。返り値は aibResolveAttack 互換の atk オブジェクト
+  // s.hand から castSpells (PP) / castWithBom (BOMB) を消費。返り値は aibResolveAttack 互換の atk オブジェクト
   const spellNames=[], spellCards=[];
   plan.castSpells.forEach(c => {
     const i = s.hand.indexOf(c);
@@ -4242,12 +4260,20 @@ function aibApplyAttackPlan(s, plan){
       spellNames.push(c.name); spellCards.push(c);
     }
   });
+  (plan.castWithBom || []).forEach(c => {
+    const i = s.hand.indexOf(c);
+    if(i>=0 && s.bomb >= (c.bom||0)){
+      s.bomb -= (c.bom||0); s.hand.splice(i,1); s.trash.push(c);
+      spellNames.push(c.name+'(💣)'); spellCards.push(c);
+    }
+  });
   const atkL = s.leaders.find(L => L.k===plan.leaderK);
   const d = leaderInfo(atkL);
   let base = atkL.aw ? d.aatk : d.atk;
-  if(d.ab==='koi') base += 4;
-  if(d.ab==='four') base += 6;
-  if(d.ab==='koi' && atkL.awThis) base += 8;
+  // v1.5(v3.3): koi+3 / four+5 / koi覚醒ターン+6 (×0.75 スケール)
+  if(d.ab==='koi') base += 3;
+  if(d.ab==='four') base += 5;
+  if(d.ab==='koi' && atkL.awThis) base += 6;
   return {atkL, ab:d.ab, raw:base+plan.spellBonus, spellBonus:plan.spellBonus, direct:plan.direct, spellNames, spellCards};
 }
 function aibMctsSelectPlan(s, o, K){

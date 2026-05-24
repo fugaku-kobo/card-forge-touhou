@@ -3154,6 +3154,25 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
               <input type="text" id="f-recoverP" placeholder="例: 1" maxlength="3" inputmode="numeric">
             </div>
           </div>
+          <div class="field-row" style="margin-top:8px;background:rgba(216,178,90,0.07);padding:8px 10px;border-radius:6px;border:1px dashed rgba(212,175,110,0.35);">
+            <div style="flex:1 1 100%;font-size:.78rem;color:#d8b25a;margin-bottom:4px;">⚙ AI対戦エンジン設定 ── このカードが AI 対戦で何をするか</div>
+            <div class="field" style="flex:0 0 220px">
+              <label>engineKind(挙動)</label>
+              <select id="f-engineKind">
+                <option value="">(未指定)</option>
+                <option value="atk">atk ── 攻撃時 削り量+</option>
+                <option value="def">def ── 防御時 軽減-</option>
+                <option value="util">util ── ドロー/P回収</option>
+                <option value="mill">mill ── 相手デッキ直接削り</option>
+                <option value="disrupt">disrupt ── 相手のP-</option>
+              </select>
+            </div>
+            <div class="field" style="flex:0 0 130px">
+              <label>engineValue(数値)</label>
+              <input type="text" id="f-engineValue" placeholder="例: 6" maxlength="3" inputmode="numeric">
+            </div>
+            <div style="flex:1 1 100%;font-size:.72rem;color:var(--parchment-dim);margin-top:2px;">未指定だと AI 対戦で「ドロー1枚」相当(util/0)として扱われます。内蔵 TH カードは設定済み。</div>
+          </div>
           <div class="field">
             <label>カード効果</label>
             <textarea id="f-effect-spell" placeholder="例: 攻撃力+10 / 2回攻撃"></textarea>
@@ -4724,6 +4743,8 @@ function readForm() {
     data.bomCost           = normalizeNumStr(document.getElementById('f-bomCost').value);
     data.trigger           = normalizeNumStr(document.getElementById('f-trigger').value);
     data.recoverP          = normalizeNumStr(document.getElementById('f-recoverP').value);
+    data.engineKind        = document.getElementById('f-engineKind').value || '';
+    data.engineValue       = normalizeNumStr(document.getElementById('f-engineValue').value);
     data.effect            = document.getElementById('f-effect-spell').value.trim();
     data.unlimited         = document.getElementById('f-unlimited-spell').checked;
     // 使用者 = work フィールド(共通入力)。スペル/シューティングでは必須(デッキ整合性チェックに使用)
@@ -4762,6 +4783,8 @@ function writeForm(c) {
   document.getElementById('f-bomCost').value           = c.bomCost || '';
   document.getElementById('f-trigger').value           = c.trigger || '';
   document.getElementById('f-recoverP').value          = c.recoverP || '';
+  document.getElementById('f-engineKind').value        = c.engineKind || '';
+  document.getElementById('f-engineValue').value       = c.engineValue || '';
   document.getElementById('f-effect-spell').value      = c.effect || '';
   document.getElementById('f-unlimited-spell').checked = !!c.unlimited;
   // 使用者の候補リスト(既存キャラ)を datalist へ

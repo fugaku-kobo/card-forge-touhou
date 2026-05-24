@@ -26,30 +26,82 @@ PAIRS = [
 CFG = {}  # 改善案テスト用の調整パラメータ
 BASE_LD = {k: v for k, v in LD.items()}  # eva 上書き用の原本
 
-# ===== スペル24種 (v1.5): kind, val, pp, quick, recoverP, reqLv =====
-# val は v1.4 から ×0.75 スケール(util/disrupt は据え置き)
+# ===== スペル30種 (v1.6): kind, val, pp, quick, recoverP, reqLv, lr =====
+# lr = '' (共有) / '霊夢' / '魔理沙' / 'レミリア' / 'フラン' (専用)
 POOL = [
- ('atk', 5,2,0,2,1),('atk', 7,3,0,1,1),('atk',11,5,0,0,2),('atk', 9,4,0,0,2),('atk', 5,3,0,1,1),
- ('def', 8,2,1,2,1),('def', 9,3,1,1,1),('def', 4,1,1,3,1),('def',15,4,1,0,2),
- ('util',2,1,0,2,1),('util',2,2,0,1,1),('util',1,2,0,0,1),
- ('disrupt',3,3,0,0,2),('mill',12,5,0,0,2),('def', 8,3,0,1,1),
- ('def', 4,3,1,1,1),('atk', 5,2,0,1,1),('def',12,4,1,0,2),('atk',12,5,0,0,2),
- ('disrupt',2,3,0,1,1),('atk', 8,4,0,0,2),('util',1,1,0,1,1),('def', 6,2,1,2,1),('util',0,2,0,0,1),
+ # 共有 10 種 (TH-001..010) — 基本コンバット
+ ('atk',     5, 2, 0, 2, 1, ''),  # TH-001 霊符『夢想妙珠』
+ ('atk',     7, 3, 0, 1, 1, ''),  # TH-002 火符『アグニシャイン』
+ ('atk',    11, 5, 0, 0, 2, ''),  # TH-003 月符『サイレントセレナ』
+ ('def',     4, 1, 1, 3, 1, ''),  # TH-004 結界『生死の境界』 QUICK
+ ('def',     8, 2, 1, 2, 1, ''),  # TH-005 結界『博麗弾幕結界』 QUICK
+ ('def',    12, 4, 1, 0, 2, ''),  # TH-006 結界『大結界』 QUICK
+ ('util',    1, 1, 0, 1, 1, ''),  # TH-007 魔符『ミルキーウェイ』
+ ('util',    2, 2, 0, 1, 1, ''),  # TH-008 魔符『マジカルブースター』
+ ('mill',    8, 4, 0, 0, 2, ''),  # TH-009 「QED『495年の波紋』」
+ ('disrupt', 1, 3, 0, 1, 2, ''),  # TH-010 幻葬『夜霧の幻影殺人鬼』
+ # 霊夢専用 5 種 (TH-101..105) — 妨害&受け
+ ('atk',     6, 2, 0, 1, 1, '霊夢'),  # TH-101 霊符『博麗符印』
+ ('atk',    10, 4, 0, 0, 2, '霊夢'),  # TH-102 神霊『夢想封印 集』
+ ('def',    10, 3, 1, 1, 2, '霊夢'),  # TH-103 結界『博麗結界』 QUICK
+ ('disrupt', 2, 3, 0, 0, 1, '霊夢'),  # TH-104 神技『八方鬼縛陣』(P-3 → P-2 に調整)
+ ('def',     6, 2, 1, 1, 1, '霊夢'),  # TH-105 『楽園の素敵な巫女』 QUICK
+ # 魔理沙専用 5 種 (TH-201..205) — 火力バースト
+ ('atk',    12, 4, 0, 0, 2, '魔理沙'),  # TH-201 恋符『マスタースパーク』 +自デッキ-2
+ ('atk',    18, 5, 0, 0, 2, '魔理沙'),  # TH-202 魔砲『ファイナルスパーク』 +自デッキ-4
+ ('atk',     8, 3, 0, 1, 1, '魔理沙'),  # TH-203 星符『ドラゴンメテオ』
+ ('atk',     6, 2, 0, 1, 1, '魔理沙'),  # TH-204 魔符『アーティフルチャンター』
+ ('util',    1, 1, 0, 1, 1, '魔理沙'),  # TH-205 『普通の魔法使い』
+ # レミリア専用 5 種 (TH-301..305) — 支配&吸血
+ ('atk',     8, 3, 0, 1, 1, 'レミリア'),  # TH-301 紅符『スカーレットシュート』
+ ('atk',    14, 5, 0, 0, 2, 'レミリア'),  # TH-302 神槍『スピア・ザ・グングニル』 +相手P-2
+ ('disrupt', 1, 3, 0, 1, 1, 'レミリア'),  # TH-303 紅魔『スカーレットデビル』
+ ('util',    2, 2, 0, 1, 1, 'レミリア'),  # TH-304 吸血『ドラキュリア』
+ ('def',     9, 3, 1, 0, 2, 'レミリア'),  # TH-305 『永遠に紅い幼き月』 QUICK
+ # フランドール専用 5 種 (TH-401..405) — 破壊&代償
+ ('atk',    10, 3, 0, 0, 1, 'フラン'),    # TH-401 禁忌『フォーオブアカインド』 +自デッキ-2
+ ('mill',   15, 5, 0, 0, 2, 'フラン'),    # TH-402 禁弾『過去を刻む時計』
+ ('atk',     7, 3, 0, 0, 1, 'フラン'),    # TH-403 禁忌『カゴメカゴメ』 +相手P-2
+ ('atk',    15, 5, 0, 0, 2, 'フラン'),    # TH-404 禁弾『スターボウブレイク』
+ ('atk',     6, 2, 0, 1, 1, 'フラン'),    # TH-405 『悪魔の妹』
 ]
-# 合計60枚・各 ≤4 (同 ID 上限 4)
-COUNTS = [4,4,3,2,3, 3,2,2,2, 2,3,2, 2,2,2, 3,4,2,2, 2,2,2,3,2]
+# 専用カードの追加効果(攻撃時 self-mill / opp-P-mill)を ID で参照
+EXTRA = {
+    15: {'self_mill': 1},      # TH-201 マスタースパーク (代償軽減 2→1)
+    16: {'self_mill': 2},      # TH-202 ファイナルスパーク (代償軽減 4→2)
+    25: {'self_mill': 2},      # TH-401 フォーオブアカインド
+    21: {'opp_p_mill': 2},     # TH-302 グングニル
+    27: {'opp_p_mill': 2},     # TH-403 カゴメカゴメ
+    10: {'opp_p_mill': 1},     # TH-101 博麗符印
+}
 
-def build_deck():
+# ペア → 該当リーダー名
+LEADER_OF_PAIR = {pair: [pair[0], pair[1]] for pair in [('魔理沙','フラン'), ('魔理沙','レミリア'), ('霊夢','フラン'), ('霊夢','魔理沙'), ('レミリア','フラン'), ('霊夢','レミリア')]}
+
+def usable_indices(pair):
+    """このペアで使用可能なカードインデックス(共有+両リーダー専用) = 20種"""
+    return [i for i, c in enumerate(POOL) if c[6]=='' or c[6] in pair]
+
+def build_deck(pair):
+    """v1.6 スターター: 共有10×4 + 該当ペア専用10×2 = 60枚"""
     d = []
-    for i, c in enumerate(COUNTS):
-        d += [i]*c
+    for i in usable_indices(pair):
+        n = 4 if POOL[i][6] == '' else 2  # 共有4枚 / 専用2枚
+        d += [i] * n
     random.shuffle(d)
     return d
+
+def spell_castable(s, c):
+    """Lv 条件 + リーダー所持 (lr) を満たすか"""
+    lr = POOL[c][6]
+    if lr and not any(L['k'] == lr for L in s.leaders):
+        return False
+    return lv_ok(s, POOL[c][5])
 
 class Side:
     def __init__(self, pair, is_first, ai_params=None):
         self.ai = ai_params or {}
-        self.deck = build_deck()
+        self.deck = build_deck(pair)
         self.is_first = is_first
         self.life = 3 + (0 if is_first else CFG.get('go2nd_life', 0))
         self.life_cards = [self.deck.pop() for _ in range(3)]
@@ -101,7 +153,7 @@ def lv_ok(s, lv):
     return lv <= 1 or any(L['aw'] for L in s.leaders)
 
 def has_quick_def(s):
-    return any(POOL[c][0]=='def' and POOL[c][3]==1 for c in s.hand)
+    return any(POOL[c][0]=='def' and POOL[c][3]==1 and spell_castable(s, c) for c in s.hand)
 
 def covenant(s, o):
     cand = [L for L in s.leaders if not L['aw']]
@@ -179,22 +231,27 @@ def do_attack(s, o):
     reserve = s.ai.get('qdef_reserve', 2) if has_quick_def(s) else 0
     budget = max(0, s.P - reserve)
     spell_bonus = 0; direct = 0
-    atk_cards = sorted([c for c in s.hand if POOL[c][0] in ('atk','mill') and lv_ok(s, POOL[c][5])],
+    atk_cards = sorted([c for c in s.hand if POOL[c][0] in ('atk','mill') and spell_castable(s, c)],
                        key=lambda c: POOL[c][1], reverse=True)
+    extra_self_mill = 0  # 攻撃時に追加で発動する自デッキ削り(マスタースパーク等)
+    extra_opp_p_mill = 0  # 相手 P 追加削り(グングニル等)
     for c in atk_cards:
-        k,val,pp,_,_,_ = POOL[c]
+        k,val,pp,_,_,_,_ = POOL[c]
         if pp <= budget:
             budget -= pp
             s.hand.remove(c); s.trash.append(c)
             if k == 'atk': spell_bonus += val
             else: direct += val
+            e = EXTRA.get(c, {})
+            extra_self_mill += e.get('self_mill', 0)
+            extra_opp_p_mill += e.get('opp_p_mill', 0)
     s.P = budget + reserve
     dL = best_def(o)
     da,de,_,_,dae,_ = LD[dL['k']]
     dval = dae if dL['aw'] else de
     raw = base + spell_bonus + (CFG.get('oharai_dmg', 0) if (ab == 'oharai' and o.P < 2) else 0)
     reduce = 0
-    quick = sorted([c for c in o.hand if POOL[c][0]=='def' and POOL[c][3]==1 and lv_ok(o, POOL[c][5])],
+    quick = sorted([c for c in o.hand if POOL[c][0]=='def' and POOL[c][3]==1 and spell_castable(o, c)],
                    key=lambda c: POOL[c][1], reverse=True)
     incoming = max(1, raw - dval)
     qdef_thresh = o.ai.get('qdef_threshold', 12)
@@ -224,10 +281,15 @@ def do_attack(s, o):
     elif ab == 'charisma':
         # 吸血: トラッシュから 1 P 回収
         if s.trash: s.P += 1
+    # 専用スペル追加効果(EXTRA で定義した self_mill / opp_p_mill)
+    if extra_self_mill > 0:
+        mill(s, extra_self_mill)
+    if extra_opp_p_mill > 0:
+        o.P = max(0, o.P - extra_opp_p_mill)
     atkL['rested'] = True
     for c in list(s.hand):
-        k,val,pp,_,_,lv = POOL[c]
-        if k=='util' and pp<=s.P and lv_ok(s,lv):
+        k,val,pp,_,_,lv,_ = POOL[c]
+        if k=='util' and pp<=s.P and spell_castable(s, c):
             s.P -= pp; s.hand.remove(c); s.trash.append(c); draw(s, max(1,val)); break
     while len(s.hand) > 7:
         s.trash.append(s.hand.pop())

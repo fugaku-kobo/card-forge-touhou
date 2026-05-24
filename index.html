@@ -3172,7 +3172,17 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
               <label>engineValue(数値)</label>
               <input type="text" id="f-engineValue" placeholder="例: 6" maxlength="3" inputmode="numeric">
             </div>
-            <div style="flex:1 1 100%;font-size:.72rem;color:var(--parchment-dim);margin-top:2px;">未指定だと AI 対戦で「ドロー1枚」相当(util/0)として扱われます。内蔵 TH カードは設定済み。</div>
+            <div class="field" style="flex:0 0 200px">
+              <label>専用リーダー (v3.4)</label>
+              <select id="f-leaderRestriction">
+                <option value="">共有(全員詠唱可)</option>
+                <option value="TH-L01">霊夢専用</option>
+                <option value="TH-L02">魔理沙専用</option>
+                <option value="TH-L03">レミリア専用</option>
+                <option value="TH-L04">フランドール専用</option>
+              </select>
+            </div>
+            <div style="flex:1 1 100%;font-size:.72rem;color:var(--parchment-dim);margin-top:2px;">未指定だと AI 対戦で「ドロー1枚」相当(util/0)として扱われます。専用カードは場に該当リーダーがいる場合のみ詠唱可。</div>
           </div>
           <div class="field">
             <label>カード効果</label>
@@ -3548,6 +3558,7 @@ function cardToSpellInfo(card){
     q:  card.spellKind==='QUICK' ? 1 : 0,
     rec: Number(card.recoverP||0),
     lv: Number(card.requiredCharLevel||1),
+    lr: card.leaderRestriction || '',  // 専用リーダーコード('' / 'TH-L01..L04')。v3.4 で導入。
     name: card.name||'', cardId: card.id, card: card,
   };
 }
@@ -4086,6 +4097,28 @@ function aibRefresh(s){s.deck=aibShuffle(s.trash);s.trash=[];s.life--;if(s.lifeC
 function aibDraw(s,n){for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return;}if(s.deck.length)s.hand.push(s.deck.shift());}}
 function aibMill(s,n){const m=[];for(let i=0;i<n;i++){if(!s.deck.length){aibRefresh(s);if(s.dead)return m;}if(!s.deck.length)break;const c=s.deck.shift();s.trash.push(c);m.push(c);}return m;}
 function aibLvOk(s,lv){return lv<=1||s.leaders.some(L=>L.aw);}
+// v3.4: リーダー専用スペルの所持判定。lr が空なら共有(true)。場に該当リーダーがいれば詠唱可。
+const AIB_LR_NAME = { 'TH-L01':'霊夢', 'TH-L02':'魔理沙', 'TH-L03':'レミリア', 'TH-L04':'フランドール' };
+function aibLeaderOk(s,lr){
+  if(!lr) return true;
+  return s.leaders.some(L => {
+    const code = (L.card && L.card.cardCode) || L.cardCode || '';
+    if(code === lr) return true;
+    // AIB 内蔵エンジン互換: L.k は表示名('霊夢'等)で持つ。lr のコードを名前に逆引き比較。
+    if(AIB_LR_NAME[lr] && L.k === AIB_LR_NAME[lr]) return true;
+    return false;
+  });
+}
+// 統合チェック: Lv + リーダー所持
+function aibSpellOk(s,spell){ return aibLvOk(s, spell.lv) && aibLeaderOk(s, spell.lr); }
+// リーダーコード → 表示名(エラーメッセージ・badge 用)
+function aibLeaderName(lr){
+  const NAMES = {'TH-L01':'霊夢','TH-L02':'魔理沙','TH-L03':'レミリア','TH-L04':'フランドール'};
+  if(NAMES[lr]) return NAMES[lr];
+  // state.cards から該当リーダーカードを探す(ユーザーが追加した場合)
+  try { const c = (state && state.cards||[]).find(x => x.cardCode === lr); if(c) return c.name||lr; } catch(e){}
+  return lr;
+}
 function aibHasQuickDef(s){return s.hand.some(c=>c.k==='def'&&c.q);}
 function aibEva(L){const d=leaderInfo(L);return L.aw?d.aeva:d.eva;}
 
@@ -4132,7 +4165,7 @@ function aibAutoDefense(o,raw){
   const dval=aibEva(dL);
   let incoming=Math.max(1,raw-dval),spellIdx=-1;
   const q=o.hand.map((c,i)=>({c:c,i:i}))
-    .filter(x=>x.c.k==='def'&&x.c.q&&aibLvOk(o,x.c.lv)&&x.c.pp<=o.P)
+    .filter(x=>x.c.k==='def'&&x.c.q&&aibSpellOk(o,x.c)&&x.c.pp<=o.P)
     .sort((a,b)=>b.c.v-a.c.v);
   // GA進化済パラメータ (Stage A): qdef_threshold=5 / bomb_life_threshold=2 / bomb_deck_ratio=0.64
   if(q.length&&incoming>5)spellIdx=q[0].i;
@@ -4173,7 +4206,7 @@ function aibResolveAttack(s,o,log,atk,def){
 function aibAutoUtil(s){
   for(const c of s.hand.slice()){
     const sp=c;
-    if(sp.k==='util'&&sp.pp<=s.P&&aibLvOk(s,sp.lv)){s.P-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);aibDraw(s,Math.max(1,sp.v));break;}
+    if(sp.k==='util'&&sp.pp<=s.P&&aibSpellOk(s,sp)){s.P-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);aibDraw(s,Math.max(1,sp.v));break;}
   }
   while(s.hand.length>7)s.trash.push(s.hand.pop());
 }
@@ -4208,8 +4241,8 @@ function aibRolloutScore(humanS, aiS, startCur, maxTurns){
   return aiS.deck.length > humanS.deck.length ? 0.55 : 0.45;
 }
 function aibEnumerateAttackPlans(s, o){
-  const atkPPCastable = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibLvOk(s, c.lv) && c.pp<=s.P);
-  const atkAll = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibLvOk(s, c.lv));
+  const atkPPCastable = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibSpellOk(s, c) && c.pp<=s.P);
+  const atkAll = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibSpellOk(s, c));
   // PP 払いの戦略パターン
   const ppStrats = [];
   ppStrats.push([]);                                                      // 詠唱なし
@@ -4330,7 +4363,7 @@ function aibComputeAttackGreedy(s,o,forced,humanBonus){
   if(humanBonus===undefined){
     const reserve=aibHasQuickDef(s)?4:0;  // GA進化済: qdef_reserve=4 (旧2)
     let budget=Math.max(0,s.P-reserve);
-    const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibLvOk(s,c.lv))
+    const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibSpellOk(s,c))
       .sort((a,b)=>b.pp-a.pp);
     for(const c of cards){
       if(c.pp<=budget){budget-=c.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
@@ -4582,7 +4615,7 @@ function aibCastSpell(idx, useBom){
   const g=aibGame,h=g.human;
   if(g.humanPhase!=='play'||idx<0||idx>=h.hand.length)return;
   const c=h.hand[idx],sp=c;
-  if(sp.k==='def'||!aibLvOk(h,sp.lv))return;
+  if(sp.k==='def'||!aibSpellOk(h,sp))return;
   const bom = sp.bom || 0;
   if(useBom){
     if(bom===0 || h.bomb < bom) return;
@@ -4799,7 +4832,7 @@ function aibCenterHtml(g){
     let defBtns='';
     g.human.hand.forEach((c,i)=>{
       const sp=c;
-      if(sp.k==='def'&&sp.q&&sp.pp<=g.human.P&&aibLvOk(g.human,sp.lv))
+      if(sp.k==='def'&&sp.q&&sp.pp<=g.human.P&&aibSpellOk(g.human,sp))
         defBtns+='<button class="btn-primary" onclick="aibHumanDefend(\'spell\','+i+')" style="margin:3px;">🛡 '+c.name+'(P'+sp.pp+' / 軽減-'+sp.v+')</button>';
     });
     if(g.human.bomb>=2)
@@ -4832,7 +4865,7 @@ function aibHandMat(g){
   if(!h.hand.length) s+='<span style="color:#8b8270;font-size:.8rem;">手札なし</span>';
   h.hand.forEach((c,i)=>{
     const sp=c;
-    const aff=sp.pp<=h.P&&aibLvOk(h,sp.lv);
+    const aff=sp.pp<=h.P&&aibSpellOk(h,sp);
     const hot=(ph==='charge')||(ph==='play'&&aff&&sp.k!=='def');
     s+='<div class="aib-card '+(hot?'castable':'dim')+'" onclick="aibCardZoom('+i+')">'+aibCardInner(c)+'</div>';
   });
@@ -4937,6 +4970,7 @@ function aibCardZoom(idx){
   } else if(!g.over&&ph==='play'){
     if(sp.k==='def') act='<div style="color:#ff8a6a;font-size:.82rem;">防御フェイズ専用 ── 自分のターンでは使えません</div>';
     else if(!aibLvOk(g.human,sp.lv)) act='<div style="color:#ff8a6a;font-size:.82rem;">発動には Lv'+sp.lv+'(リーダー覚醒)が必要</div>';
+    else if(!aibLeaderOk(g.human,sp.lr)) act='<div style="color:#ff8a6a;font-size:.82rem;">このカードは <b>'+aibLeaderName(sp.lr)+'</b> 専用です</div>';
     else {
       let btns='';
       if(sp.pp<=g.human.P) btns+='<button class="btn-primary" onclick="aibCastSpell('+idx+',false)">🔮 P'+sp.pp+' で詠唱</button> ';
@@ -5009,6 +5043,7 @@ function readForm() {
     data.recoverP          = normalizeNumStr(document.getElementById('f-recoverP').value);
     data.engineKind        = document.getElementById('f-engineKind').value || '';
     data.engineValue       = normalizeNumStr(document.getElementById('f-engineValue').value);
+    data.leaderRestriction = document.getElementById('f-leaderRestriction').value || '';
     data.effect            = document.getElementById('f-effect-spell').value.trim();
     data.unlimited         = document.getElementById('f-unlimited-spell').checked;
     // 使用者 = work フィールド(共通入力)。スペル/シューティングでは必須(デッキ整合性チェックに使用)
@@ -5049,6 +5084,7 @@ function writeForm(c) {
   document.getElementById('f-recoverP').value          = c.recoverP || '';
   document.getElementById('f-engineKind').value        = c.engineKind || '';
   document.getElementById('f-engineValue').value       = c.engineValue || '';
+  document.getElementById('f-leaderRestriction').value = c.leaderRestriction || '';
   document.getElementById('f-effect-spell').value      = c.effect || '';
   document.getElementById('f-unlimited-spell').checked = !!c.unlimited;
   // 使用者の候補リスト(既存キャラ)を datalist へ
@@ -5234,6 +5270,9 @@ function buildCardHTML(c, idx, opts) {
     if (c.bomCost) costParts.push(`💣BOM ${c.bomCost}`);
     const costLine = costParts.join(' / ');
     const userName = c.user || c.work || '';
+    // v3.4: 専用リーダー badge
+    const lrName = c.leaderRestriction ? ({ 'TH-L01':'霊夢','TH-L02':'魔理沙','TH-L03':'レミリア','TH-L04':'フランドール' }[c.leaderRestriction] || c.leaderRestriction) : '';
+    const lrColor = ({ 'TH-L01':'linear-gradient(135deg,#cc3344,#fff,#cc3344)', 'TH-L02':'linear-gradient(135deg,#222,#d4af37)', 'TH-L03':'linear-gradient(135deg,#7d2050,#c33665)', 'TH-L04':'linear-gradient(135deg,#ff5577,#ffaa44,#88ddff,#cc66ff)' })[c.leaderRestriction] || '';
     body = `
       <div class="cp-header">
         ${c.requiredCharLevel ? `<div class="cp-badge cp-badge-level" style="background:${color}" title="発動条件: 盤面キャラが Lv ${escapeHtml(c.requiredCharLevel)} 以上"><span class="cp-badge-prefix">≥Lv</span>${escapeHtml(c.requiredCharLevel)}</div>` : ''}
@@ -5253,7 +5292,7 @@ function buildCardHTML(c, idx, opts) {
       </div>
       <div class="cp-footer">
         ${c.recoverP ? `<div class="cp-footer-work cp-recover-p" title="攻撃でトラッシュに送られた時、攻撃側が獲得">回収P ${escapeHtml(c.recoverP)}</div>` : '<div></div>'}
-        ${userName ? `<div class="cp-footer-rule cp-user-tag" title="使用者">👤 ${escapeHtml(userName)}</div>` : ''}
+        ${lrName ? `<div class="cp-leader-tag" style="background:${lrColor};-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;font-size:.78rem;text-shadow:0 0 1px rgba(0,0,0,.45);" title="このカードは ${escapeHtml(lrName)} を場に持つ場合のみ詠唱可">★ ${escapeHtml(lrName)}専用</div>` : (userName ? `<div class="cp-footer-rule cp-user-tag" title="使用者">👤 ${escapeHtml(userName)}</div>` : '')}
       </div>
     `;
   }
@@ -6385,6 +6424,7 @@ function importXLSX(ev) {
           else if (h === 'トリガー') colIdx.trigger = i;
           else if (h === '回収P' || h === '回収Pコスト') colIdx.recoverP = i;
           else if (h === '発動条件Lv' || h === '左上') colIdx.requiredCharLevel = i;
+          else if (h === '専用リーダー' || h === 'リーダー専用') colIdx.leaderRestriction = i;
         });
 
         for (let r = 1; r < rows.length; r++) {
@@ -6437,6 +6477,7 @@ function importXLSX(ev) {
             card.bomCost           = normalizeNumStr(row[colIdx.bomCost]);
             card.trigger           = normalizeNumStr(row[colIdx.trigger]);
             card.recoverP          = normalizeNumStr(row[colIdx.recoverP]);
+            card.leaderRestriction = String(row[colIdx.leaderRestriction] || '').trim();
             card.effect            = String(row[colIdx.effect] || '').trim();
           }
           importedCards.push(card);

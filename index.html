@@ -3587,10 +3587,10 @@ function buildBuiltinCards(){
   const ch=(code,nm,ic,a,e,awc,aa,ae,ef,aef)=>({id:cid(),type:'キャラ',name:nm,cardCode:code,
     work:W,user:nm,icon:ic,art:'',level:'1',attack:a,evasion:e,awakenCost:awc,
     awakenAttack:aa,awakenEvasion:ae,effect:ef,awakenEffect:aef});
-  const sp=(code,nm,kd,lv,pp,bom,rec,ef,ek,ev,lr)=>({id:cid(),type:'スペル',name:nm,cardCode:code,
+  const sp=(code,nm,kd,lv,pp,bom,rec,ef,ek,ev,lr,ex)=>({id:cid(),type:'スペル',name:nm,cardCode:code,
     work:W,user:W,icon:'✨',art:'',spellKind:kd,requiredCharLevel:lv,ppCost:pp,
     bomCost:String(bom),trigger:'',recoverP:rec,effect:ef,engineKind:ek,engineValue:String(ev),
-    leaderRestriction:lr||''});
+    leaderRestriction:lr||'',engineExtra:ex||null});
   return [
     // v3.4: 基礎値は v3.3 維持、テキストで「受け担当/バースト/支配/代償」のテーマを明示。
     // 専用スペル(Phase C で TH-101..405)で各リーダーの戦闘軸を更に強化する。
@@ -3660,6 +3660,7 @@ function cardToSpellInfo(card){
     rec: Number(card.recoverP||0),
     lv: Number(card.requiredCharLevel||1),
     lr: card.leaderRestriction || '',  // 専用リーダーコード('' / 'TH-L01..L04')。v3.4 で導入。
+    ex: card.engineExtra || null,       // v1.7: 追加効果オブジェクト(bonus_if_*, counter_*, draw_on_hit 等)
     name: card.name||'', cardId: card.id, card: card,
   };
 }
@@ -3838,6 +3839,44 @@ function migrateLeaderRestrictionsV40(){
   state.rebalanceVer = '4.0';
 }
 
+// v1.7 (v3.5): 既存スペル 30 種に新 ex 効果(15 種)を強制同期する。
+function migrateSpellExEffectsV41(){
+  if (!state.cards) return;
+  if (state.rebalanceVer === '4.1') return;
+  // v1.7 ex 効果マップ (AIB_POOL の ex と同期)
+  const EXMAP = {
+    'TH-002': {bonus_if_opp_p_low:{th:2,v:3}},
+    'TH-003': {draw_on_hit:1},
+    'TH-004': {draw_on_defend:1},
+    'TH-005': {bomb_on_defend:1},
+    'TH-006': {negate_if_opp_multi_spell:{n:2}, next_atk_bonus:4},
+    'TH-101': {opp_p_mill:1, bonus_if_opp_p_low:{th:0,v:4}},
+    'TH-102': {draw_on_hit:1},
+    'TH-103': {counter_mill:3, draw_on_defend:1},
+    'TH-105': {negate_if_low_life:1, counter_p_mill:2},
+    'TH-201': {bonus_if_high_trash:{th:8,v:3}},
+    'TH-202': {self_mill:2, bonus_if_high_trash:{th:12,v:4}},
+    'TH-203': {draw_on_hit:1},
+    'TH-301': {bomb_on_hit:1},
+    'TH-302': {opp_p_mill:2, bonus_if_opp_awakened:3},
+    'TH-303': {bonus_if_opp_awakened:2},
+    'TH-305': {counter_p_mill:2},
+    'TH-401': {self_mill:1, bonus_if_low_deck:{th:25,v:5}},
+    'TH-403': {opp_p_mill:2},
+    'TH-404': {bonus_if_low_life:5},
+    'TH-405': {bomb_on_hit:1, bonus_if_low_life:8},
+  };
+  state.cards.forEach(c => {
+    if (getTypeKind(c.type) === 'touhou-spell' && EXMAP[c.cardCode]) {
+      c.engineExtra = EXMAP[c.cardCode];
+    }
+  });
+  // TH-104 八方鬼縛陣: disrupt 値 1→2 (v1.7 で再強化)
+  const th104 = state.cards.find(c => c.cardCode === 'TH-104');
+  if (th104) th104.engineValue = '2';
+  state.rebalanceVer = '4.1';
+}
+
 function loadData() {
   let loaded = false;
   try {
@@ -3872,6 +3911,8 @@ function loadData() {
   migrateRebalanceV33();
   // v3.4 リーダー再設計: 公式 TH-L01..L04 の数値・効果文を新仕様に更新(初回のみ)
   migrateLeaderRestrictionsV40();
+  // v1.7: スペル ex 効果(15 種)を既存セーブに強制同期
+  migrateSpellExEffectsV41();
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
   // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
@@ -4213,45 +4254,46 @@ const AIB_PAIRS = {
   '霊夢+フランドール':           ['霊夢','フランドール'],
   '霊夢+レミリア':               ['霊夢','レミリア'],
 };
-// スペル30種 (v1.6: 共有10+専用各5): k=種別, v=値, pp=コスト, q=QUICK, rec=回収P, lv=発動条件Lv, lr=リーダー専用('' or '霊夢'..'フランドール')
-//   ex = 追加効果 { self_mill, opp_p_mill } を持つカードもある(攻撃決算後に発動)
+// スペル30種 (v1.7: 共有10+専用各5 + ex 効果 15種): k=種別, v=値, pp=コスト, q=QUICK, rec=回収P, lv=発動条件Lv, lr=リーダー専用
+//   ex = 追加効果。詳細は docs/cards.md §ex 効果一覧 を参照。
+//   攻撃系: self_mill / opp_p_mill / bonus_if_opp_p_low / bonus_if_low_life / bonus_if_high_trash / bonus_if_low_deck / bonus_if_opp_awakened / draw_on_hit / bomb_on_hit
+//   防御系: negate_if_low_life / negate_if_opp_multi_spell / counter_mill / counter_p_mill / bomb_on_defend / draw_on_defend / next_atk_bonus
 const AIB_POOL = [
-  // 共有10種 (TH-001..010)
-  {k:'atk',v:5,pp:2,q:0,rec:2,lv:1,lr:''},   // TH-001 夢想妙珠
-  {k:'atk',v:7,pp:3,q:0,rec:1,lv:1,lr:''},   // TH-002 アグニシャイン
-  {k:'atk',v:11,pp:5,q:0,rec:0,lv:2,lr:''},  // TH-003 サイレントセレナ
-  {k:'def',v:4,pp:1,q:1,rec:3,lv:1,lr:''},   // TH-004 生死の境界
-  {k:'def',v:8,pp:2,q:1,rec:2,lv:1,lr:''},   // TH-005 博麗弾幕結界
-  {k:'def',v:12,pp:4,q:1,rec:0,lv:2,lr:''},  // TH-006 大結界
-  {k:'util',v:1,pp:1,q:0,rec:1,lv:1,lr:''},  // TH-007 ミルキーウェイ
-  {k:'util',v:2,pp:2,q:0,rec:1,lv:1,lr:''},  // TH-008 マジカルブースター
-  {k:'mill',v:8,pp:4,q:0,rec:0,lv:2,lr:''},  // TH-009 QED495
-  {k:'disrupt',v:1,pp:3,q:0,rec:1,lv:2,lr:''}, // TH-010 夜霧の幻影
-  // 霊夢専用5種 (TH-101..105)
-  // v3.4 バランス調整(2026-05-24): ペア幅 17.1pt 達成版
-  {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'霊夢'},                     // TH-101 博麗符印(opp_p_mill 削除)
-  {k:'atk',v:10,pp:4,q:0,rec:0,lv:2,lr:'霊夢'},                    // TH-102 夢想封印 集
-  {k:'def',v:10,pp:3,q:1,rec:1,lv:2,lr:'霊夢'},                    // TH-103 博麗結界
-  {k:'disrupt',v:1,pp:3,q:0,rec:0,lv:1,lr:'霊夢'},                 // TH-104 八方鬼縛陣(v3→1 大幅弱化)
-  {k:'def',v:6,pp:2,q:1,rec:1,lv:1,lr:'霊夢'},                     // TH-105 楽園の素敵な巫女
-  // 魔理沙専用5種 (TH-201..205) — 代償ほぼ無し化
-  {k:'atk',v:12,pp:4,q:0,rec:0,lv:2,lr:'魔理沙'},                  // TH-201 マスタースパーク(self_mill 削除)
-  {k:'atk',v:18,pp:5,q:0,rec:0,lv:2,lr:'魔理沙',ex:{self_mill:1}}, // TH-202 ファイナルスパーク(4→1)
-  {k:'atk',v:8,pp:3,q:0,rec:1,lv:1,lr:'魔理沙'},                   // TH-203 ドラゴンメテオ
-  {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'魔理沙'},                   // TH-204 アーティフルチャンター
-  {k:'util',v:1,pp:1,q:0,rec:1,lv:1,lr:'魔理沙'},                  // TH-205 普通の魔法使い
-  // レミリア専用5種 (TH-301..305)
-  {k:'atk',v:8,pp:3,q:0,rec:1,lv:1,lr:'レミリア'},                 // TH-301 スカーレットシュート
-  {k:'atk',v:14,pp:5,q:0,rec:0,lv:2,lr:'レミリア',ex:{opp_p_mill:1}}, // TH-302 グングニル(2→1)
-  {k:'disrupt',v:1,pp:3,q:0,rec:1,lv:1,lr:'レミリア'},             // TH-303 スカーレットデビル
-  {k:'util',v:2,pp:2,q:0,rec:1,lv:1,lr:'レミリア'},                // TH-304 ドラキュリア
-  {k:'def',v:9,pp:3,q:1,rec:0,lv:2,lr:'レミリア'},                 // TH-305 永遠に紅い幼き月
-  // フランドール専用5種 (TH-401..405)
-  {k:'atk',v:10,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{self_mill:1}}, // TH-401 フォーオブアカインド(2→1)
-  {k:'mill',v:15,pp:5,q:0,rec:0,lv:2,lr:'フランドール'},           // TH-402 過去を刻む時計
-  {k:'atk',v:7,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{opp_p_mill:1}}, // TH-403 カゴメカゴメ(2→1)
-  {k:'atk',v:15,pp:5,q:0,rec:0,lv:2,lr:'フランドール'},            // TH-404 スターボウブレイク
-  {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'フランドール'},             // TH-405 悪魔の妹
+  // ===== 共有10種 (TH-001..010) =====
+  {k:'atk',v:5,pp:2,q:0,rec:2,lv:1,lr:''},                                                  // TH-001 夢想妙珠(素打ち基本)
+  {k:'atk',v:7,pp:3,q:0,rec:1,lv:1,lr:'',ex:{bonus_if_opp_p_low:{th:2,v:3}}},                // TH-002 アグニシャイン(相手 P 干渉時 +3)
+  {k:'atk',v:11,pp:5,q:0,rec:0,lv:2,lr:'',ex:{draw_on_hit:1}},                              // TH-003 サイレントセレナ(命中ドロー)
+  {k:'def',v:4,pp:1,q:1,rec:3,lv:1,lr:'',ex:{draw_on_defend:1}},                            // TH-004 生死の境界(キャントリップ)
+  {k:'def',v:8,pp:2,q:1,rec:2,lv:1,lr:'',ex:{bomb_on_defend:1}},                            // TH-005 博麗弾幕結界(BOMB+1)
+  {k:'def',v:12,pp:4,q:1,rec:0,lv:2,lr:'',ex:{negate_if_opp_multi_spell:{n:2},next_atk_bonus:4}}, // TH-006 大結界(対バーストカウンター)
+  {k:'util',v:1,pp:1,q:0,rec:1,lv:1,lr:''},                                                 // TH-007 ミルキーウェイ
+  {k:'util',v:2,pp:2,q:0,rec:1,lv:1,lr:''},                                                 // TH-008 マジカルブースター
+  {k:'mill',v:8,pp:4,q:0,rec:0,lv:2,lr:''},                                                 // TH-009 QED495
+  {k:'disrupt',v:1,pp:3,q:0,rec:1,lv:2,lr:''},                                              // TH-010 夜霧の幻影
+  // ===== 霊夢専用5種 (TH-101..105) — 妨害&受け =====
+  {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'霊夢',ex:{opp_p_mill:1,bonus_if_opp_p_low:{th:0,v:4}}},   // TH-101 博麗符印(お祓い相乗)
+  {k:'atk',v:10,pp:4,q:0,rec:0,lv:2,lr:'霊夢',ex:{draw_on_hit:1}},                          // TH-102 夢想封印 集
+  {k:'def',v:10,pp:3,q:1,rec:1,lv:2,lr:'霊夢',ex:{counter_mill:3,draw_on_defend:1}},        // TH-103 博麗結界(削り返し+ドロー)
+  {k:'disrupt',v:2,pp:3,q:0,rec:0,lv:1,lr:'霊夢'},                                          // TH-104 八方鬼縛陣(相手 P -2)
+  {k:'def',v:6,pp:2,q:1,rec:1,lv:1,lr:'霊夢',ex:{negate_if_low_life:1,counter_p_mill:2}},   // TH-105 楽園の素敵な巫女(救済)
+  // ===== 魔理沙専用5種 (TH-201..205) — 火力バースト =====
+  {k:'atk',v:12,pp:4,q:0,rec:0,lv:2,lr:'魔理沙',ex:{bonus_if_high_trash:{th:8,v:3}}},        // TH-201 マスタースパーク(コレクション)
+  {k:'atk',v:18,pp:5,q:0,rec:0,lv:2,lr:'魔理沙',ex:{self_mill:2,bonus_if_high_trash:{th:12,v:4}}}, // TH-202 ファイナルスパーク
+  {k:'atk',v:8,pp:3,q:0,rec:1,lv:1,lr:'魔理沙',ex:{draw_on_hit:1}},                         // TH-203 ドラゴンメテオ
+  {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'魔理沙'},                                            // TH-204 アーティフルチャンター
+  {k:'util',v:1,pp:1,q:0,rec:1,lv:1,lr:'魔理沙'},                                           // TH-205 普通の魔法使い
+  // ===== レミリア専用5種 (TH-301..305) — 支配&吸血 =====
+  {k:'atk',v:8,pp:3,q:0,rec:1,lv:1,lr:'レミリア',ex:{bomb_on_hit:1}},                       // TH-301 スカーレットシュート(吸血で BOMB)
+  {k:'atk',v:14,pp:5,q:0,rec:0,lv:2,lr:'レミリア',ex:{opp_p_mill:2,bonus_if_opp_awakened:3}}, // TH-302 グングニル(覚醒メタ)
+  {k:'disrupt',v:1,pp:3,q:0,rec:1,lv:1,lr:'レミリア',ex:{bonus_if_opp_awakened:2}},          // TH-303 スカーレットデビル
+  {k:'util',v:2,pp:2,q:0,rec:1,lv:1,lr:'レミリア'},                                         // TH-304 ドラキュリア
+  {k:'def',v:9,pp:3,q:1,rec:0,lv:2,lr:'レミリア',ex:{counter_p_mill:2}},                    // TH-305 永遠に紅い幼き月(受けて削り)
+  // ===== フランドール専用5種 (TH-401..405) — 破壊&代償 =====
+  {k:'atk',v:10,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{self_mill:1,bonus_if_low_deck:{th:25,v:5}}}, // TH-401 フォーオブ(終盤覚醒)
+  {k:'mill',v:15,pp:5,q:0,rec:0,lv:2,lr:'フランドール'},                                    // TH-402 過去を刻む時計
+  {k:'atk',v:7,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{opp_p_mill:2}},                    // TH-403 カゴメカゴメ
+  {k:'atk',v:15,pp:5,q:0,rec:0,lv:2,lr:'フランドール',ex:{bonus_if_low_life:5}},            // TH-404 スターボウブレイク
+  {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'フランドール',ex:{bomb_on_hit:1,bonus_if_low_life:8}}, // TH-405 悪魔の妹(最終捲り)
 ];
 const AIB_NM = [
   '夢想妙珠','アグニシャイン','サイレントセレナ','生死の境界','博麗弾幕結界',
@@ -4407,7 +4449,7 @@ function aibLval(L,o){
   if(d.ab==='four')base+=5;
   if(d.ab==='koi'&&L.awThis)base+=8;  // v3.4: マスタースパーク強化 (6→8)
   let virt=0;
-  if(d.ab==='oharai')virt=o.P>0?3:0;
+  if(d.ab==='oharai')virt=o.P>0?1:0;  // v1.7: お祓い弱化に合わせ virt 3→1
   if(d.ab==='charisma')virt=2;
   return {base:base,virt:virt,ab:d.ab};
 }
@@ -4419,8 +4461,8 @@ function aibComputeAttack(s,o,forced,humanBonus){
   if(aibAiMode==='mcts') return aibMctsComputeAttack(s,o);
   return aibComputeAttackGreedy(s,o,undefined,undefined);
 }
-// 防御側 o の自動防御判断
-function aibAutoDefense(o,raw){
+// 防御側 o の自動防御判断 (atk 省略可・互換のため)
+function aibAutoDefense(o,raw,atk){
   const ready=o.leaders.filter(L=>!L.rested);
   const dL=(ready.length?ready:o.leaders).slice().sort((a,b)=>aibEva(b)-aibEva(a))[0];
   const dval=aibEva(dL);
@@ -4428,12 +4470,24 @@ function aibAutoDefense(o,raw){
   const q=o.hand.map((c,i)=>({c:c,i:i}))
     .filter(x=>x.c.k==='def'&&x.c.q&&aibSpellOk(o,x.c)&&x.c.pp<=o.P)
     .sort((a,b)=>b.c.v-a.c.v);
-  // GA v1.6 進化済パラメータ (2026-05-24): qdef_threshold=8 / bomb_life_threshold=2 / bomb_deck_ratio=0.81
-  // default AI 比 76.5% 勝率 (200戦)。旧 v1.4 進化値 (qdef_th=5/ratio=0.64) より更に防御的に最適化された。
-  if(q.length&&incoming>8)spellIdx=q[0].i;
+  // v1.7: negate_if_* を持つ def スペルが発動可能なら最優先
+  const opp_spells_n = atk && atk.spellCards ? atk.spellCards.length : 0;
+  const negateCard = q.find(x => {
+    const ex = x.c.ex; if(!ex) return false;
+    if(ex.negate_if_low_life && o.life <= 1) return true;
+    if(ex.negate_if_opp_multi_spell && opp_spells_n >= ex.negate_if_opp_multi_spell.n) return true;
+    return false;
+  });
+  if(negateCard){ spellIdx = negateCard.i; }
+  else if(q.length&&incoming>8){
+    // GA v1.6 進化値: qdef_threshold=8、最高 v の def を選ぶ
+    spellIdx = q[0].i;
+  }
   const reduce=spellIdx>=0?(o.hand[spellIdx]).v:0;
-  incoming=Math.max(1,raw-dval-reduce);
-  return {spellIdx:spellIdx,bomb:(o.bomb>=2&&incoming>=0.81*o.deck.length&&o.life<=2)};
+  // negate 発動時は raw を 0 扱いで BOMB 判断
+  const negateActive = negateCard ? true : false;
+  incoming = negateActive ? 0 : Math.max(1, raw-dval-reduce);
+  return {spellIdx:spellIdx,bomb:(!negateActive && o.bomb>=2 && incoming>=0.81*o.deck.length && o.life<=2),negate:negateActive};
 }
 // 攻撃解決: atk=宣言結果, def={spellIdx,bomb}(防御側 o の応答)
 function aibResolveAttack(s,o,log,atk,def){
@@ -4447,28 +4501,45 @@ function aibResolveAttack(s,o,log,atk,def){
   }
   let useBomb=false;
   if(def&&def.bomb&&o.bomb>=2){useBomb=true;o.bomb-=2;}
-  const final=useBomb?0:Math.max(1,atk.raw-dval-reduce);
+  // v1.7: negate 発動なら final=0
+  const negateActive = !!(def && def.negate);
+  const final = (useBomb || negateActive) ? 0 : Math.max(1, atk.raw-dval-reduce);
   if(final>0){
     // FX: 攻撃命中時の衝撃波&振動
     if(typeof aibSpawnHitFx==='function') aibSpawnHitFx();
-    const m=aibMill(o,final);s.P+=Math.min(m.reduce((x,c)=>x+c.rec,0),3);
+    const m=aibMill(o,final);s.P=Math.min(7, s.P + Math.min(m.reduce((x,c)=>x+c.rec,0),3));  // v1.7: PP 上限 7
   }
   if(atk.direct>0&&!o.dead)aibMill(o,atk.direct);
   // v3.4 バランス調整: フォーオブアカインド自デッキ -2 維持
   if(atk.ab==='four')aibMill(s,2);
-  else if(atk.ab==='oharai')o.P=Math.max(0,o.P-2);
+  else if(atk.ab==='oharai')o.P=Math.max(0,o.P-1);  // v1.7: お祓い -2 → -1 (PP 戦略の余地確保)
   // カリスマ吸血: トラッシュ 4 枚以上で +1 P (序盤抑制)
-  else if(atk.ab==='charisma'){if(s.trash.length>=4)s.P+=1;}
-  // v1.6: 専用スペルの追加効果 (ex フィールド) を適用
-  let exSelfMill=0, exOppPMill=0;
+  else if(atk.ab==='charisma'){if(s.trash.length>=4)s.P=Math.min(7, s.P+1);}  // v1.7: PP 上限 7
+  // v1.7: 攻撃側 ex (self_mill / opp_p_mill / draw_on_hit / bomb_on_hit) を適用
+  let exSelfMill=0, exOppPMill=0, exDrawHit=0, exBombHit=0;
   (atk.spellCards||[]).forEach(c => {
-    if(c && c.ex){
-      exSelfMill += (c.ex.self_mill||0);
-      exOppPMill += (c.ex.opp_p_mill||0);
+    if(!c || !c.ex) return;
+    exSelfMill += (c.ex.self_mill||0);
+    exOppPMill += (c.ex.opp_p_mill||0);
+    if(final>0){  // 命中時のみ発火
+      exDrawHit += (c.ex.draw_on_hit||0);
+      exBombHit += (c.ex.bomb_on_hit||0);
     }
   });
   if(exSelfMill>0) aibMill(s, exSelfMill);
   if(exOppPMill>0) o.P = Math.max(0, o.P - exOppPMill);
+  if(exDrawHit>0){ aibDraw(s, exDrawHit); log.push('　　🔮 命中効果: '+exDrawHit+' 枚ドロー'); }
+  if(exBombHit>0){ s.bomb = Math.min(6, s.bomb+exBombHit); log.push('　　💣 命中効果: BOMB +'+exBombHit); }
+  // v1.7: 防御側 ex (counter_mill / counter_p_mill / draw_on_defend / bomb_on_defend / next_atk_bonus)
+  // 防御スペルが詠唱された場合のみ発火(useBomb 時は def スペル無効)
+  if(defCard && defCard.ex && !useBomb){
+    const dex = defCard.ex;
+    if(dex.counter_mill > 0){ aibMill(s, dex.counter_mill); log.push('　　🌀 反撃: 相手デッキ '+dex.counter_mill+' 枚削り'); }
+    if(dex.counter_p_mill > 0){ s.P = Math.max(0, s.P - dex.counter_p_mill); log.push('　　💢 反撃: 相手 P -'+dex.counter_p_mill); }
+    if(dex.draw_on_defend > 0){ aibDraw(o, dex.draw_on_defend); log.push('　　🔮 防御効果: '+o.name+' '+dex.draw_on_defend+' 枚ドロー'); }
+    if(dex.bomb_on_defend > 0){ o.bomb = Math.min(6, o.bomb + dex.bomb_on_defend); log.push('　　💣 防御効果: '+o.name+' BOMB +'+dex.bomb_on_defend); }
+    if(dex.next_atk_bonus > 0){ o._nextAtkBonus = (o._nextAtkBonus||0) + dex.next_atk_bonus; log.push('　　⚔ 次の攻撃: '+o.name+' +'+dex.next_atk_bonus+' 蓄積'); }
+  }
   atk.atkL.rested=true;
   log.push('　⚔ '+atk.atkL.k+(atk.atkL.aw?'(覚醒)':'')+' が攻撃(迎撃 '+dL.k+'・回避'+dval+')'
     +(atk.spellBonus?' スペル+'+atk.spellBonus:''));
@@ -4585,7 +4656,7 @@ function aibEnumerateAttackPlans(s, o){
   }
   return plans;
 }
-function aibApplyAttackPlan(s, plan){
+function aibApplyAttackPlan(s, plan, o){
   // s.hand から castSpells (PP) / castWithBom (BOMB) を消費。返り値は aibResolveAttack 互換の atk オブジェクト
   const spellNames=[], spellCards=[];
   plan.castSpells.forEach(c => {
@@ -4609,7 +4680,9 @@ function aibApplyAttackPlan(s, plan){
   if(d.ab==='koi') base += 3;
   if(d.ab==='four') base += 5;
   if(d.ab==='koi' && atkL.awThis) base += 8;  // v3.4: マスタースパーク強化 (6→8)
-  return {atkL, ab:d.ab, raw:base+plan.spellBonus, spellBonus:plan.spellBonus, direct:plan.direct, spellNames, spellCards};
+  // v1.7: 詠唱した atk/mill スペルの ex.bonus_if_* を集計して削り量に加算
+  const exBonus = aibApplyExBonus(s, o, spellCards);
+  return {atkL, ab:d.ab, raw:base+plan.spellBonus+exBonus, spellBonus:plan.spellBonus, exBonus, direct:plan.direct, spellNames, spellCards};
 }
 function aibMctsSelectPlan(s, o, K){
   K = K || AIB_MCTS_K;
@@ -4633,8 +4706,8 @@ function aibMctsSelectPlan(s, o, K){
       }
       // バグ修正: castWithBom も plan に含める
       const planCloned = {leaderK:plan.leaderK, castSpells:ppOk, castWithBom:bomOk, spellBonus:plan.spellBonus, direct:plan.direct};
-      const atk = aibApplyAttackPlan(sC, planCloned);
-      const def = aibAutoDefense(oC, atk.raw);
+      const atk = aibApplyAttackPlan(sC, planCloned, oC);
+      const def = aibAutoDefense(oC, atk.raw, atk);
       aibResolveAttack(sC, oC, [], atk, def);
       aibAutoUtil(sC);
       // 相手のターンから展開
@@ -4653,7 +4726,7 @@ function aibMctsComputeAttack(s, o){
     // フォールバック: 貪欲
     return aibComputeAttackGreedy(s, o, undefined, undefined);
   }
-  return aibApplyAttackPlan(s, plan);
+  return aibApplyAttackPlan(s, plan, o);
 }
 // 旧 aibComputeAttack をリネーム(後方互換)
 function aibComputeAttackGreedy(s,o,forced,humanBonus){
@@ -4678,13 +4751,34 @@ function aibComputeAttackGreedy(s,o,forced,humanBonus){
     }
     s.P=budget+reserve;
   } else { spellBonus=humanBonus; }
-  return {atkL:atkL,ab:ab,raw:base+spellBonus,spellBonus:spellBonus,direct:direct,spellNames:spellNames,spellCards:spellCards};
+  // v1.7: ex bonus を集計(MCTS と同じ aibApplyExBonus を利用)
+  const exBonus = aibApplyExBonus(s, o, spellCards);
+  return {atkL:atkL,ab:ab,raw:base+spellBonus+exBonus,spellBonus:spellBonus,exBonus,direct:direct,spellNames:spellNames,spellCards:spellCards};
+}
+// v1.7: 詠唱した attack 系スペルの ex.bonus_if_* を集計して返す。next_atk_bonus も加算&クリア。
+function aibApplyExBonus(s, o, spellCards){
+  let bonus = 0;
+  (spellCards||[]).forEach(c => {
+    if(!c.ex) return;
+    const ex = c.ex;
+    if(ex.bonus_if_opp_p_low && o.P <= ex.bonus_if_opp_p_low.th) bonus += ex.bonus_if_opp_p_low.v;
+    if(ex.bonus_if_low_life !== undefined && s.life <= 1){
+      bonus += (typeof ex.bonus_if_low_life==='number' ? ex.bonus_if_low_life : ex.bonus_if_low_life.v);
+    }
+    if(ex.bonus_if_high_trash && s.trash.length >= ex.bonus_if_high_trash.th) bonus += ex.bonus_if_high_trash.v;
+    if(ex.bonus_if_low_deck && s.deck.length <= ex.bonus_if_low_deck.th) bonus += ex.bonus_if_low_deck.v;
+    if(ex.bonus_if_opp_awakened !== undefined && o.leaders.some(L=>L.aw)){
+      bonus += (typeof ex.bonus_if_opp_awakened==='number' ? ex.bonus_if_opp_awakened : ex.bonus_if_opp_awakened.v);
+    }
+  });
+  if(s._nextAtkBonus){ bonus += s._nextAtkBonus; s._nextAtkBonus = 0; }
+  return bonus;
 }
 
 // 旧API: 自動で攻撃を1回(観戦/AI同士で使用)
 function aibDoAttack(s,o,log,forced){
   const atk=aibComputeAttack(s,o,forced);
-  aibResolveAttack(s,o,log,atk,aibAutoDefense(o,atk.raw));
+  aibResolveAttack(s,o,log,atk,aibAutoDefense(o,atk.raw,atk));
   aibAutoUtil(s);
 }
 
@@ -4695,7 +4789,7 @@ function aibTakeTurn(s,o,log){
   if(!(s.isFirst&&s.turn===1))aibDraw(s,1);
   if(s.dead)return;
   if(s.hand.length){
-    s.P+=1;
+    s.P=Math.min(7, s.P+1);  // v1.7: PP 上限 7
     let wi=0,wv=1e9;
     s.hand.forEach((c,i)=>{const sc=(c.k==='util'?0:10)+c.v;if(sc<wv){wv=sc;wi=i;}});
     s.hand.splice(wi,1);aibDraw(s,1);
@@ -4884,7 +4978,7 @@ function aibCharge(idx){
   const g=aibGame,h=g.human;
   if(g.humanPhase!=='charge'||idx<0||idx>=h.hand.length)return;
   const c=h.hand[idx];
-  h.P++;h.hand.splice(idx,1);aibDraw(h,1);
+  h.P=Math.min(7, h.P+1);h.hand.splice(idx,1);aibDraw(h,1);  // v1.7: PP 上限 7
   g.log.push('　② チャージ: '+c.name+' を P へ(P'+h.P+')+1ドロー');
   g.action='② チャージ ── '+c.name+' を P に置きました(P'+h.P+')';
   aibCloseZoom();
@@ -4945,7 +5039,7 @@ function aibChooseAttack(idx){
   const g=aibGame,h=g.human;
   if(g.humanPhase!=='play')return;
   const atk=aibComputeAttack(h,g.ai,h.leaders[idx],g.atkBonus);
-  const res=aibResolveAttack(h,g.ai,g.log,atk,aibAutoDefense(g.ai,atk.raw));
+  const res=aibResolveAttack(h,g.ai,g.log,atk,aibAutoDefense(g.ai,atk.raw,atk));
   while(h.hand.length>7)h.trash.push(h.hand.pop());
   g.lastCombat={by:'you',atkLeader:atk.atkL.k,atkSpells:[],defCard:res.defCard,dmg:res.final,bomb:res.useBomb,abil:res.abil};
   g.action='⑤ '+atk.atkL.k+'で攻撃! '+(res.useBomb?'🤖 AIがBOMBで無効化':

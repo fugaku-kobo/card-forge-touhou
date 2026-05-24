@@ -44,7 +44,7 @@ POOL = [
  ('atk',     6, 2, 0, 1, 1, '霊夢'),  # TH-101 霊符『博麗符印』
  ('atk',    10, 4, 0, 0, 2, '霊夢'),  # TH-102 神霊『夢想封印 集』
  ('def',    10, 3, 1, 1, 2, '霊夢'),  # TH-103 結界『博麗結界』 QUICK
- ('disrupt', 1, 3, 0, 0, 1, '霊夢'),  # TH-104 神技『八方鬼縛陣』(P-3 → P-1 に大幅弱化)
+ ('disrupt', 2, 3, 0, 0, 1, '霊夢'),  # TH-104 神技『八方鬼縛陣』 (v1.7 では P-2)
  ('def',     6, 2, 1, 1, 1, '霊夢'),  # TH-105 『楽園の素敵な巫女』 QUICK
  # 魔理沙専用 5 種 (TH-201..205) — 火力バースト
  ('atk',    12, 4, 0, 0, 2, '魔理沙'),  # TH-201 恋符『マスタースパーク』 +自デッキ-2
@@ -65,16 +65,41 @@ POOL = [
  ('atk',    15, 5, 0, 0, 2, 'フラン'),    # TH-404 禁弾『スターボウブレイク』
  ('atk',     6, 2, 0, 1, 1, 'フラン'),    # TH-405 『悪魔の妹』
 ]
-# 専用カードの追加効果(攻撃時 self-mill / opp-P-mill)を ID で参照
-# ラウンド 1 調整: 霊夢系弱化 + 魔理沙/フラン系代償軽減
+# v1.7: ex 効果辞書 (index.html の AIB_POOL.ex と同期)
+# 攻撃系: self_mill, opp_p_mill, bonus_if_opp_p_low{th,v}, bonus_if_low_life,
+#         bonus_if_high_trash{th,v}, bonus_if_low_deck{th,v}, bonus_if_opp_awakened,
+#         draw_on_hit, bomb_on_hit
+# 防御系: negate_if_low_life, negate_if_opp_multi_spell{n}, counter_mill, counter_p_mill,
+#         bomb_on_defend, draw_on_defend, next_atk_bonus
 EXTRA = {
-    15: {'self_mill': 0},      # TH-201 マスタースパーク (代償ゼロ)
-    16: {'self_mill': 1},      # TH-202 ファイナルスパーク (4→1 大幅軽減)
-    25: {'self_mill': 1},      # TH-401 フォーオブアカインド (2→1)
-    21: {'opp_p_mill': 1},     # TH-302 グングニル (2→1 弱化)
-    27: {'opp_p_mill': 1},     # TH-403 カゴメカゴメ (2→1)
-    10: {'opp_p_mill': 0},     # TH-101 博麗符印 (1→0 弱化)
+    # 共有
+    1:  {'bonus_if_opp_p_low': {'th':2,'v':3}},       # TH-002 アグニシャイン
+    2:  {'draw_on_hit': 1},                            # TH-003 サイレントセレナ
+    3:  {'draw_on_defend': 1},                         # TH-004 生死の境界
+    4:  {'bomb_on_defend': 1},                         # TH-005 弾幕結界
+    5:  {'negate_if_opp_multi_spell': {'n':2}, 'next_atk_bonus': 4},  # TH-006 大結界
+    # 霊夢専用
+    10: {'opp_p_mill': 1, 'bonus_if_opp_p_low': {'th':0,'v':4}},  # TH-101 博麗符印
+    11: {'draw_on_hit': 1},                            # TH-102 夢想封印 集
+    12: {'counter_mill': 3, 'draw_on_defend': 1},      # TH-103 博麗結界
+    13: {'opp_p_mill': 2},                             # TH-104 八方鬼縛陣 (disrupt の val=2 と二重で適用しない: val を 2 にしてここは無し)
+    14: {'negate_if_low_life': 1, 'counter_p_mill': 2}, # TH-105 楽園
+    # 魔理沙専用
+    15: {'bonus_if_high_trash': {'th':8,'v':3}},       # TH-201 マスタースパーク
+    16: {'self_mill': 2, 'bonus_if_high_trash': {'th':12,'v':4}},  # TH-202 ファイナル
+    17: {'draw_on_hit': 1},                            # TH-203 ドラゴンメテオ
+    # レミリア専用
+    20: {'bomb_on_hit': 1},                            # TH-301 スカーレットシュート
+    21: {'opp_p_mill': 2, 'bonus_if_opp_awakened': 3}, # TH-302 グングニル
+    22: {'bonus_if_opp_awakened': 2},                  # TH-303 スカーレットデビル
+    24: {'counter_p_mill': 2},                         # TH-305 永遠に紅い幼き月
+    # フランドール専用
+    25: {'self_mill': 1, 'bonus_if_low_deck': {'th':25,'v':5}},  # TH-401 フォーオブ
+    27: {'opp_p_mill': 2},                             # TH-403 カゴメカゴメ
+    28: {'bonus_if_low_life': 5},                      # TH-404 スターボウ
+    29: {'bomb_on_hit': 1, 'bonus_if_low_life': 8},    # TH-405 悪魔の妹
 }
+# TH-104 八方鬼縛陣の POOL val (=2) は disrupt として独立して相手 P -2、EXTRA 13 と二重発動しないよう注意
 
 # ペア → 該当リーダー名
 LEADER_OF_PAIR = {pair: [pair[0], pair[1]] for pair in [('魔理沙','フラン'), ('魔理沙','レミリア'), ('霊夢','フラン'), ('霊夢','魔理沙'), ('レミリア','フラン'), ('霊夢','レミリア')]}
@@ -198,7 +223,7 @@ def take_turn(s, o):
         draw(s, 1)
     if s.dead: return
     if s.hand:   # チャージ: 手札1枚をPへ、1枚ドロー
-        s.P += 1
+        s.P = min(7, s.P + 1)  # v1.7: PP 上限 7
         order = sorted(range(len(s.hand)), key=lambda i: (POOL[s.hand[i]][0]!='util', POOL[s.hand[i]][1]))
         s.hand.pop(order[0])
         draw(s, 1)
@@ -222,8 +247,8 @@ def do_attack(s, o):
         # v3.4: マスタースパーク覚醒ターン = +8 (バースト個性強化)
         if ab == 'koi' and L['awThis']: base += CFG.get('koi_aw_bonus', 8)
         virt = 0
-        if ab == 'oharai':
-            virt = 3 if o.P > 0 else CFG.get('oharai_dmg', 0)
+        # v1.7: お祓い弱化 (P-2→P-1) に合わせ virt 3→1
+        if ab == 'oharai': virt = 1 if o.P > 0 else 0
         if ab == 'charisma': virt = 2
         return base, virt, ab
     scored = [(leader_val(L), L) for L in s.leaders]
@@ -234,54 +259,103 @@ def do_attack(s, o):
     spell_bonus = 0; direct = 0
     atk_cards = sorted([c for c in s.hand if POOL[c][0] in ('atk','mill') and spell_castable(s, c)],
                        key=lambda c: POOL[c][1], reverse=True)
-    extra_self_mill = 0  # 攻撃時に追加で発動する自デッキ削り(マスタースパーク等)
-    extra_opp_p_mill = 0  # 相手 P 追加削り(グングニル等)
+    cast_cards = []  # 詠唱した atk/mill カードの index リスト
+    extra_self_mill = 0; extra_opp_p_mill = 0
+    extra_draw_hit = 0; extra_bomb_hit = 0
+    ex_bonus = 0  # v1.7: bonus_if_* の合計
     for c in atk_cards:
         k,val,pp,_,_,_,_ = POOL[c]
         if pp <= budget:
             budget -= pp
-            s.hand.remove(c); s.trash.append(c)
+            s.hand.remove(c); s.trash.append(c); cast_cards.append(c)
             if k == 'atk': spell_bonus += val
             else: direct += val
             e = EXTRA.get(c, {})
             extra_self_mill += e.get('self_mill', 0)
             extra_opp_p_mill += e.get('opp_p_mill', 0)
+            extra_draw_hit += e.get('draw_on_hit', 0)
+            extra_bomb_hit += e.get('bomb_on_hit', 0)
+            # v1.7 bonus_if_* 集計
+            if 'bonus_if_opp_p_low' in e and o.P <= e['bonus_if_opp_p_low']['th']:
+                ex_bonus += e['bonus_if_opp_p_low']['v']
+            if 'bonus_if_low_life' in e and s.life <= 1:
+                v = e['bonus_if_low_life']
+                ex_bonus += v if isinstance(v, int) else v.get('v', 0)
+            if 'bonus_if_high_trash' in e and len(s.trash) >= e['bonus_if_high_trash']['th']:
+                ex_bonus += e['bonus_if_high_trash']['v']
+            if 'bonus_if_low_deck' in e and len(s.deck) <= e['bonus_if_low_deck']['th']:
+                ex_bonus += e['bonus_if_low_deck']['v']
+            if 'bonus_if_opp_awakened' in e and any(L['aw'] for L in o.leaders):
+                v = e['bonus_if_opp_awakened']
+                ex_bonus += v if isinstance(v, int) else v.get('v', 0)
+    # v1.7: 前ターンの next_atk_bonus を消費
+    ex_bonus += s.__dict__.pop('_next_atk_bonus', 0)
     s.P = budget + reserve
     dL = best_def(o)
     da,de,_,_,dae,_ = LD[dL['k']]
     dval = dae if dL['aw'] else de
-    raw = base + spell_bonus + (CFG.get('oharai_dmg', 0) if (ab == 'oharai' and o.P < 2) else 0)
-    reduce = 0
+    raw = base + spell_bonus + ex_bonus
+    reduce = 0; def_card = None
+    # v1.7: 防御カード選択 (negate_if_* を最優先)
     quick = sorted([c for c in o.hand if POOL[c][0]=='def' and POOL[c][3]==1 and spell_castable(o, c)],
                    key=lambda c: POOL[c][1], reverse=True)
-    incoming = max(1, raw - dval)
+    negate_card = None
+    for c in quick:
+        if POOL[c][2] > o.P: continue
+        e = EXTRA.get(c, {})
+        if e.get('negate_if_low_life') and o.life <= 1: negate_card = c; break
+        if 'negate_if_opp_multi_spell' in e and len(cast_cards) >= e['negate_if_opp_multi_spell']['n']:
+            negate_card = c; break
     qdef_thresh = o.ai.get('qdef_threshold', 12)
-    if quick and incoming > qdef_thresh and POOL[quick[0]][2] <= o.P:
-        c = quick[0]
+    incoming = max(1, raw - dval)
+    if negate_card is not None:
+        def_card = negate_card
+        o.P -= POOL[negate_card][2]; o.hand.remove(negate_card); o.trash.append(negate_card)
+    elif quick and incoming > qdef_thresh and POOL[quick[0]][2] <= o.P:
+        c = quick[0]; def_card = c
         o.P -= POOL[c][2]; o.hand.remove(c); o.trash.append(c)
         reduce += POOL[c][1]
     incoming = max(1, raw - dval - reduce)
     bomb_life = o.ai.get('bomb_life_threshold', 1)
     bomb_ratio = o.ai.get('bomb_deck_ratio', 1.0)
-    use_bomb = o.bomb >= 2 and incoming >= bomb_ratio * len(o.deck) and o.life <= bomb_life
+    use_bomb = (negate_card is None) and o.bomb >= 2 and incoming >= bomb_ratio * len(o.deck) and o.life <= bomb_life
     if use_bomb: o.bomb -= 2
-    final = 0 if use_bomb else max(1, raw - dval - reduce)
+    negated = negate_card is not None
+    final = 0 if (use_bomb or negated) else max(1, raw - dval - reduce)
     if CFG.get('first_t1_atk_half') and s.is_first and s.turncount == 1:
         final = max(1, final // 2)
     if final > 0:
         milled = mill(o, final)
-        s.P += min(sum(POOL[c][4] for c in milled), 3)
+        s.P = min(7, s.P + min(sum(POOL[c][4] for c in milled), 3))  # v1.7: PP 上限 7
     if direct > 0 and not o.dead:
         mill(o, direct)
+    # v1.7: 攻撃命中時の ex
+    if final > 0 and extra_draw_hit > 0:
+        draw(s, extra_draw_hit)
+    if final > 0 and extra_bomb_hit > 0:
+        s.bomb = min(6, s.bomb + extra_bomb_hit)
+    # v1.7: 防御スペル ex (counter/draw/bomb/next_atk_bonus)
+    if def_card is not None and not use_bomb:
+        de = EXTRA.get(def_card, {})
+        if de.get('counter_mill', 0) > 0:
+            mill(s, de['counter_mill'])
+        if de.get('counter_p_mill', 0) > 0:
+            s.P = max(0, s.P - de['counter_p_mill'])
+        if de.get('draw_on_defend', 0) > 0:
+            draw(o, de['draw_on_defend'])
+        if de.get('bomb_on_defend', 0) > 0:
+            o.bomb = min(6, o.bomb + de['bomb_on_defend'])
+        if de.get('next_atk_bonus', 0) > 0:
+            o._next_atk_bonus = getattr(o, '_next_atk_bonus', 0) + de['next_atk_bonus']
     if ab == 'four':
         # v3.4 フォーオブアカインド: 攻撃時 自デッキ-2 (v3.3 維持)
         mill(s, 2)
     elif ab == 'oharai':
-        # 無敵巫女(夢想妙珠): 相手 P -2(常時発動)
-        o.P = max(0, o.P - 2)
+        # v1.7: 無敵巫女(夢想妙珠): 相手 P -1(常時)に弱化
+        o.P = max(0, o.P - 1)
     elif ab == 'charisma':
-        # 吸血: トラッシュ 4 枚以上で 1 P 回収(序盤に効きすぎないよう条件化)
-        if len(s.trash) >= 4: s.P += 1
+        # 吸血: トラッシュ 4 枚以上で 1 P 回収
+        if len(s.trash) >= 4: s.P = min(7, s.P + 1)
     # 専用スペル追加効果(EXTRA で定義した self_mill / opp_p_mill)
     if extra_self_mill > 0:
         mill(s, extra_self_mill)

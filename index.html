@@ -3900,6 +3900,38 @@ function migrateCounterSpellsV42(){
   state.rebalanceVer = '4.2';
 }
 
+// v3.7 (v1.9): 覚醒ゲージ式 + 継続効果型に切替。リーダーカードの効果文を新仕様に更新。
+function migrateAwakenGaugeV43(){
+  if (!state.cards) return;
+  if (state.rebalanceVer === '4.3') return;
+  const LEADER_V37 = {
+    'TH-L01':{atk:'15',eva:'8',aatk:'18',aeva:'11',awc:'-',
+      ef:'【夢想妙珠 ── 無敵巫女】攻撃したとき、相手の P を 2 個トラッシュ。覚醒後、毎ターン開始時に相手の P -1、攻撃を受けるたび BOMB +1。',
+      aef:'【夢想封印】覚醒した時、相手の手札を 1 枚見て 1 枚捨てさせ、1 枚ドロー。'},
+    'TH-L02':{atk:'16',eva:'8',aatk:'22',aeva:'9',awc:'-',
+      ef:'【恋符 ── 普通の魔法使い】攻撃したとき、削り量 +3。覚醒後、最初の攻撃で 削り +8 / 自デッキ -2。自トラッシュ 12 枚以上で攻撃に +4。',
+      aef:'【マスタースパーク】覚醒時、デッキトップ 3 枚を見て好きな 1 枚を手札に加える。'},
+    'TH-L03':{atk:'15',eva:'8',aatk:'20',aeva:'11',awc:'-',
+      ef:'【カリスマ ── 紅夜の覇者】攻撃したとき、自トラッシュから 1 枚を P へ(吸血)。覚醒後、毎ターン開始時にも 1 P 吸血、攻撃時に相手の覚醒ゲージ -1。',
+      aef:'【スピア・ザ・グングニル】覚醒時、相手の P 半減 + 相手の手札 -1。'},
+    'TH-L04':{atk:'16',eva:'7',aatk:'23',aeva:'8',awc:'-',
+      ef:'【フォーオブアカインド ── きゅっとして…】攻撃したとき、削り量 +5。自デッキ -2。覚醒後、攻撃時の削り +(覚醒経過ターン)、攻撃のたびに自デッキ -1 累積。',
+      aef:'【レーヴァテイン】覚醒時、相手のデッキ -6 / 自デッキ -1。'},
+  };
+  state.cards.forEach(c => {
+    if (getTypeKind(c.type) === 'touhou-char') {
+      const L = LEADER_V37[c.cardCode];
+      if (L) {
+        c.attack = L.atk; c.evasion = L.eva;
+        c.awakenAttack = L.aatk; c.awakenEvasion = L.aeva;
+        c.awakenCost = L.awc;  // ゲージ式なので「-」表記
+        c.effect = L.ef; c.awakenEffect = L.aef;
+      }
+    }
+  });
+  state.rebalanceVer = '4.3';
+}
+
 function loadData() {
   let loaded = false;
   try {
@@ -3938,6 +3970,8 @@ function loadData() {
   migrateSpellExEffectsV41();
   // v1.8: カウンタースペル 6 種を既存セーブに追加
   migrateCounterSpellsV42();
+  // v3.7: 覚醒ゲージ式に切替(リーダーカードの覚醒コスト記述を更新)
+  migrateAwakenGaugeV43();
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
   // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
@@ -4371,7 +4405,8 @@ function aibMakeSide(pair,isFirst,name){
   s.lifeCards=[s.deck.pop(),s.deck.pop(),s.deck.pop()];
   s.P=isFirst?0:6;
   for(let i=0;i<4+(isFirst?0:1);i++) if(s.deck.length) s.hand.push(s.deck.shift());
-  s.leaders=pair.map(k=>({k:k,aw:false,rested:false,awThis:false}));
+  // v3.7: awakenGauge(0-3) を導入。aw は awakenGauge>=3 で代替判定
+  s.leaders=pair.map(k=>({k:k,aw:false,rested:false,awThis:false,awakenGauge:0,awakenedTurn:null,awakenedAttackCount:0}));
   return s;
 }
 function aibRefresh(s){s.deck=aibShuffle(s.trash);s.trash=[];s.life--;if(s.lifeCards.length)s.hand.push(s.lifeCards.pop());if(s.life<=0)s.dead=true;}
@@ -4462,9 +4497,11 @@ function aibHasQuickDef(s){return s.hand.some(c=>c.k==='def'&&c.q);}
 function aibEva(L){const d=leaderInfo(L);return L.aw?d.aeva:d.eva;}
 
 function aibAwaken(s,o,log,L){
-  const cost=leaderInfo(L).awc;
-  if(s.P<cost)return false;
-  s.P-=cost;L.aw=true;L.awThis=true;
+  // v3.7: PP コスト廃止。aibProgressGauge → ゲージ3到達時に自動呼び出し される。
+  L.aw=true;L.awThis=true;
+  L.awakenGauge=3;
+  L.awakenedTurn = s.turn;
+  L.awakenedAttackCount = 0;
   // FX: 覚醒フラッシュ
   if(typeof aibSpawnAwakenFx==='function') aibSpawnAwakenFx();
   // v1.8: 相手側カウンターチェック (opp_awaken)
@@ -4490,20 +4527,65 @@ function aibAwaken(s,o,log,L){
   log.push('　🌟 '+L.k+' 覚醒 '+extra);
   return true;
 }
+// v3.7: aibCovenant は aibChooseMainAction + aibProgressGauge に置換
+// (旧 PP コスト方式の覚醒は廃止)
 function aibCovenant(s,o,log){
-  const cand=s.leaders.filter(L=>!L.aw&&s.P>=leaderInfo(L).awc);
-  if(!cand.length)return;
-  cand.sort((a,b)=>leaderInfo(b).aatk-leaderInfo(a).aatk);
-  aibAwaken(s,o,log,cand[0]);
+  // 旧 API 互換のため残置。新規実装では呼ばれない。
 }
 
-function aibLval(L,o){
+// v3.7: ゲージ進行 — リーダー idx を 1 段階進める。3 で自動覚醒。
+function aibProgressGauge(s, o, log, idx){
+  const L = s.leaders[idx];
+  if(!L || L.awakenGauge >= 3) return false;
+  L.awakenGauge += 1;
+  log.push('　⚡ '+s.name+': '+L.k+' の覚醒ゲージ '+L.awakenGauge+'/3');
+  if(L.awakenGauge >= 3){
+    aibAwaken(s, o, log, L);
+  }
+  return true;
+}
+
+// v3.7: メインフェーズ 3 択 — 攻撃 / ゲージ進行 / 待機 を選ぶ
+// 戻り値: 'attack' / 'gauge:0' / 'gauge:1' / 'wait'
+function aibChooseMainAction(s, o){
+  const unawakened = s.leaders.findIndex(L => L.awakenGauge < 3);
+  if(unawakened < 0) return 'attack';  // 全員覚醒済み
+  // 序盤は攻撃優先
+  if(s.turn <= 2) return 'attack';
+  // 自分不利(相手にライフで 1 以上勝たれている)→ 覚醒急いで巻き返す
+  if(o.life < s.life) return 'attack';  // 自分有利、攻撃継続
+  if(o.life === s.life){
+    // 互角:相手のゲージが進行中なら追従、そうでなければ攻撃
+    const oppMaxGauge = Math.max(...o.leaders.map(L => L.awakenGauge));
+    const myMaxGauge = Math.max(...s.leaders.map(L => L.awakenGauge));
+    if(oppMaxGauge > myMaxGauge) return 'gauge:' + unawakened;
+    // 4 ターン毎にゲージ進行(攻撃 3:1 ゲージ)
+    return (s.turn % 4 === 0) ? ('gauge:' + unawakened) : 'attack';
+  }
+  // 自分不利
+  return 'gauge:' + unawakened;
+}
+
+function aibLval(L,o,s){
   const d=leaderInfo(L);let base=L.aw?d.aatk:d.atk;
   if(d.ab==='koi')base+=3;
   if(d.ab==='four')base+=5;
-  if(d.ab==='koi'&&L.awThis)base+=8;  // v3.4: マスタースパーク強化 (6→8)
+  // v3.7: 覚醒継続効果(awakenGauge >= 3)
+  if(L.awakenGauge >= 3){
+    if(d.ab==='koi'){
+      // マスタースパーク覚醒: 覚醒後の最初の攻撃 +8(awakenedAttackCount===0 のとき)
+      if((L.awakenedAttackCount||0) === 0) base += 8;
+      // コレクション: 自トラッシュ 12+ で +4
+      if(s && s.trash && s.trash.length >= 12) base += 4;
+    }
+    if(d.ab==='four' && s){
+      // フラン覚醒: 削り +(覚醒経過ターン数)
+      const elapsed = Math.max(0, s.turn - (L.awakenedTurn||s.turn));
+      base += elapsed;
+    }
+  }
   let virt=0;
-  if(d.ab==='oharai')virt=o.P>0?1:0;  // v1.7: お祓い弱化に合わせ virt 3→1
+  if(d.ab==='oharai')virt=o.P>0?1:0;
   if(d.ab==='charisma')virt=2;
   return {base:base,virt:virt,ab:d.ab};
 }
@@ -4642,6 +4724,38 @@ function aibResolveAttack(s,o,log,atk,def){
     if(dex.next_atk_bonus > 0){ o._nextAtkBonus = (o._nextAtkBonus||0) + dex.next_atk_bonus; log.push('　　⚔ 次の攻撃: '+o.name+' +'+dex.next_atk_bonus+' 蓄積'); }
   }
   atk.atkL.rested=true;
+  // v3.7: 攻撃したリーダーが覚醒済みなら、覚醒継続効果の副作用を適用
+  if(atk.atkL.awakenGauge >= 3){
+    atk.atkL.awakenedAttackCount = (atk.atkL.awakenedAttackCount||0) + 1;
+    const ab2 = leaderInfo(atk.atkL).ab;
+    if(ab2 === 'koi' && atk.atkL.awakenedAttackCount === 1){
+      // マスタースパーク代償: 自デッキ -2
+      aibMill(s, 2);
+      log.push('　　🌟 マスタースパーク代償: '+s.name+' 自デッキ -2');
+    }
+    if(ab2 === 'four'){
+      // フラン覚醒: 攻撃のたびに自デッキ -1 累積
+      aibMill(s, 1);
+      log.push('　　🌟 悪魔の妹: '+s.name+' 自デッキ -1 累積');
+    }
+    if(ab2 === 'charisma'){
+      // レミリア覚醒: 攻撃時、相手のリーダーで最高ゲージを 1 戻す
+      const target = o.leaders.filter(L=>L.awakenGauge<3 && L.awakenGauge>0)
+        .sort((a,b)=>b.awakenGauge-a.awakenGauge)[0];
+      if(target){
+        target.awakenGauge -= 1;
+        log.push('　　🌟 紅夜の覇者: '+o.name+' '+target.k+' のゲージ -1 → '+target.awakenGauge);
+      }
+    }
+  }
+  // v3.7: 防御側に霊夢覚醒済みがいて、攻撃命中(final>0)なら BOMB +1
+  if(final > 0){
+    const reimuAwoken = o.leaders.find(L => L.awakenGauge>=3 && leaderInfo(L).ab==='oharai');
+    if(reimuAwoken){
+      o.bomb = Math.min(6, o.bomb + 1);
+      log.push('　　🌟 無敵巫女: '+o.name+' BOMB +1(被弾)');
+    }
+  }
   log.push('　⚔ '+atk.atkL.k+(atk.atkL.aw?'(覚醒)':'')+' が攻撃(迎撃 '+dL.k+'・回避'+dval+')'
     +(atk.spellBonus?' スペル+'+atk.spellBonus:''));
   if(AIB_ABILFIRE[atk.ab]) log.push('　　✨ '+atk.atkL.k+' の通常技 ── '+AIB_ABILFIRE[atk.ab]);
@@ -4797,10 +4911,19 @@ function aibApplyAttackPlan(s, plan, o){
   const atkL = s.leaders.find(L => L.k===plan.leaderK);
   const d = leaderInfo(atkL);
   let base = atkL.aw ? d.aatk : d.atk;
-  // v1.5(v3.3): koi+3 / four+5 / koi覚醒ターン+6 (×0.75 スケール)
   if(d.ab==='koi') base += 3;
   if(d.ab==='four') base += 5;
-  if(d.ab==='koi' && atkL.awThis) base += 8;  // v3.4: マスタースパーク強化 (6→8)
+  // v3.7: 覚醒継続効果
+  if(atkL.awakenGauge >= 3){
+    if(d.ab==='koi'){
+      if((atkL.awakenedAttackCount||0) === 0) base += 8;  // マスタースパーク(覚醒後最初の攻撃)
+      if(s.trash.length >= 12) base += 4;                  // コレクション
+    }
+    if(d.ab==='four'){
+      const elapsed = Math.max(0, s.turn - (atkL.awakenedTurn||s.turn));
+      base += elapsed;                                      // フラン覚醒(経過ターン累積)
+    }
+  }
   // v1.7: 詠唱した atk/mill スペルの ex.bonus_if_* を集計して削り量に加算
   const exBonus = aibApplyExBonus(s, o, spellCards);
   return {atkL, ab:d.ab, raw:base+plan.spellBonus+exBonus, spellBonus:plan.spellBonus, exBonus, direct:plan.direct, spellNames, spellCards};
@@ -4852,9 +4975,9 @@ function aibMctsComputeAttack(s, o){
 // 旧 aibComputeAttack をリネーム(後方互換)
 function aibComputeAttackGreedy(s,o,forced,humanBonus){
   let atkL,base,ab;
-  if(forced){const v=aibLval(forced,o);atkL=forced;base=v.base;ab=v.ab;}
+  if(forced){const v=aibLval(forced,o,s);atkL=forced;base=v.base;ab=v.ab;}
   else{
-    const sc=s.leaders.map(L=>({v:aibLval(L,o),L:L}));
+    const sc=s.leaders.map(L=>({v:aibLval(L,o,s),L:L}));
     sc.sort((a,b)=>(b.v.base+b.v.virt)-(a.v.base+a.v.virt));
     atkL=sc[0].L;base=sc[0].v.base;ab=sc[0].v.ab;
   }
@@ -4934,6 +5057,24 @@ function aibTakeTurn(s,o,log){
     else L.rested=false;
     L.awThis=false;
   });
+  // v3.7: 覚醒済みリーダーの「毎ターン開始時」継続効果
+  s.leaders.forEach(L => {
+    if(L.awakenGauge < 3) return;
+    const ab = leaderInfo(L).ab;
+    if(ab === 'oharai'){
+      // 霊夢覚醒『無敵巫女』: 毎ターン開始時、相手の P を 1 個トラッシュ
+      if(o.P > 0){
+        o.P = Math.max(0, o.P - 1);
+        log.push('　🌟 '+L.k+'(覚醒): 無敵巫女 → '+o.name+' P -1');
+      }
+    } else if(ab === 'charisma'){
+      // レミリア覚醒『紅夜の覇者』: 毎ターン開始時、自トラッシュから 1 枚を P へ
+      if(s.trash.length){
+        s.P = Math.min(7, s.P + 1);
+        log.push('　🌟 '+L.k+'(覚醒): 紅夜の覇者 → 自 P +1(吸血)');
+      }
+    }
+  });
   log.push('【'+s.name+' ターン'+s.turn+'】 ライフ '+s.life+' / デッキ '+s.deck.length+' / P '+s.P);
   if(!(s.isFirst&&s.turn===1))aibDraw(s,1);
   if(s.dead)return;
@@ -4944,8 +5085,22 @@ function aibTakeTurn(s,o,log){
     s.hand.splice(wi,1);aibDraw(s,1);
     if(s.dead)return;
   }
-  if(s.turn>=2){aibCovenant(s,o,log);if(s.dead||o.dead)return;}
-  aibDoAttack(s,o,log);
+  // v3.7: メインフェーズ 3 択 — 攻撃 / 覚醒ゲージ進行 / 待機
+  if(s.turn >= 2){
+    const action = aibChooseMainAction(s, o);
+    if(action.indexOf('gauge:') === 0){
+      const idx = parseInt(action.slice(6), 10);
+      aibProgressGauge(s, o, log, idx);
+      if(s.dead || o.dead) return;
+    } else if(action === 'wait'){
+      log.push('　⏸ '+s.name+' は待機');
+    } else {
+      aibDoAttack(s, o, log);
+    }
+  } else {
+    // 初ターンは攻撃のみ(従来挙動)
+    aibDoAttack(s, o, log);
+  }
 }
 
 function aibPlayGame(pairA,pairB){

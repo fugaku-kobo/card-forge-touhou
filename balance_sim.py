@@ -191,7 +191,9 @@ class Side:
         for _ in range(n):
             if self.deck:
                 self.hand.append(self.deck.pop(0))
-        self.leaders = [{'k':k,'aw':False,'rested':False,'awThis':False} for k in pair]
+        # v3.7: awakenGauge / awakenedTurn / awakenedAttackCount を導入
+        self.leaders = [{'k':k,'aw':False,'rested':False,'awThis':False,
+                         'awakenGauge':0,'awakenedTurn':None,'awakenedAttackCount':0} for k in pair]
 
 def draw(s, n):
     for _ in range(n):
@@ -231,20 +233,33 @@ def lv_ok(s, lv):
 def has_quick_def(s):
     return any(POOL[c][0]=='def' and POOL[c][3]==1 and spell_castable(s, c) for c in s.hand)
 
-def covenant(s, o):
-    cand = [L for L in s.leaders if not L['aw']]
-    if not cand: return
-    cand.sort(key=lambda L: LD[L['k']][3], reverse=True)
-    L = cand[0]
-    cost = LD[L['k']][2]
-    aid = next((c for c in s.hand if POOL[c][0]=='util' and POOL[c][1]==0 and POOL[c][2]<=s.P), None)
-    eff = cost
-    if aid is not None and cost-2 <= s.P < cost:
-        s.P -= POOL[aid][2]; s.hand.remove(aid); s.trash.append(aid); eff = cost-2
-    extra = s.ai.get('awaken_min_P_extra', 0)
-    if s.P < eff + extra: return
-    s.P -= eff
+def progress_gauge(s, o, idx):
+    """v3.7: ゲージ +1。3 到達で自動覚醒。"""
+    L = s.leaders[idx]
+    if L['awakenGauge'] >= 3: return False
+    L['awakenGauge'] += 1
+    if L['awakenGauge'] >= 3:
+        awaken_leader(s, o, L)
+    return True
+
+def choose_main_action(s, o):
+    """v3.7: 'attack' / 'gauge:N' / 'wait' を返す"""
+    unawakened = next((i for i,L in enumerate(s.leaders) if L['awakenGauge']<3), -1)
+    if unawakened < 0: return 'attack'
+    if s.turncount <= 2: return 'attack'
+    if o.life < s.life: return 'attack'  # 自分有利、押し切り
+    if o.life == s.life:
+        opp_max = max(L['awakenGauge'] for L in o.leaders)
+        my_max = max(L['awakenGauge'] for L in s.leaders)
+        if opp_max > my_max: return 'gauge:%d' % unawakened
+        return 'gauge:%d' % unawakened if s.turncount % 4 == 0 else 'attack'
+    return 'gauge:%d' % unawakened
+
+def awaken_leader(s, o, L):
+    """v3.7: 旧 covenant の覚醒スキル発動部分を抜き出した関数。PP コストなし。"""
     L['aw'] = True; L['awThis'] = True
+    L['awakenedTurn'] = s.turncount
+    L['awakenedAttackCount'] = 0
     ab = LD[L['k']][5]
     if ab == 'oharai':
         if o.hand: o.trash.append(o.hand.pop(random.randrange(len(o.hand))))
@@ -276,23 +291,39 @@ def take_turn(s, o):
     s.turncount += 1
     for L in s.leaders:
         if L.get('_frozen'):
-            L['rested'] = True; L['_frozen'] = False  # v1.8: 凍結中は rested 維持&解除
+            L['rested'] = True; L['_frozen'] = False
         else:
             L['rested'] = False
         L['awThis'] = False
+    # v3.7: 覚醒済みリーダーの「毎ターン開始時」継続効果
+    for L in s.leaders:
+        if L['awakenGauge'] < 3: continue
+        ab = LD[L['k']][5]
+        if ab == 'oharai':
+            o.P = max(0, o.P - 1)  # 霊夢覚醒『無敵巫女』
+        elif ab == 'charisma':
+            if s.trash:
+                s.P = min(7, s.P + 1)  # レミリア覚醒『紅夜の覇者』
     if not (s.is_first and s.turncount == 1):
         draw(s, 1)
     if s.dead: return
-    if s.hand:   # チャージ: 手札1枚をPへ、1枚ドロー
-        s.P = min(7, s.P + 1)  # v1.7: PP 上限 7
+    if s.hand:
+        s.P = min(7, s.P + 1)
         order = sorted(range(len(s.hand)), key=lambda i: (POOL[s.hand[i]][0]!='util', POOL[s.hand[i]][1]))
         s.hand.pop(order[0])
         draw(s, 1)
         if s.dead: return
+    # v3.7: メインフェーズ 3 択
     if s.turncount >= 2:
-        covenant(s, o)
-        if s.dead or o.dead: return
-    # 攻撃 (テスト設定: 先攻初ターンの攻撃をスキップ)
+        action = choose_main_action(s, o)
+        if action.startswith('gauge:'):
+            idx = int(action.split(':')[1])
+            progress_gauge(s, o, idx)
+            if s.dead or o.dead: return
+            return  # ゲージ進行ターンは攻撃しない
+        elif action == 'wait':
+            return
+        # 'attack' は下の do_attack へ
     if CFG.get('first_no_t1_atk') and s.is_first and s.turncount == 1:
         return
     do_attack(s, o)
@@ -305,8 +336,16 @@ def do_attack(s, o):
         base = aatk if L['aw'] else a
         if ab == 'koi': base += CFG.get('koi', 3)
         if ab == 'four': base += CFG.get('four', 5)
-        # v3.4: マスタースパーク覚醒ターン = +8 (バースト個性強化)
-        if ab == 'koi' and L['awThis']: base += CFG.get('koi_aw_bonus', 8)
+        # v3.7: 覚醒継続効果
+        if L['awakenGauge'] >= 3:
+            if ab == 'koi':
+                if L['awakenedAttackCount'] == 0:
+                    base += 8  # マスタースパーク(覚醒後最初の攻撃)
+                if len(s.trash) >= 12:
+                    base += 4  # コレクション
+            if ab == 'four':
+                elapsed = max(0, s.turncount - (L['awakenedTurn'] or s.turncount))
+                base += elapsed  # フラン覚醒経過ターン累積
         virt = 0
         # v1.7: お祓い弱化 (P-2→P-1) に合わせ virt 3→1
         if ab == 'oharai': virt = 1 if o.P > 0 else 0
@@ -435,6 +474,21 @@ def do_attack(s, o):
     if extra_opp_p_mill > 0:
         o.P = max(0, o.P - extra_opp_p_mill)
     atkL['rested'] = True
+    # v3.7: 攻撃したリーダーが覚醒済みなら覚醒継続効果の副作用
+    if atkL['awakenGauge'] >= 3:
+        atkL['awakenedAttackCount'] += 1
+        if ab == 'koi' and atkL['awakenedAttackCount'] == 1:
+            mill(s, 2)  # マスタースパーク代償
+        if ab == 'four':
+            mill(s, 1)  # フラン覚醒の自デッキ累積
+        if ab == 'charisma':
+            target = sorted([L for L in o.leaders if 0 < L['awakenGauge'] < 3],
+                            key=lambda L: -L['awakenGauge'])
+            if target: target[0]['awakenGauge'] -= 1
+    # v3.7: 防御側に霊夢覚醒済みがいて、final > 0 なら BOMB +1
+    if final > 0:
+        if any(L['awakenGauge']>=3 and LD[L['k']][5]=='oharai' for L in o.leaders):
+            o.bomb = min(6, o.bomb + 1)
     for c in list(s.hand):
         k,val,pp,_,_,lv,_ = POOL[c]
         if k=='util' and pp<=s.P and spell_castable(s, c):

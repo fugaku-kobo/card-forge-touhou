@@ -64,7 +64,23 @@ POOL = [
  ('atk',     7, 3, 0, 0, 1, 'フラン'),    # TH-403 禁忌『カゴメカゴメ』 +相手P-2
  ('atk',    15, 5, 0, 0, 2, 'フラン'),    # TH-404 禁弾『スターボウブレイク』
  ('atk',     6, 2, 0, 1, 1, 'フラン'),    # TH-405 『悪魔の妹』
+ # ===== v1.8 カウンター 6 種 (TH-501..506) — 手札から相手ターン中に発動 =====
+ ('def',     0, 4, 1, 0, 1, '霊夢'),       # TH-501 結界『博麗弾結界』(完全無効)
+ ('def',     0, 3, 1, 0, 2, '霊夢'),       # TH-502 神技『陰陽弾』(覚醒打消し)
+ ('disrupt', 0, 3, 1, 0, 1, '魔理沙'),     # TH-503 魔符『閃光』(詠唱無効)
+ ('def',     0, 3, 1, 0, 1, 'レミリア'),   # TH-504 紅符『緋色の波』(半減+反射)
+ ('disrupt', 0, 4, 1, 0, 2, 'フラン'),     # TH-505 禁弾『刻時停止』(覚醒リーダー凍結)
+ ('disrupt', 0, 2, 1, 0, 1, ''),           # TH-506 結界『縛』(追加コスト要求)
 ]
+# v1.8: カウンタースペルの triggerTiming(POOL の index → 発動可能タイミング)
+TRIGGER = {
+    30: 'opp_atk_declare',  # TH-501 博麗弾結界
+    31: 'opp_awaken',       # TH-502 陰陽弾
+    32: 'opp_cast',         # TH-503 閃光
+    33: 'opp_atk_declare',  # TH-504 緋色の波
+    34: 'opp_awaken',       # TH-505 刻時停止
+    35: 'opp_cast',         # TH-506 縛
+}
 # v1.7: ex 効果辞書 (index.html の AIB_POOL.ex と同期)
 # 攻撃系: self_mill, opp_p_mill, bonus_if_opp_p_low{th,v}, bonus_if_low_life,
 #         bonus_if_high_trash{th,v}, bonus_if_low_deck{th,v}, bonus_if_opp_awakened,
@@ -98,6 +114,13 @@ EXTRA = {
     27: {'opp_p_mill': 2},                             # TH-403 カゴメカゴメ
     28: {'bonus_if_low_life': 5},                      # TH-404 スターボウ
     29: {'bomb_on_hit': 1, 'bonus_if_low_life': 8},    # TH-405 悪魔の妹
+    # v1.8 カウンター ex
+    30: {'negate_attack': 1},                          # TH-501 博麗弾結界
+    31: {'negate_awaken_effect': 1},                   # TH-502 陰陽弾
+    32: {'negate_spell': 1},                           # TH-503 閃光
+    33: {'half_attack': 1, 'reflect_to_opp': 1},       # TH-504 緋色の波
+    34: {'freeze_awakened_leader': 1},                 # TH-505 刻時停止
+    35: {'spell_cost_surcharge': 1},                   # TH-506 縛
 }
 # TH-104 八方鬼縛陣の POOL val (=2) は disrupt として独立して相手 P -2、EXTRA 13 と二重発動しないよう注意
 
@@ -109,10 +132,14 @@ def usable_indices(pair):
     return [i for i, c in enumerate(POOL) if c[6]=='' or c[6] in pair]
 
 def build_deck(pair):
-    """v1.6 スターター: 共有10×4 + 該当ペア専用10×2 = 60枚"""
+    """v1.8 スターター: カウンターは少なめに分配(共有2枚/専用1枚)で計65枚前後"""
     d = []
     for i in usable_indices(pair):
-        n = 4 if POOL[i][6] == '' else 2  # 共有4枚 / 専用2枚
+        is_counter = i in TRIGGER
+        if POOL[i][6] == '':  # 共有
+            n = 4 if not is_counter else 2
+        else:  # 専用
+            n = 2 if not is_counter else 1
         d += [i] * n
     random.shuffle(d)
     return d
@@ -123,6 +150,29 @@ def spell_castable(s, c):
     if lr and not any(L['k'] == lr for L in s.leaders):
         return False
     return lv_ok(s, POOL[c][5])
+
+def check_counter(reactor, actor, timing, ctx=None):
+    """v1.8: 相手の手札からカウンタースペルを発動するか判断し、効果 dict を返す"""
+    candidates = [c for c in reactor.hand
+        if TRIGGER.get(c) == timing
+        and spell_castable(reactor, c)
+        and POOL[c][2] <= reactor.P]
+    if not candidates: return None
+    # 簡単な heuristic で選択
+    for c in candidates:
+        ex = EXTRA.get(c, {})
+        if 'negate_attack' in ex and ctx and ctx.get('atk_raw', 0) >= 14: pick = c; break
+        if 'half_attack' in ex and ctx and ctx.get('atk_raw', 0) >= 12: pick = c; break
+        if 'negate_spell' in ex and ctx and ctx.get('spell_v', 0) >= 8: pick = c; break
+        if 'spell_cost_surcharge' in ex and ctx and actor.P < ctx.get('spell_pp', 0) + 1: pick = c; break
+        if 'negate_awaken_effect' in ex: pick = c; break
+        if 'freeze_awakened_leader' in ex: pick = c; break
+    else:
+        return None
+    reactor.P -= POOL[pick][2]
+    reactor.hand.remove(pick)
+    reactor.trash.append(pick)
+    return EXTRA.get(pick, {})
 
 class Side:
     def __init__(self, pair, is_first, ai_params=None):
@@ -206,6 +256,13 @@ def covenant(s, o):
         # v3.4 レーヴァテイン: 相手デッキ-6 / 自デッキ-1 (代償軽減 2→1)
         mill(o, CFG.get('four_aw_mill', 6))
         mill(s, CFG.get('four_aw_self_mill', 1))
+    # v1.8: 相手のカウンターチェック (opp_awaken)
+    cnt = check_counter(o, s, 'opp_awaken')
+    if cnt:
+        if cnt.get('negate_awaken_effect'):
+            pass  # 効果は既に発動済み(簡略化のためここでは無効化できないが、覚醒コストは消費維持)
+        if cnt.get('freeze_awakened_leader'):
+            L['_frozen'] = True
 
 def best_def(o):
     ready = [L for L in o.leaders if not L['rested']]
@@ -218,7 +275,11 @@ def best_def(o):
 def take_turn(s, o):
     s.turncount += 1
     for L in s.leaders:
-        L['rested'] = False; L['awThis'] = False
+        if L.get('_frozen'):
+            L['rested'] = True; L['_frozen'] = False  # v1.8: 凍結中は rested 維持&解除
+        else:
+            L['rested'] = False
+        L['awThis'] = False
     if not (s.is_first and s.turncount == 1):
         draw(s, 1)
     if s.dead: return
@@ -295,6 +356,15 @@ def do_attack(s, o):
     da,de,_,_,dae,_ = LD[dL['k']]
     dval = dae if dL['aw'] else de
     raw = base + spell_bonus + ex_bonus
+    # v1.8: 相手のカウンターチェック (opp_atk_declare)
+    cntA = check_counter(o, s, 'opp_atk_declare', {'atk_raw': raw})
+    if cntA:
+        if cntA.get('negate_attack'):
+            atkL['rested'] = True
+            return  # 攻撃完全無効化
+        if cntA.get('half_attack'):
+            raw = (raw + 1) // 2  # 切り上げ
+        # reflect_to_opp は最終 final 確定後に処理
     reduce = 0; def_card = None
     # v1.7: 防御カード選択 (negate_if_* を最優先)
     quick = sorted([c for c in o.hand if POOL[c][0]=='def' and POOL[c][3]==1 and spell_castable(o, c)],
@@ -329,6 +399,9 @@ def do_attack(s, o):
         s.P = min(7, s.P + min(sum(POOL[c][4] for c in milled), 3))  # v1.7: PP 上限 7
     if direct > 0 and not o.dead:
         mill(o, direct)
+    # v1.8: reflect_to_opp(カウンター緋色の波)— final 分を s.deck に反射
+    if cntA and cntA.get('reflect_to_opp') and final > 0:
+        mill(s, final)
     # v1.7: 攻撃命中時の ex
     if final > 0 and extra_draw_hit > 0:
         draw(s, extra_draw_hit)
@@ -365,6 +438,16 @@ def do_attack(s, o):
     for c in list(s.hand):
         k,val,pp,_,_,lv,_ = POOL[c]
         if k=='util' and pp<=s.P and spell_castable(s, c):
+            # v1.8: opp_cast カウンターチェック
+            cntC = check_counter(o, s, 'opp_cast', {'spell_v': val, 'spell_pp': pp})
+            if cntC:
+                if cntC.get('negate_spell'):
+                    s.P -= pp; s.hand.remove(c); s.trash.append(c)
+                    break  # 効果なしでコストだけ消費
+                if cntC.get('spell_cost_surcharge'):
+                    if s.P < pp + 1:
+                        break  # 追加コスト払えず失敗
+                    s.P -= 1
             s.P -= pp; s.hand.remove(c); s.trash.append(c); draw(s, max(1,val)); break
     while len(s.hand) > 7:
         s.trash.append(s.hand.pop())

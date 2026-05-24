@@ -3587,10 +3587,10 @@ function buildBuiltinCards(){
   const ch=(code,nm,ic,a,e,awc,aa,ae,ef,aef)=>({id:cid(),type:'キャラ',name:nm,cardCode:code,
     work:W,user:nm,icon:ic,art:'',level:'1',attack:a,evasion:e,awakenCost:awc,
     awakenAttack:aa,awakenEvasion:ae,effect:ef,awakenEffect:aef});
-  const sp=(code,nm,kd,lv,pp,bom,rec,ef,ek,ev,lr,ex)=>({id:cid(),type:'スペル',name:nm,cardCode:code,
+  const sp=(code,nm,kd,lv,pp,bom,rec,ef,ek,ev,lr,ex,tg)=>({id:cid(),type:'スペル',name:nm,cardCode:code,
     work:W,user:W,icon:'✨',art:'',spellKind:kd,requiredCharLevel:lv,ppCost:pp,
     bomCost:String(bom),trigger:'',recoverP:rec,effect:ef,engineKind:ek,engineValue:String(ev),
-    leaderRestriction:lr||'',engineExtra:ex||null});
+    leaderRestriction:lr||'',engineExtra:ex||null,triggerTiming:tg||''});
   return [
     // v3.4: 基礎値は v3.3 維持、テキストで「受け担当/バースト/支配/代償」のテーマを明示。
     // 専用スペル(Phase C で TH-101..405)で各リーダーの戦闘軸を更に強化する。
@@ -3642,6 +3642,13 @@ function buildBuiltinCards(){
     sp('TH-403','禁忌「カゴメカゴメ」',        '通常','1','3','1','0','削り量 +7。その後、相手の P を 2 個トラッシュ。【フランドール専用】','atk',7,'TH-L04'),
     sp('TH-404','禁弾「スターボウブレイク」',  '通常','2','5','2','0','削り量 +15。【フランドール専用】','atk',15,'TH-L04'),
     sp('TH-405','「悪魔の妹」',                '通常','1','2','1','1','削り量 +6。【フランドール専用】','atk',6,'TH-L04'),
+    // ===== カウンター 6 種 (TH-501..506) v1.8 — 手札から相手ターン中に発動 =====
+    sp('TH-501','結界「博麗弾結界」',          'カウンター','1','4','2','0','【霊夢専用・カウンター】相手の攻撃宣言時に発動 → その攻撃を完全無効化。','def',0,'TH-L01',{negate_attack:1},'opp_atk_declare'),
+    sp('TH-502','神技「陰陽弾」',              'カウンター','2','3','1','0','【霊夢専用・カウンター】相手の覚醒時に発動 → その覚醒スキルを打ち消す(覚醒コストは消費)。','def',0,'TH-L01',{negate_awaken_effect:1},'opp_awaken'),
+    sp('TH-503','魔符「閃光」',                'カウンター','1','3','1','0','【魔理沙専用・カウンター】相手のスペル詠唱時に発動 → そのスペルを無効化。','disrupt',0,'TH-L02',{negate_spell:1},'opp_cast'),
+    sp('TH-504','紅符「緋色の波」',            'カウンター','1','3','1','0','【レミリア専用・カウンター】相手の攻撃宣言時に発動 → 削り量を半減し、その分を相手のデッキへ反射。','def',0,'TH-L03',{half_attack:1,reflect_to_opp:1},'opp_atk_declare'),
+    sp('TH-505','禁弾「刻時停止」',            'カウンター','2','4','2','0','【フランドール専用・カウンター】相手の覚醒時に発動 → 覚醒したリーダーを次ターンも「行動済み」にする。','disrupt',0,'TH-L04',{freeze_awakened_leader:1},'opp_awaken'),
+    sp('TH-506','結界「縛」',                  'カウンター','1','2','1','0','【共有・カウンター】相手のスペル詠唱時に発動 → 追加コスト PP +1 を要求する(払えなければ詠唱失敗)。','disrupt',0,'',{spell_cost_surcharge:1},'opp_cast'),
   ];
 }
 
@@ -3656,11 +3663,12 @@ function cardToSpellInfo(card){
     v:  Number(card.engineValue||0),
     pp: Number(card.ppCost||0),
     bom: Number(card.bomCost||0),
-    q:  card.spellKind==='QUICK' ? 1 : 0,
+    q:  (card.spellKind==='QUICK'||card.spellKind==='カウンター') ? 1 : 0,  // v1.8: カウンターも q=1 扱い(発動条件統合)
     rec: Number(card.recoverP||0),
     lv: Number(card.requiredCharLevel||1),
     lr: card.leaderRestriction || '',  // 専用リーダーコード('' / 'TH-L01..L04')。v3.4 で導入。
     ex: card.engineExtra || null,       // v1.7: 追加効果オブジェクト(bonus_if_*, counter_*, draw_on_hit 等)
+    tg: card.triggerTiming || '',       // v1.8: カウンター発動タイミング('opp_atk_declare'/'opp_cast'/'opp_awaken')
     name: card.name||'', cardId: card.id, card: card,
   };
 }
@@ -3877,6 +3885,21 @@ function migrateSpellExEffectsV41(){
   state.rebalanceVer = '4.1';
 }
 
+// v1.8 (v3.6): カウンタースペル 6 種(TH-501..506)を追加。
+function migrateCounterSpellsV42(){
+  if (!state.cards) return;
+  if (state.rebalanceVer === '4.2') return;
+  const NEW_CODES = new Set(['TH-501','TH-502','TH-503','TH-504','TH-505','TH-506']);
+  const existing = new Set(state.cards.map(c => c.cardCode));
+  const builtins = buildBuiltinCards();
+  builtins.forEach(b => {
+    if (NEW_CODES.has(b.cardCode) && !existing.has(b.cardCode)) {
+      state.cards.push(b);
+    }
+  });
+  state.rebalanceVer = '4.2';
+}
+
 function loadData() {
   let loaded = false;
   try {
@@ -3913,6 +3936,8 @@ function loadData() {
   migrateLeaderRestrictionsV40();
   // v1.7: スペル ex 効果(15 種)を既存セーブに強制同期
   migrateSpellExEffectsV41();
+  // v1.8: カウンタースペル 6 種を既存セーブに追加
+  migrateCounterSpellsV42();
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
   // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
@@ -4294,6 +4319,14 @@ const AIB_POOL = [
   {k:'atk',v:7,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{opp_p_mill:2}},                    // TH-403 カゴメカゴメ
   {k:'atk',v:15,pp:5,q:0,rec:0,lv:2,lr:'フランドール',ex:{bonus_if_low_life:5}},            // TH-404 スターボウブレイク
   {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'フランドール',ex:{bomb_on_hit:1,bonus_if_low_life:8}}, // TH-405 悪魔の妹(最終捲り)
+  // ===== カウンター 6 種 (TH-501..506) v1.8 — 手札から相手ターン中に発動する速攻魔法 =====
+  // tg: 発動可能なタイミング('opp_atk_declare'/'opp_cast'/'opp_awaken')
+  {k:'def',v:0,pp:4,q:1,rec:0,lv:1,lr:'霊夢',tg:'opp_atk_declare',ex:{negate_attack:1}},        // TH-501 結界『博麗弾結界』完全無効
+  {k:'def',v:0,pp:3,q:1,rec:0,lv:2,lr:'霊夢',tg:'opp_awaken',ex:{negate_awaken_effect:1}},      // TH-502 神技『陰陽弾』覚醒打消し
+  {k:'disrupt',v:0,pp:3,q:1,rec:0,lv:1,lr:'魔理沙',tg:'opp_cast',ex:{negate_spell:1}},          // TH-503 魔符『閃光』詠唱無効化
+  {k:'def',v:0,pp:3,q:1,rec:0,lv:1,lr:'レミリア',tg:'opp_atk_declare',ex:{half_attack:1,reflect_to_opp:1}}, // TH-504 紅符『緋色の波』半減+反射
+  {k:'disrupt',v:0,pp:4,q:1,rec:0,lv:2,lr:'フランドール',tg:'opp_awaken',ex:{freeze_awakened_leader:1}},   // TH-505 禁弾『刻時停止』覚醒リーダー凍結
+  {k:'disrupt',v:0,pp:2,q:1,rec:0,lv:1,lr:'',tg:'opp_cast',ex:{spell_cost_surcharge:1}},         // TH-506 結界『縛』追加コスト要求(共有)
 ];
 const AIB_NM = [
   '夢想妙珠','アグニシャイン','サイレントセレナ','生死の境界','博麗弾幕結界',
@@ -4302,6 +4335,8 @@ const AIB_NM = [
   'マスタースパーク','ファイナルスパーク','ドラゴンメテオ','アーティフルチャンター','普通の魔法使い',
   'スカーレットシュート','スピア・ザ・グングニル','スカーレットデビル','ドラキュリア','永遠に紅い幼き月',
   'フォーオブアカインド','過去を刻む時計','カゴメカゴメ','スターボウブレイク','悪魔の妹',
+  // カウンター 6 種 (v1.8)
+  '博麗弾結界','陰陽弾','閃光','緋色の波','刻時停止','縛',
 ];
 // AIB_POOL を card-shaped に enrich(name/idx/bom を付与してエンジンを ref ベースに)
 AIB_POOL.forEach((sp,i)=>{ sp.name=AIB_NM[i]; sp.idx=i; if(sp.bom===undefined) sp.bom=Math.max(1,Math.ceil(sp.pp/3)); });
@@ -4317,12 +4352,15 @@ function aibSpellDesc(c){
 }
 
 function aibShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-// v1.6: スターターは 共有10×4 + 該当ペア専用10×2 = 60枚
+// v1.8: 共有 atk/def 4枚、専用 atk/def 2枚、共有カウンター 2枚、専用カウンター 1枚 (計約65枚)
 function aibBuildDeck(pair){
   const d = [];
   AIB_POOL.forEach(sp => {
     if (sp.lr === '' || pair.includes(sp.lr)) {
-      const n = sp.lr === '' ? 4 : 2;
+      const isCounter = !!sp.tg;
+      let n;
+      if(sp.lr === '') n = isCounter ? 2 : 4;
+      else n = isCounter ? 1 : 2;
       for (let k = 0; k < n; k++) d.push(sp);
     }
   });
@@ -4429,10 +4467,26 @@ function aibAwaken(s,o,log,L){
   s.P-=cost;L.aw=true;L.awThis=true;
   // FX: 覚醒フラッシュ
   if(typeof aibSpawnAwakenFx==='function') aibSpawnAwakenFx();
+  // v1.8: 相手側カウンターチェック (opp_awaken)
+  const counter = aibCheckCounter(o, s, 'opp_awaken', log, {awakenedLeader:L});
+  let _negateAwaken = false;
+  if(counter){
+    if(counter.negate_awaken_effect){
+      log.push('　🚫 覚醒スキルが打ち消された(コストは消費済み)');
+      _negateAwaken = true;
+    }
+    if(counter.freeze_awakened_leader){
+      L._frozen = true;  // 次ターンも rested 扱い
+      log.push('　❄ 『'+L.k+'』は次ターンも行動済み(刻時停止)');
+    }
+  }
   const ab=leaderInfo(L).ab;let extra='';
-  if(ab==='oharai'){if(o.hand.length)o.trash.push(o.hand.splice(Math.floor(Math.random()*o.hand.length),1)[0]);aibDraw(s,1);extra='(夢想封印: 相手手札-1)';}
-  else if(ab==='charisma'){aibMill(o,4);extra='(スピア・ザ・グングニル: 相手デッキ-4)';}
-  else if(ab==='four'){aibMill(o,6);aibMill(s,1);extra='(レーヴァテイン: 相手デッキ-6 / 自デッキ-1)';}
+  // v1.8: negate_awaken_effect が発動したら能力スキップ
+  if(!_negateAwaken){
+    if(ab==='oharai'){if(o.hand.length)o.trash.push(o.hand.splice(Math.floor(Math.random()*o.hand.length),1)[0]);aibDraw(s,1);extra='(夢想封印: 相手手札-1)';}
+    else if(ab==='charisma'){aibMill(o,4);extra='(スピア・ザ・グングニル: 相手デッキ-4)';}
+    else if(ab==='four'){aibMill(o,6);aibMill(s,1);extra='(レーヴァテイン: 相手デッキ-6 / 自デッキ-1)';}
+  } else { extra = '(覚醒スキル打消し)'; }
   log.push('　🌟 '+L.k+' 覚醒 '+extra);
   return true;
 }
@@ -4488,6 +4542,53 @@ function aibAutoDefense(o,raw,atk){
   const negateActive = negateCard ? true : false;
   incoming = negateActive ? 0 : Math.max(1, raw-dval-reduce);
   return {spellIdx:spellIdx,bomb:(!negateActive && o.bomb>=2 && incoming>=0.81*o.deck.length && o.life<=2),negate:negateActive};
+}
+// v1.8: 相手ターン割り込み(カウンター)発動チェック
+// reactor が手札のカウンタースペルを発動するか判断し、効果オブジェクトを返す
+// timing: 'opp_atk_declare' / 'opp_cast' / 'opp_awaken'
+function aibCheckCounter(reactor, actor, timing, log, ctx){
+  if(!reactor || !reactor.hand) return null;
+  const candidates = reactor.hand.filter(c =>
+    c && c.tg === timing &&
+    aibSpellOk(reactor, c) &&
+    c.pp <= reactor.P
+  );
+  if(!candidates.length) return null;
+  // 発動判断: 当面シンプルな heuristic で「価値が高ければ発動」
+  const choice = aibChooseCounter(reactor, actor, candidates, timing, ctx);
+  if(!choice) return null;
+  // コスト支払い + 手札から消費
+  reactor.P -= choice.pp;
+  reactor.hand.splice(reactor.hand.indexOf(choice), 1);
+  reactor.trash.push(choice);
+  if(log) log.push('　⚡ '+(reactor.name||'相手')+' のカウンター: 『'+choice.name+'』 発動!');
+  return choice.ex || {};
+}
+// AI のカウンター発動判断 — 当面 heuristic
+function aibChooseCounter(reactor, actor, candidates, timing, ctx){
+  for(const c of candidates){
+    if(!c.ex) continue;
+    const ex = c.ex;
+    // negate_attack: 受ける削り量が大きいときだけ
+    if(ex.negate_attack && ctx && ctx.atk){
+      const incoming = Math.max(1, ctx.atk.raw - 8);  // 防御側のおよその回避力
+      if(incoming >= 6) return c;
+    }
+    // half_attack: 削り量 8 以上の時
+    if(ex.half_attack && ctx && ctx.atk){
+      if(ctx.atk.raw >= 12) return c;
+    }
+    // negate_spell: 詠唱スペルの v が高い時
+    if(ex.negate_spell && ctx && ctx.spell){
+      if((ctx.spell.v||0) >= 8 || ctx.spell.k === 'mill') return c;
+    }
+    if(ex.spell_cost_surcharge && ctx && ctx.spell){
+      if(actor.P < (ctx.spell.pp||0) + 1) return c;  // 払いきれないと予測すれば打つ
+    }
+    // negate_awaken_effect / freeze_awakened_leader: 相手覚醒なら即発動
+    if(ex.negate_awaken_effect || ex.freeze_awakened_leader) return c;
+  }
+  return null;
 }
 // 攻撃解決: atk=宣言結果, def={spellIdx,bomb}(防御側 o の応答)
 function aibResolveAttack(s,o,log,atk,def){
@@ -4552,10 +4653,30 @@ function aibResolveAttack(s,o,log,atk,def){
   return {final:final,useBomb:useBomb,reduce:reduce,defName:defName,defCard:defCard,defLeader:dL.k,abil:(AIB_ABILFIRE[atk.ab]||'')};
 }
 // 攻撃後の余りPで util を自動詠唱(AI用)+ 手札上限7
-function aibAutoUtil(s){
+function aibAutoUtil(s, o, log){
   for(const c of s.hand.slice()){
     const sp=c;
-    if(sp.k==='util'&&sp.pp<=s.P&&aibSpellOk(s,sp)){s.P-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);aibDraw(s,Math.max(1,sp.v));break;}
+    if(sp.k==='util'&&sp.pp<=s.P&&aibSpellOk(s,sp)){
+      // v1.8: 相手のカウンターチェック (opp_cast)
+      if(o && log){
+        const counter = aibCheckCounter(o, s, 'opp_cast', log, {spell:sp});
+        if(counter){
+          if(counter.negate_spell){
+            s.P -= sp.pp; s.hand.splice(s.hand.indexOf(c),1); s.trash.push(c);
+            log.push('　🚫 '+sp.name+' が無効化された(コストは消費)');
+            break;
+          }
+          if(counter.spell_cost_surcharge){
+            if(s.P < sp.pp + 1){
+              log.push('　🚫 '+sp.name+' は追加コスト払えず詠唱失敗');
+              break;
+            }
+            s.P -= 1;  // 追加コスト
+          }
+        }
+      }
+      s.P-=sp.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);aibDraw(s,Math.max(1,sp.v));break;
+    }
   }
   while(s.hand.length>7)s.trash.push(s.hand.pop());
 }
@@ -4709,7 +4830,7 @@ function aibMctsSelectPlan(s, o, K){
       const atk = aibApplyAttackPlan(sC, planCloned, oC);
       const def = aibAutoDefense(oC, atk.raw, atk);
       aibResolveAttack(sC, oC, [], atk, def);
-      aibAutoUtil(sC);
+      aibAutoUtil(sC, oC, []);
       // 相手のターンから展開
       if(oC.dead) { total += 1; continue; }
       if(sC.dead) { total += 0; continue; }
@@ -4778,13 +4899,41 @@ function aibApplyExBonus(s, o, spellCards){
 // 旧API: 自動で攻撃を1回(観戦/AI同士で使用)
 function aibDoAttack(s,o,log,forced){
   const atk=aibComputeAttack(s,o,forced);
-  aibResolveAttack(s,o,log,atk,aibAutoDefense(o,atk.raw,atk));
-  aibAutoUtil(s);
+  if(!atk) return;
+  // v1.8: 相手のカウンターチェック (opp_atk_declare)
+  const counter = aibCheckCounter(o, s, 'opp_atk_declare', log, {atk});
+  if(counter){
+    if(counter.negate_attack){
+      log.push('　🚫 攻撃が完全に打ち消された');
+      atk.atkL.rested = true;  // 攻撃したリーダーは行動済み
+      aibAutoUtil(s, o, log);
+      return;
+    }
+    if(counter.half_attack){
+      atk.raw = Math.ceil(atk.raw / 2);
+      log.push('　🌊 攻撃が半減された(raw='+atk.raw+')');
+    }
+    if(counter.reflect_to_opp){
+      atk._reflect = true;  // aibResolveAttack 後に s デッキを削る
+    }
+  }
+  const res = aibResolveAttack(s,o,log,atk,aibAutoDefense(o,atk.raw,atk));
+  // v1.8: reflect 効果 — final 分を s.deck へ反射
+  if(atk._reflect && res && res.final > 0){
+    log.push('　🩸 反射: '+s.name+' のデッキを '+res.final+' 枚削り');
+    aibMill(s, res.final);
+  }
+  aibAutoUtil(s, o, log);
 }
 
 function aibTakeTurn(s,o,log){
   s.turn++;
-  s.leaders.forEach(L=>{L.rested=false;L.awThis=false;});
+  // v1.8: _frozen(刻時停止)のリーダーは rested 維持(=次ターン行動不可)
+  s.leaders.forEach(L=>{
+    if(L._frozen){ L.rested=true; L._frozen=false; }
+    else L.rested=false;
+    L.awThis=false;
+  });
   log.push('【'+s.name+' ターン'+s.turn+'】 ライフ '+s.life+' / デッキ '+s.deck.length+' / P '+s.P);
   if(!(s.isFirst&&s.turn===1))aibDraw(s,1);
   if(s.dead)return;
@@ -5105,7 +5254,7 @@ function aibResolveAiAttack(def){
   const g=aibGame;
   const pa=g.pendingAtk;
   const res=aibResolveAttack(g.ai,g.human,g.log,pa,def);
-  aibAutoUtil(g.ai);
+  aibAutoUtil(g.ai, g.human, g.log);
   g.lastCombat={by:'ai',atkLeader:pa.atkL.k,atkSpells:pa.spellCards||[],defCard:res.defCard,dmg:res.final,bomb:res.useBomb,abil:res.abil};
   g.action='🤖 AIの攻撃! '+(res.useBomb?'あなたがBOMBで無効化':
     (res.defName?'あなたが『'+res.defName+'』で防御(-'+res.reduce+') → ':'')+'あなたのデッキ '+res.final+' 枚トラッシュ');

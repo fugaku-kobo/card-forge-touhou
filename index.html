@@ -4127,10 +4127,11 @@ function aibAutoDefense(o,raw){
   const q=o.hand.map((c,i)=>({c:c,i:i}))
     .filter(x=>x.c.k==='def'&&x.c.q&&aibLvOk(o,x.c.lv)&&x.c.pp<=o.P)
     .sort((a,b)=>b.c.v-a.c.v);
-  if(q.length&&incoming>12)spellIdx=q[0].i;
+  // GA進化済パラメータ (Stage A): qdef_threshold=5 / bomb_life_threshold=2 / bomb_deck_ratio=0.64
+  if(q.length&&incoming>5)spellIdx=q[0].i;
   const reduce=spellIdx>=0?(o.hand[spellIdx]).v:0;
   incoming=Math.max(1,raw-dval-reduce);
-  return {spellIdx:spellIdx,bomb:(o.bomb>=2&&incoming>=o.deck.length&&o.life<=1)};
+  return {spellIdx:spellIdx,bomb:(o.bomb>=2&&incoming>=0.64*o.deck.length&&o.life<=2)};
 }
 // 攻撃解決: atk=宣言結果, def={spellIdx,bomb}(防御側 o の応答)
 function aibResolveAttack(s,o,log,atk,def){
@@ -4300,7 +4301,7 @@ function aibComputeAttackGreedy(s,o,forced,humanBonus){
   let spellBonus=0,direct=0;
   const spellNames=[],spellCards=[];
   if(humanBonus===undefined){
-    const reserve=aibHasQuickDef(s)?2:0;
+    const reserve=aibHasQuickDef(s)?4:0;  // GA進化済: qdef_reserve=4 (旧2)
     let budget=Math.max(0,s.P-reserve);
     const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibLvOk(s,c.lv))
       .sort((a,b)=>b.pp-a.pp);

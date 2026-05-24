@@ -44,7 +44,7 @@ POOL = [
  ('atk',     6, 2, 0, 1, 1, '霊夢'),  # TH-101 霊符『博麗符印』
  ('atk',    10, 4, 0, 0, 2, '霊夢'),  # TH-102 神霊『夢想封印 集』
  ('def',    10, 3, 1, 1, 2, '霊夢'),  # TH-103 結界『博麗結界』 QUICK
- ('disrupt', 2, 3, 0, 0, 1, '霊夢'),  # TH-104 神技『八方鬼縛陣』(P-3 → P-2 に調整)
+ ('disrupt', 1, 3, 0, 0, 1, '霊夢'),  # TH-104 神技『八方鬼縛陣』(P-3 → P-1 に大幅弱化)
  ('def',     6, 2, 1, 1, 1, '霊夢'),  # TH-105 『楽園の素敵な巫女』 QUICK
  # 魔理沙専用 5 種 (TH-201..205) — 火力バースト
  ('atk',    12, 4, 0, 0, 2, '魔理沙'),  # TH-201 恋符『マスタースパーク』 +自デッキ-2
@@ -66,13 +66,14 @@ POOL = [
  ('atk',     6, 2, 0, 1, 1, 'フラン'),    # TH-405 『悪魔の妹』
 ]
 # 専用カードの追加効果(攻撃時 self-mill / opp-P-mill)を ID で参照
+# ラウンド 1 調整: 霊夢系弱化 + 魔理沙/フラン系代償軽減
 EXTRA = {
-    15: {'self_mill': 1},      # TH-201 マスタースパーク (代償軽減 2→1)
-    16: {'self_mill': 2},      # TH-202 ファイナルスパーク (代償軽減 4→2)
-    25: {'self_mill': 2},      # TH-401 フォーオブアカインド
-    21: {'opp_p_mill': 2},     # TH-302 グングニル
-    27: {'opp_p_mill': 2},     # TH-403 カゴメカゴメ
-    10: {'opp_p_mill': 1},     # TH-101 博麗符印
+    15: {'self_mill': 0},      # TH-201 マスタースパーク (代償ゼロ)
+    16: {'self_mill': 1},      # TH-202 ファイナルスパーク (4→1 大幅軽減)
+    25: {'self_mill': 1},      # TH-401 フォーオブアカインド (2→1)
+    21: {'opp_p_mill': 1},     # TH-302 グングニル (2→1 弱化)
+    27: {'opp_p_mill': 1},     # TH-403 カゴメカゴメ (2→1)
+    10: {'opp_p_mill': 0},     # TH-101 博麗符印 (1→0 弱化)
 }
 
 # ペア → 該当リーダー名
@@ -177,9 +178,9 @@ def covenant(s, o):
         # v3.4 スピア・ザ・グングニル: 相手のデッキを 4 枚トラッシュ
         mill(o, CFG.get('gungnir', 4))
     elif ab == 'four':
-        # v3.4 レーヴァテイン: 相手デッキ-6 / 自デッキ-2 (v3.3 維持)
+        # v3.4 レーヴァテイン: 相手デッキ-6 / 自デッキ-1 (代償軽減 2→1)
         mill(o, CFG.get('four_aw_mill', 6))
-        mill(s, CFG.get('four_aw_self_mill', 2))
+        mill(s, CFG.get('four_aw_self_mill', 1))
 
 def best_def(o):
     ready = [L for L in o.leaders if not L['rested']]
@@ -218,8 +219,8 @@ def do_attack(s, o):
         base = aatk if L['aw'] else a
         if ab == 'koi': base += CFG.get('koi', 3)
         if ab == 'four': base += CFG.get('four', 5)
-        # v3.4: マスタースパーク覚醒ターン = +6 (v3.3 維持)
-        if ab == 'koi' and L['awThis']: base += CFG.get('koi_aw_bonus', 6)
+        # v3.4: マスタースパーク覚醒ターン = +8 (バースト個性強化)
+        if ab == 'koi' and L['awThis']: base += CFG.get('koi_aw_bonus', 8)
         virt = 0
         if ab == 'oharai':
             virt = 3 if o.P > 0 else CFG.get('oharai_dmg', 0)
@@ -276,11 +277,11 @@ def do_attack(s, o):
         # v3.4 フォーオブアカインド: 攻撃時 自デッキ-2 (v3.3 維持)
         mill(s, 2)
     elif ab == 'oharai':
-        # 夢想封印: 相手 P -2(攻撃時に常時発動)
+        # 無敵巫女(夢想妙珠): 相手 P -2(常時発動)
         o.P = max(0, o.P - 2)
     elif ab == 'charisma':
-        # 吸血: トラッシュから 1 P 回収
-        if s.trash: s.P += 1
+        # 吸血: トラッシュ 4 枚以上で 1 P 回収(序盤に効きすぎないよう条件化)
+        if len(s.trash) >= 4: s.P += 1
     # 専用スペル追加効果(EXTRA で定義した self_mill / opp_p_mill)
     if extra_self_mill > 0:
         mill(s, extra_self_mill)

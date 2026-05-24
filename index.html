@@ -4820,6 +4820,7 @@ function aibCloneSide(s){
     life: s.life, bomb: s.bomb, P: s.P,
     turn: s.turn, isFirst: s.isFirst, name: s.name, dead: !!s.dead,
     leaders: s.leaders.map(L => ({k:L.k, aw:L.aw, rested:L.rested, awThis:L.awThis, card:L.card, awakenGauge:L.awakenGauge||0, awakenedTurn:L.awakenedTurn, awakenedAttackCount:L.awakenedAttackCount||0, _frozen:L._frozen})),
+    _nextAtkBonus: s._nextAtkBonus || 0,  // v1.7 防御スペル next_atk_bonus を clone に含める
   };
 }
 // 中間盤面評価: AI 視点 (aiS) で「勝ちやすさ」を 0-1 で返す
@@ -5104,8 +5105,10 @@ function aibTakeTurn(s,o,log){
       const idx = parseInt(action.slice(6), 10);
       aibProgressGauge(s, o, log, idx);
       if(s.dead || o.dead) return;
+      aibAutoUtil(s, o, log);  // v3.7: ゲージ進行ターンも util スペル詠唱は可
     } else if(action === 'wait'){
       log.push('　⏸ '+s.name+' は待機');
+      aibAutoUtil(s, o, log);
     } else {
       aibDoAttack(s, o, log);
     }
@@ -5754,12 +5757,12 @@ function aibLeaderZoom(side,idx){
     +'<div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:11px;">'
     +'<div><div style="font-size:.7rem;color:#b9a98a;">通常</div>'
     +'<span style="font-size:1.15rem;font-weight:700;color:'+(L.aw?'#9a8e72':'#fff')+';">⚔'+d.atk+' 🛡'+d.eva+'</span></div>'
-    +'<div><div style="font-size:.7rem;color:#b9a98a;">覚醒(コストP'+d.awc+')</div>'
+    +'<div><div style="font-size:.7rem;color:#b9a98a;">覚醒(ゲージ '+(L.awakenGauge||0)+'/3)</div>'
     +'<span style="font-size:1.15rem;font-weight:700;color:'+(L.aw?'#ffe6a8':'#9a8e72')+';">⚔'+d.aatk+' 🛡'+d.aeva+'</span></div>'
     +'</div>'
     +'<div class="aib-zoom-ef" style="margin-bottom:6px;"><b style="color:#ff8da0;">通常技</b><br>'+aibLeaderAbil(d.ab,false)+'</div>'
     +'<div class="aib-zoom-ef"><b style="color:#e6c878;">覚醒技</b><br>'+aibLeaderAbil(d.ab,true)+'</div>'
-    +'<div class="aib-zoom-meta" style="margin-top:8px;">現在: '+(L.aw?'覚醒中':'通常')+(L.rested?' ・ 💤行動済み':'')+'</div>'
+    +'<div class="aib-zoom-meta" style="margin-top:8px;">現在: '+(L.aw?'🌟覚醒中':'通常')+(L.rested?' ・ 💤行動済み':'')+(L._frozen?' ・ ❄ 凍結':'')+'</div>'
     +'</div>'
     +'<div class="aib-zoom-act"><button class="btn-small" onclick="aibCloseZoom()">閉じる</button></div>'
     +'</div>';

@@ -357,7 +357,10 @@ def do_attack(s, o):
     reserve = s.ai.get('qdef_reserve', 2) if has_quick_def(s) else 0
     budget = max(0, s.P - reserve)
     spell_bonus = 0; direct = 0
-    atk_cards = sorted([c for c in s.hand if POOL[c][0] in ('atk','mill') and spell_castable(s, c)],
+    # v3.7+: 専用スペルは攻撃リーダー固有(他リーダー攻撃には乗せない)
+    atkL_name = atkL['k']
+    atk_cards = sorted([c for c in s.hand if POOL[c][0] in ('atk','mill') and spell_castable(s, c)
+                        and (not POOL[c][6] or POOL[c][6] == atkL_name)],
                        key=lambda c: POOL[c][1], reverse=True)
     cast_cards = []  # 詠唱した atk/mill カードの index リスト
     extra_self_mill = 0; extra_opp_p_mill = 0

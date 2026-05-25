@@ -2938,6 +2938,14 @@ footer .ornament { color: var(--gold); letter-spacing: 0.5em; margin-bottom: 6px
 .aib-gp{width:18px;height:8px;border-radius:3px;background:rgba(120,80,150,.25);border:1px solid rgba(180,140,220,.4);transition:all .3s ease;}
 .aib-gp.on{background:linear-gradient(90deg,#9b5fd0,#c280ff);box-shadow:0 0 6px rgba(180,100,240,.6);border-color:#e0b0ff;}
 .aib-gp.max{background:linear-gradient(90deg,#ffd700,#ff8c00);box-shadow:0 0 8px rgba(255,200,80,.8);border-color:#fff0c0;}
+.aib-gp.just-filled{animation:gauge-pulse 1s ease-out;}
+@keyframes gauge-pulse{
+  0%   { box-shadow:0 0 0 rgba(255,255,255,0); transform:scale(1);}
+  50%  { box-shadow:0 0 18px rgba(255,200,80,.9); transform:scale(1.6);}
+  100% { box-shadow:0 0 6px rgba(180,100,240,.6); transform:scale(1);}
+}
+/* v3.7: 覚醒テーマ名表示 */
+.aib-awoken-theme{font-size:.65rem;color:#ffd87a;font-weight:700;text-align:center;padding:2px 4px;background:rgba(180,100,40,.18);border-top:1px solid rgba(220,180,80,.3);letter-spacing:.04em;}
 .aib-leader.awakened{border-color:#e6c878;box-shadow:0 0 14px rgba(216,178,90,.55);}
 .aib-leader.rested{opacity:.5;transform:rotate(6deg);}
 .aib-lname{background:#c8324c;color:#fff;font-weight:700;font-size:.84rem;padding:4px 6px;text-align:center;letter-spacing:.04em;}
@@ -4550,6 +4558,7 @@ function aibProgressGauge(s, o, log, idx){
   const L = s.leaders[idx];
   if(!L || L.awakenGauge >= 3) return false;
   L.awakenGauge += 1;
+  L._gaugeJustFilled = L.awakenGauge;  // UI アニメ用フラグ
   log.push('　⚡ '+s.name+': '+L.k+' の覚醒ゲージ '+L.awakenGauge+'/3');
   if(L.awakenGauge >= 3){
     aibAwaken(s, o, log, L);
@@ -4863,41 +4872,46 @@ function aibRolloutScore(humanS, aiS, startCur, maxTurns){
     aibAiMode = savedMode;
   }
 }
+// v3.7+: 攻撃リーダー L で詠唱可能か(共有 or L 専用のみ)
+function aibSpellMatchesLeader(spell, leader){
+  if(!spell.lr) return true;  // 共有 → 誰でも OK
+  const lrName = (typeof AIB_LR_NAME !== 'undefined' && AIB_LR_NAME[spell.lr]) || spell.lr;
+  return leader.k === lrName || leader.k === spell.lr;
+}
 function aibEnumerateAttackPlans(s, o){
-  const atkPPCastable = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibSpellOk(s, c) && c.pp<=s.P);
-  const atkAll = s.hand.filter(c => (c.k==='atk'||c.k==='mill') && aibSpellOk(s, c));
-  // PP 払いの戦略パターン
-  const ppStrats = [];
-  ppStrats.push([]);                                                      // 詠唱なし
-  { let budget=s.P; const sorted=atkPPCastable.slice().sort((a,b)=>b.pp-a.pp); const sel=[];
-    for(const c of sorted){ if(c.pp<=budget){ budget-=c.pp; sel.push(c); } }
-    if(sel.length) ppStrats.push(sel); }                                  // 貪欲(全部PP詠唱)
-  if(atkPPCastable.length){ const best=atkPPCastable.slice().sort((a,b)=>b.v-a.v)[0]; if(best.pp<=s.P) ppStrats.push([best]); }
-  if(atkPPCastable.length){ const cheap=atkPPCastable.slice().sort((a,b)=>a.pp-b.pp)[0]; if(cheap.pp<=s.P) ppStrats.push([cheap]); }
-  // BOMB 拡張: 各 PP 戦略に「残りの最強 atk を BOMB で追加詠唱」バリアントを足す
-  // ただし BOMB は 2 個を防御用に温存(useable = bomb - 2)
-  const usableBomb = Math.max(0, s.bomb - 2);
-  const combos = [];
-  ppStrats.forEach(pp => {
-    combos.push({pp, bom: []});
-    if (usableBomb > 0) {
-      const remaining = atkAll.filter(c => !pp.includes(c) && (c.bom||0) > 0 && (c.bom||0) <= usableBomb);
-      if (remaining.length) {
-        const bombBest = remaining.slice().sort((a,b)=>b.v-a.v)[0];
-        combos.push({pp, bom: [bombBest]});
-      }
-    }
-  });
-  // 重複排除
-  const seen = new Set();
-  const uniqStrats = combos.filter(set => {
-    const key = set.pp.map(c=>c.name).sort().join('|') + '||' + set.bom.map(c=>c.name).sort().join('|');
-    if(seen.has(key)) return false;
-    seen.add(key); return true;
-  });
-  // 各リーダー × 各戦略 = プラン
+  // リーダー × 戦略 でプラン生成。各リーダーは「共有 + 自分専用スペル」のみ詠唱可能。
   const plans = [];
   for(const L of s.leaders){
+    // L が詠唱可能な atk/mill カードのみ抽出
+    const atkPPCastable = s.hand.filter(c =>
+      (c.k==='atk'||c.k==='mill') && aibSpellOk(s, c) && c.pp<=s.P && aibSpellMatchesLeader(c, L));
+    const atkAll = s.hand.filter(c =>
+      (c.k==='atk'||c.k==='mill') && aibSpellOk(s, c) && aibSpellMatchesLeader(c, L));
+    const ppStrats = [];
+    ppStrats.push([]);
+    { let budget=s.P; const sorted=atkPPCastable.slice().sort((a,b)=>b.pp-a.pp); const sel=[];
+      for(const c of sorted){ if(c.pp<=budget){ budget-=c.pp; sel.push(c); } }
+      if(sel.length) ppStrats.push(sel); }
+    if(atkPPCastable.length){ const best=atkPPCastable.slice().sort((a,b)=>b.v-a.v)[0]; if(best.pp<=s.P) ppStrats.push([best]); }
+    if(atkPPCastable.length){ const cheap=atkPPCastable.slice().sort((a,b)=>a.pp-b.pp)[0]; if(cheap.pp<=s.P) ppStrats.push([cheap]); }
+    const usableBomb = Math.max(0, s.bomb - 2);
+    const combos = [];
+    ppStrats.forEach(pp => {
+      combos.push({pp, bom: []});
+      if (usableBomb > 0) {
+        const remaining = atkAll.filter(c => !pp.includes(c) && (c.bom||0) > 0 && (c.bom||0) <= usableBomb);
+        if (remaining.length) {
+          const bombBest = remaining.slice().sort((a,b)=>b.v-a.v)[0];
+          combos.push({pp, bom: [bombBest]});
+        }
+      }
+    });
+    const seen = new Set();
+    const uniqStrats = combos.filter(set => {
+      const key = set.pp.map(c=>c.name).sort().join('|') + '||' + set.bom.map(c=>c.name).sort().join('|');
+      if(seen.has(key)) return false;
+      seen.add(key); return true;
+    });
     for(const set of uniqStrats){
       let bonus=0, direct=0;
       [...set.pp, ...set.bom].forEach(c => { if(c.k==='atk') bonus+=c.v; else direct+=c.v; });
@@ -5067,7 +5081,8 @@ function aibComputeAttackGreedy(s,o,forced,humanBonus){
   if(humanBonus===undefined){
     const reserve=aibHasQuickDef(s)?4:0;  // GA進化済: qdef_reserve=4 (旧2)
     let budget=Math.max(0,s.P-reserve);
-    const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibSpellOk(s,c))
+    // v3.7+: 攻撃リーダーが詠唱可能なスペルのみ
+    const cards=s.hand.filter(c=>(c.k==='atk'||c.k==='mill')&&aibSpellOk(s,c)&&aibSpellMatchesLeader(c, atkL))
       .sort((a,b)=>b.pp-a.pp);
     for(const c of cards){
       if(c.pp<=budget){budget-=c.pp;s.hand.splice(s.hand.indexOf(c),1);s.trash.push(c);
@@ -5136,7 +5151,7 @@ function aibTakeTurn(s,o,log){
   s.leaders.forEach(L=>{
     if(L._frozen){ L.rested=true; L._frozen=false; }
     else L.rested=false;
-    L.awThis=false;
+    L.awThis=false; L._gaugeJustFilled = null;  // v3.7: アニメフラグもクリア
   });
   // v3.7: 覚醒済みリーダーの「毎ターン開始時」継続効果
   s.leaders.forEach(L => {
@@ -5345,7 +5360,7 @@ function aibBeginHumanTurn(){
   h.leaders.forEach(L=>{
     if(L._frozen){ L.rested=true; L._frozen=false; }
     else L.rested=false;
-    L.awThis=false;
+    L.awThis=false; L._gaugeJustFilled = null;  // v3.7: アニメフラグもクリア
   });
   // v3.7: 覚醒済みリーダーの「毎ターン開始時」継続効果
   h.leaders.forEach(L => {
@@ -5454,7 +5469,24 @@ function aibCastSpell(idx, useBom){
   }
   h.hand.splice(idx,1);h.trash.push(c);
   const payTxt = useBom ? ('💣BOM'+bom) : ('P'+sp.pp);
-  if(sp.k==='atk'){g.atkBonus+=sp.v;g.action='④ メイン ── '+c.name+' 詠唱!('+payTxt+')攻撃ボーナス +'+sp.v;}
+  if(sp.k==='atk'){
+    g.atkBonus+=sp.v;
+    // v3.7+: 専用スペルなら攻撃リーダー lock
+    if(sp.lr){
+      const lrName = (AIB_LR_NAME && AIB_LR_NAME[sp.lr]) || sp.lr;
+      if(!g.atkLeaderLock) g.atkLeaderLock = lrName;
+      else if(g.atkLeaderLock !== lrName){
+        g.action = '⚠ 別リーダー専用スペル(' + lrName + ')は同ターンに混ぜられません';
+        // ロールバック
+        h.trash.pop(); h.hand.splice(idx, 0, c);
+        if(useBom){ h.bomb += bom; } else { h.P += sp.pp; }
+        g.atkBonus -= sp.v;
+        aibCloseZoom(); aibRenderGame();
+        return;
+      }
+    }
+    g.action='④ メイン ── '+c.name+' 詠唱!('+payTxt+')攻撃ボーナス +'+sp.v+(g.atkLeaderLock?'(攻撃リーダー固定: '+g.atkLeaderLock+')':'');
+  }
   else if(sp.k==='mill'){aibMill(g.ai,sp.v);g.action='④ メイン ── '+c.name+' 詠唱!('+payTxt+')相手デッキ'+sp.v+'削り';}
   else if(sp.k==='util'){aibDraw(h,Math.max(1,sp.v));g.action='④ メイン ── '+c.name+' 詠唱!('+payTxt+')カードを引いた';}
   else if(sp.k==='disrupt'){g.ai.P=Math.max(0,g.ai.P-sp.v);g.action='④ メイン ── '+c.name+' 詠唱!('+payTxt+')相手P-'+sp.v;}
@@ -5466,13 +5498,20 @@ function aibCastSpell(idx, useBom){
 function aibChooseAttack(idx){
   const g=aibGame,h=g.human;
   if(g.humanPhase!=='play')return;
-  const atk=aibComputeAttack(h,g.ai,h.leaders[idx],g.atkBonus);
+  const atkL = h.leaders[idx];
+  // v3.7+: 詠唱した専用スペルと攻撃リーダーが一致しないなら攻撃不可
+  if(g.atkLeaderLock && atkL.k !== g.atkLeaderLock){
+    g.action='⚠ '+g.atkLeaderLock+'専用スペルを詠唱したため、'+atkL.k+'では攻撃できません';
+    aibRenderGame();
+    return;
+  }
+  const atk=aibComputeAttack(h,g.ai,atkL,g.atkBonus);
   const res=aibResolveAttack(h,g.ai,g.log,atk,aibAutoDefense(g.ai,atk.raw,atk));
   while(h.hand.length>7)h.trash.push(h.hand.pop());
   g.lastCombat={by:'you',atkLeader:atk.atkL.k,atkSpells:[],defCard:res.defCard,dmg:res.final,bomb:res.useBomb,abil:res.abil};
   g.action='⑤ '+atk.atkL.k+'で攻撃! '+(res.useBomb?'🤖 AIがBOMBで無効化':
     (res.defName?'🤖 AIが『'+res.defName+'』で防御(-'+res.reduce+') → ':'')+'相手デッキ '+res.final+' 枚トラッシュ');
-  g.atkBonus=0;g.humanPhase=null;g.stepHi=[6];
+  g.atkBonus=0;g.atkLeaderLock=null;g.humanPhase=null;g.stepHi=[6];
   if(g.ai.dead){aibFinish('human');return;}
   if(h.dead){aibFinish('ai');return;}
   aibRenderGame();
@@ -5486,7 +5525,7 @@ function aibAiTurnStart(){
   s.leaders.forEach(L=>{
     if(L._frozen){ L.rested=true; L._frozen=false; }
     else L.rested=false;
-    L.awThis=false;
+    L.awThis=false; L._gaugeJustFilled = null;  // v3.7: アニメフラグもクリア
   });
   // v3.7: 覚醒済みリーダーの「毎ターン開始時」継続効果
   s.leaders.forEach(L => {
@@ -5590,18 +5629,28 @@ function aibPips(cur,max,type){
   for(let i=0;i<max;i++) h+='<span class="aib-pip '+type+(i<cur?'':' spent')+'"></span>';
   return h+'</span>';
 }
+// v3.7: 覚醒テーマ名(リーダー識別子 → テーマ)
+const AIB_AWAKEN_THEME = {
+  '霊夢':'無敵巫女', '魔理沙':'マスタースパーク',
+  'レミリア':'紅夜の覇者', 'フランドール':'悪魔の妹',
+};
 function aibLeaderCard(L,isAtk,side,idx){
   const d=leaderInfo(L);
   const atk=L.aw?d.aatk:d.atk, eva=L.aw?d.aeva:d.eva;
   const tag=L.rested?'<div class="aib-ltag rs">💤 行動済み</div>'
     :(L.aw?'<div class="aib-ltag aw">🌟 覚醒中</div>':'<div class="aib-ltag nm">通常</div>');
-  // v3.7: 覚醒ゲージ表示(3 マス)
+  // v3.7: 覚醒ゲージ表示(3 マス)+ 直近進行マスはアニメ
   const gauge = L.awakenGauge||0;
+  const justFilled = L._gaugeJustFilled === gauge;  // 1 ターン限定アニメ
   let gaugeHtml = '<div class="aib-lgauge" title="覚醒ゲージ '+gauge+'/3">';
   for(let i=0;i<3;i++){
-    gaugeHtml += '<span class="aib-gp'+(i<gauge?' on':'')+(gauge>=3?' max':'')+'"></span>';
+    const filled = i < gauge;
+    const isLast = (i === gauge - 1) && justFilled;
+    gaugeHtml += '<span class="aib-gp'+(filled?' on':'')+(gauge>=3?' max':'')+(isLast?' just-filled':'')+'"></span>';
   }
   gaugeHtml += '</div>';
+  // v3.7: 覚醒済みリーダーはテーマ名表示
+  const theme = (L.aw && AIB_AWAKEN_THEME[L.k]) ? '<div class="aib-awoken-theme">🌟 '+AIB_AWAKEN_THEME[L.k]+'</div>' : '';
   return '<div class="aib-leader'+(L.aw?' awakened':'')+(L.rested?' rested':'')+(isAtk?' attacker':'')+'"'
     +' onclick="aibLeaderZoom(\''+side+'\','+idx+')" title="クリックでカード詳細">'
     +'<div class="aib-lname">'+L.k+'</div>'
@@ -5609,7 +5658,7 @@ function aibLeaderCard(L,isAtk,side,idx){
     +'<div class="aib-lbody">'
     +'<div class="aib-lstat"><span class="v">'+atk+'</span><span class="k">⚔ 攻撃</span></div>'
     +'<div class="aib-lstat"><span class="v">'+eva+'</span><span class="k">🛡 回避</span></div>'
-    +'</div>'+gaugeHtml+tag+'</div>';
+    +'</div>'+gaugeHtml+theme+tag+'</div>';
 }
 function aibSideMat(s,isHuman){
   const g=aibGame;

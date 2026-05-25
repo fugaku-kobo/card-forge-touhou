@@ -4891,8 +4891,11 @@ function aibPositionScore(humanS, aiS){
 function aibRolloutScore(humanS, aiS, startCur, maxTurns){
   // 既存の貪欲 aibTakeTurn で残りゲームをシミュ → AI 視点で 1/0/中間スコアを返す
   // 注: ロールアウト中は Greedy 固定(MCTS 再帰呼び出しによる爆発を防ぐ)
+  //     + aibSync=true で FX を抑制(DOM 大量操作によるブラウザフリーズ防止)
   const savedMode = aibAiMode;
+  const savedSync = aibSync;
   aibAiMode = 'greedy';
+  aibSync = true;
   try {
     let cur = (startCur==='ai') ? aiS : humanS;
     let opp = (startCur==='ai') ? humanS : aiS;
@@ -4907,6 +4910,7 @@ function aibRolloutScore(humanS, aiS, startCur, maxTurns){
     return aibPositionScore(humanS, aiS);
   } finally {
     aibAiMode = savedMode;
+    aibSync = savedSync;
   }
 }
 // v3.7+: 攻撃リーダー L で詠唱可能か(共有 or L 専用のみ)
@@ -5020,6 +5024,10 @@ function aibMctsSelectPlan(s, o, K){
   K = K || AIB_MCTS_K;
   const plans = aibEnumerateAttackPlans(s, o);
   if(plans.length<=1) return plans[0] || null;
+  // v4.0 バグ修正: MCTS 計算中も FX 抑制(ロールアウトで大量 DOM 操作するため)
+  const savedSync = aibSync;
+  aibSync = true;
+  try {
   let bestPlan = plans[0], bestScore = -1;
   for(const plan of plans){
     let total = 0;
@@ -5051,6 +5059,7 @@ function aibMctsSelectPlan(s, o, K){
     if(avg > bestScore){ bestScore = avg; bestPlan = plan; }
   }
   return bestPlan;
+  } finally { aibSync = savedSync; }
 }
 
 // v3.7: メインフェーズの行動プラン(攻撃 + ゲージ進行 + 待機)を列挙
@@ -5079,6 +5088,10 @@ function aibMctsSelectAction(s, o, K){
     const p = candidates[0];
     return p.type === 'gauge' ? ('gauge:' + p.leaderIdx) : 'attack';
   }
+  // v4.0 バグ修正: FX 抑制
+  const savedSync = aibSync;
+  aibSync = true;
+  try {
   let bestPlan = candidates[0], bestScore = -1;
   for(const plan of candidates){
     let total = 0;
@@ -5117,6 +5130,7 @@ function aibMctsSelectAction(s, o, K){
   if(bestPlan.type === 'gauge') return 'gauge:' + bestPlan.leaderIdx;
   if(bestPlan.type === 'wait') return 'wait';
   return 'attack';
+  } finally { aibSync = savedSync; }
 }
 function aibMctsComputeAttack(s, o){
   const plan = aibMctsSelectPlan(s, o);
@@ -5624,6 +5638,15 @@ function aibAiDrawStep(){
 function aibAiAwakenStep(){
   const g=aibGame,s=g.ai,o=g.human;
   g.stepHi=[3];
+  // v4.0: MCTS なら「考え中」を表示してから次フレームで実際に計算(ブラウザの応答性確保)
+  if(aibAiMode === 'mcts' && s.turn >= 2 && !g._mctsThinking){
+    g._mctsThinking = true;
+    g.action = '🤖 AI ── 🧠 考え中…';
+    aibRenderGame();
+    aibNext(aibAiAwakenStep);  // 次のフレームで実行
+    return;
+  }
+  g._mctsThinking = false;
   // v3.7: メインフェーズ 3 択判定 — 攻撃 / ゲージ進行 / 待機
   if(s.turn >= 2){
     const action = aibChooseMainAction(s, o);

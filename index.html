@@ -4564,17 +4564,19 @@ function aibChooseMainAction(s, o){
   if(unawakened < 0) return 'attack';  // 全員覚醒済み
   // 序盤は攻撃優先
   if(s.turn <= 2) return 'attack';
-  // 自分不利(相手にライフで 1 以上勝たれている)→ 覚醒急いで巻き返す
-  if(o.life < s.life) return 'attack';  // 自分有利、攻撃継続
+  // v3.7: MCTS モードなら直接 MCTS で行動選択
+  if(aibAiMode === 'mcts'){
+    const action = aibMctsSelectAction(s, o);
+    if(action) return action;
+  }
+  // Greedy heuristic
+  if(o.life < s.life) return 'attack';
   if(o.life === s.life){
-    // 互角:相手のゲージが進行中なら追従、そうでなければ攻撃
     const oppMaxGauge = Math.max(...o.leaders.map(L => L.awakenGauge));
     const myMaxGauge = Math.max(...s.leaders.map(L => L.awakenGauge));
     if(oppMaxGauge > myMaxGauge) return 'gauge:' + unawakened;
-    // 4 ターン毎にゲージ進行(攻撃 3:1 ゲージ)
     return (s.turn % 4 === 0) ? ('gauge:' + unawakened) : 'attack';
   }
-  // 自分不利
   return 'gauge:' + unawakened;
 }
 
@@ -4976,6 +4978,72 @@ function aibMctsSelectPlan(s, o, K){
     if(avg > bestScore){ bestScore = avg; bestPlan = plan; }
   }
   return bestPlan;
+}
+
+// v3.7: メインフェーズの行動プラン(攻撃 + ゲージ進行 + 待機)を列挙
+function aibEnumerateActionPlans(s, o){
+  const plans = [];
+  // 攻撃プラン群(各リーダー × 各 spell 戦略)
+  const attackPlans = aibEnumerateAttackPlans(s, o);
+  attackPlans.forEach(p => { p.type = 'attack'; plans.push(p); });
+  // ゲージ進行プラン(各リーダー、awakenGauge < 3 のみ)
+  if(s.turn >= 2){
+    s.leaders.forEach((L, i) => {
+      if((L.awakenGauge||0) < 3){
+        plans.push({type: 'gauge', leaderIdx: i});
+      }
+    });
+  }
+  return plans;
+}
+
+// v3.7: MCTS で行動(攻撃 / ゲージ進行 / 待機)を選択 → 'attack' or 'gauge:N' or 'wait' を返す
+function aibMctsSelectAction(s, o, K){
+  K = K || Math.max(20, Math.floor(AIB_MCTS_K / 2));  // 行動数が増えるので K を控えめに
+  const candidates = aibEnumerateActionPlans(s, o);
+  if(candidates.length === 0) return null;
+  if(candidates.length === 1){
+    const p = candidates[0];
+    return p.type === 'gauge' ? ('gauge:' + p.leaderIdx) : 'attack';
+  }
+  let bestPlan = candidates[0], bestScore = -1;
+  for(const plan of candidates){
+    let total = 0;
+    for(let i = 0; i < K; i++){
+      const sC = aibCloneSide(s), oC = aibCloneSide(o);
+      if(plan.type === 'attack'){
+        // 攻撃プラン適用
+        const handSnap = sC.hand.slice();
+        const ppOk = [], bomOk = [];
+        for(const c of (plan.castSpells||[])){
+          const idx = handSnap.indexOf(c);
+          if(idx>=0){ ppOk.push(c); handSnap.splice(idx,1); }
+        }
+        for(const c of (plan.castWithBom||[])){
+          const idx = handSnap.indexOf(c);
+          if(idx>=0){ bomOk.push(c); handSnap.splice(idx,1); }
+        }
+        const planCloned = {leaderK:plan.leaderK, castSpells:ppOk, castWithBom:bomOk, spellBonus:plan.spellBonus, direct:plan.direct};
+        const atk = aibApplyAttackPlan(sC, planCloned, oC);
+        const def = aibAutoDefense(oC, atk.raw, atk);
+        aibResolveAttack(sC, oC, [], atk, def);
+        aibAutoUtil(sC, oC, []);
+      } else if(plan.type === 'gauge'){
+        aibProgressGauge(sC, oC, [], plan.leaderIdx);
+        aibAutoUtil(sC, oC, []);
+      } else {
+        aibAutoUtil(sC, oC, []);
+      }
+      if(oC.dead) { total += 1; continue; }
+      if(sC.dead) { total += 0; continue; }
+      total += aibRolloutScore(oC, sC, 'human', AIB_MCTS_DEPTH-1);
+    }
+    const avg = total / K;
+    if(avg > bestScore){ bestScore = avg; bestPlan = plan; }
+  }
+  if(bestPlan.type === 'gauge') return 'gauge:' + bestPlan.leaderIdx;
+  if(bestPlan.type === 'wait') return 'wait';
+  return 'attack';
 }
 function aibMctsComputeAttack(s, o){
   const plan = aibMctsSelectPlan(s, o);

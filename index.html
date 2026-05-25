@@ -3600,10 +3600,10 @@ function buildBuiltinCards(){
   const ch=(code,nm,ic,a,e,awc,aa,ae,ef,aef)=>({id:cid(),type:'キャラ',name:nm,cardCode:code,
     work:W,user:nm,icon:ic,art:'',level:'1',attack:a,evasion:e,awakenCost:awc,
     awakenAttack:aa,awakenEvasion:ae,effect:ef,awakenEffect:aef});
-  const sp=(code,nm,kd,lv,pp,bom,rec,ef,ek,ev,lr,ex,tg)=>({id:cid(),type:'スペル',name:nm,cardCode:code,
+  const sp=(code,nm,kd,lv,pp,bom,rec,ef,ek,ev,lr,ex,tg,combo)=>({id:cid(),type:'スペル',name:nm,cardCode:code,
     work:W,user:W,icon:'✨',art:'',spellKind:kd,requiredCharLevel:lv,ppCost:pp,
     bomCost:String(bom),trigger:'',recoverP:rec,effect:ef,engineKind:ek,engineValue:String(ev),
-    leaderRestriction:lr||'',engineExtra:ex||null,triggerTiming:tg||''});
+    leaderRestriction:lr||'',engineExtra:ex||null,triggerTiming:tg||'',comboAfter:combo||''});
   return [
     // v3.4: 基礎値は v3.3 維持、テキストで「受け担当/バースト/支配/代償」のテーマを明示。
     // 専用スペル(Phase C で TH-101..405)で各リーダーの戦闘軸を更に強化する。
@@ -3681,7 +3681,8 @@ function cardToSpellInfo(card){
     lv: Number(card.requiredCharLevel||1),
     lr: card.leaderRestriction || '',  // 専用リーダーコード('' / 'TH-L01..L04')。v3.4 で導入。
     ex: card.engineExtra || null,       // v1.7: 追加効果オブジェクト(bonus_if_*, counter_*, draw_on_hit 等)
-    tg: card.triggerTiming || '',       // v1.8: カウンター発動タイミング('opp_atk_declare'/'opp_cast'/'opp_awaken')
+    tg: card.triggerTiming || '',       // v1.8: カウンター発動タイミング
+    comboAfter: card.comboAfter || '',  // v4.0: 直前に詠唱したカードコードと一致でコンボ発動
     name: card.name||'', cardId: card.id, card: card,
   };
 }
@@ -3898,6 +3899,28 @@ function migrateSpellExEffectsV41(){
   state.rebalanceVer = '4.1';
 }
 
+// v4.0: 既存セーブのスペルに comboAfter フィールド + ex.combo_* を注入
+function migrateCombosV44(){
+  if (!state.cards) return;
+  if (state.rebalanceVer === '4.4') return;
+  const COMBO_MAP = {
+    'TH-002': {comboAfter:'TH-001', exExtra:{combo_bonus:3}},
+    'TH-003': {comboAfter:'TH-002', exExtra:{combo_bonus:5}},
+    'TH-102': {comboAfter:'TH-101', exExtra:{combo_bonus:5}},
+    'TH-202': {comboAfter:'TH-201', exExtra:{combo_self_mill_reduce:1}},
+    'TH-304': {comboAfter:'TH-301', exExtra:{combo_p_gain:2}},
+    'TH-403': {comboAfter:'TH-401', exExtra:{combo_opp_p_mill:3}},
+  };
+  state.cards.forEach(c => {
+    if (getTypeKind(c.type) === 'touhou-spell' && COMBO_MAP[c.cardCode]) {
+      const m = COMBO_MAP[c.cardCode];
+      c.comboAfter = m.comboAfter;
+      c.engineExtra = Object.assign({}, c.engineExtra || {}, m.exExtra);
+    }
+  });
+  state.rebalanceVer = '4.4';
+}
+
 // v1.8 (v3.6): カウンタースペル 6 種(TH-501..506)を追加。
 function migrateCounterSpellsV42(){
   if (!state.cards) return;
@@ -3985,6 +4008,8 @@ function loadData() {
   migrateCounterSpellsV42();
   // v3.7: 覚醒ゲージ式に切替(リーダーカードの覚醒コスト記述を更新)
   migrateAwakenGaugeV43();
+  // v4.0: スペル連鎖(コンボ)フィールド注入
+  migrateCombosV44();
   // 基本タイプは常に存在を保証
   ensureBuiltinTypes();
   // デッキ形式の移行(旧 cardIds 形式があれば cards に変換)
@@ -4340,8 +4365,8 @@ const AIB_PAIRS = {
 const AIB_POOL = [
   // ===== 共有10種 (TH-001..010) =====
   {k:'atk',v:5,pp:2,q:0,rec:2,lv:1,lr:''},                                                  // TH-001 夢想妙珠(素打ち基本)
-  {k:'atk',v:7,pp:3,q:0,rec:1,lv:1,lr:'',ex:{bonus_if_opp_p_low:{th:2,v:3}}},                // TH-002 アグニシャイン(相手 P 干渉時 +3)
-  {k:'atk',v:11,pp:5,q:0,rec:0,lv:2,lr:'',ex:{draw_on_hit:1}},                              // TH-003 サイレントセレナ(命中ドロー)
+  {k:'atk',v:7,pp:3,q:0,rec:1,lv:1,lr:'',ex:{bonus_if_opp_p_low:{th:2,v:3},combo_bonus:3},comboAfter:'TH-001'}, // TH-002 アグニシャイン(夢想妙珠後で +3 連撃)
+  {k:'atk',v:11,pp:5,q:0,rec:0,lv:2,lr:'',ex:{draw_on_hit:1,combo_bonus:5},comboAfter:'TH-002'}, // TH-003 サイレントセレナ(アグニシャイン後で +5、3 連撃完成)
   {k:'def',v:4,pp:1,q:1,rec:3,lv:1,lr:'',ex:{draw_on_defend:1}},                            // TH-004 生死の境界(キャントリップ)
   {k:'def',v:8,pp:2,q:1,rec:2,lv:1,lr:'',ex:{bomb_on_defend:1}},                            // TH-005 博麗弾幕結界(BOMB+1)
   {k:'def',v:12,pp:4,q:1,rec:0,lv:2,lr:'',ex:{negate_if_opp_multi_spell:{n:2},next_atk_bonus:4}}, // TH-006 大結界(対バーストカウンター)
@@ -4351,13 +4376,13 @@ const AIB_POOL = [
   {k:'disrupt',v:1,pp:3,q:0,rec:1,lv:2,lr:''},                                              // TH-010 夜霧の幻影
   // ===== 霊夢専用5種 (TH-101..105) — 妨害&受け =====
   {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'霊夢',ex:{opp_p_mill:1,bonus_if_opp_p_low:{th:0,v:4}}},   // TH-101 博麗符印(お祓い相乗)
-  {k:'atk',v:10,pp:4,q:0,rec:0,lv:2,lr:'霊夢',ex:{draw_on_hit:1}},                          // TH-102 夢想封印 集
+  {k:'atk',v:10,pp:4,q:0,rec:0,lv:2,lr:'霊夢',ex:{draw_on_hit:1,combo_bonus:5},comboAfter:'TH-101'}, // TH-102 夢想封印 集(博麗符印からのコンボで +5)
   {k:'def',v:10,pp:3,q:1,rec:1,lv:2,lr:'霊夢',ex:{counter_mill:3,draw_on_defend:1}},        // TH-103 博麗結界(削り返し+ドロー)
   {k:'disrupt',v:2,pp:3,q:0,rec:0,lv:1,lr:'霊夢'},                                          // TH-104 八方鬼縛陣(相手 P -2)
   {k:'def',v:6,pp:2,q:1,rec:1,lv:1,lr:'霊夢',ex:{negate_if_low_life:1,counter_p_mill:2}},   // TH-105 楽園の素敵な巫女(救済)
   // ===== 魔理沙専用5種 (TH-201..205) — 火力バースト =====
   {k:'atk',v:12,pp:4,q:0,rec:0,lv:2,lr:'魔理沙',ex:{bonus_if_high_trash:{th:8,v:3}}},        // TH-201 マスタースパーク(コレクション)
-  {k:'atk',v:18,pp:5,q:0,rec:0,lv:2,lr:'魔理沙',ex:{self_mill:2,bonus_if_high_trash:{th:12,v:4}}}, // TH-202 ファイナルスパーク
+  {k:'atk',v:18,pp:5,q:0,rec:0,lv:2,lr:'魔理沙',ex:{self_mill:2,bonus_if_high_trash:{th:12,v:4},combo_self_mill_reduce:1},comboAfter:'TH-201'}, // TH-202 ファイナル(マスタースパーク後で自デッキ削り -1 軽減)
   {k:'atk',v:8,pp:3,q:0,rec:1,lv:1,lr:'魔理沙',ex:{draw_on_hit:1}},                         // TH-203 ドラゴンメテオ
   {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'魔理沙'},                                            // TH-204 アーティフルチャンター
   {k:'util',v:1,pp:1,q:0,rec:1,lv:1,lr:'魔理沙'},                                           // TH-205 普通の魔法使い
@@ -4365,12 +4390,12 @@ const AIB_POOL = [
   {k:'atk',v:8,pp:3,q:0,rec:1,lv:1,lr:'レミリア',ex:{bomb_on_hit:1}},                       // TH-301 スカーレットシュート(吸血で BOMB)
   {k:'atk',v:14,pp:5,q:0,rec:0,lv:2,lr:'レミリア',ex:{opp_p_mill:2,bonus_if_opp_awakened:3}}, // TH-302 グングニル(覚醒メタ)
   {k:'disrupt',v:1,pp:3,q:0,rec:1,lv:1,lr:'レミリア',ex:{bonus_if_opp_awakened:2}},          // TH-303 スカーレットデビル
-  {k:'util',v:2,pp:2,q:0,rec:1,lv:1,lr:'レミリア'},                                         // TH-304 ドラキュリア
+  {k:'util',v:2,pp:2,q:0,rec:1,lv:1,lr:'レミリア',ex:{combo_p_gain:2},comboAfter:'TH-301'}, // TH-304 ドラキュリア(スカーレットシュート後で +2 P 追加吸血)
   {k:'def',v:9,pp:3,q:1,rec:0,lv:2,lr:'レミリア',ex:{counter_p_mill:2}},                    // TH-305 永遠に紅い幼き月(受けて削り)
   // ===== フランドール専用5種 (TH-401..405) — 破壊&代償 =====
   {k:'atk',v:10,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{self_mill:1,bonus_if_low_deck:{th:25,v:5}}}, // TH-401 フォーオブ(終盤覚醒)
   {k:'mill',v:15,pp:5,q:0,rec:0,lv:2,lr:'フランドール'},                                    // TH-402 過去を刻む時計
-  {k:'atk',v:7,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{opp_p_mill:2}},                    // TH-403 カゴメカゴメ
+  {k:'atk',v:7,pp:3,q:0,rec:0,lv:1,lr:'フランドール',ex:{opp_p_mill:2,combo_opp_p_mill:3},comboAfter:'TH-401'}, // TH-403 カゴメカゴメ(フォーオブ後で 相手 P -3 追加)
   {k:'atk',v:15,pp:5,q:0,rec:0,lv:2,lr:'フランドール',ex:{bonus_if_low_life:5}},            // TH-404 スターボウブレイク
   {k:'atk',v:6,pp:2,q:0,rec:1,lv:1,lr:'フランドール',ex:{bomb_on_hit:1,bonus_if_low_life:8}}, // TH-405 悪魔の妹(最終捲り)
   // ===== カウンター 6 種 (TH-501..506) v1.8 — 手札から相手ターン中に発動する速攻魔法 =====
@@ -4393,7 +4418,16 @@ const AIB_NM = [
   '博麗弾結界','陰陽弾','閃光','緋色の波','刻時停止','縛',
 ];
 // AIB_POOL を card-shaped に enrich(name/idx/bom を付与してエンジンを ref ベースに)
-AIB_POOL.forEach((sp,i)=>{ sp.name=AIB_NM[i]; sp.idx=i; if(sp.bom===undefined) sp.bom=Math.max(1,Math.ceil(sp.pp/3)); });
+// v4.0: cardCode を AIB_POOL に付与(コンボ判定 comboAfter で使用)
+const AIB_CODES = [
+  'TH-001','TH-002','TH-003','TH-004','TH-005','TH-006','TH-007','TH-008','TH-009','TH-010',
+  'TH-101','TH-102','TH-103','TH-104','TH-105',
+  'TH-201','TH-202','TH-203','TH-204','TH-205',
+  'TH-301','TH-302','TH-303','TH-304','TH-305',
+  'TH-401','TH-402','TH-403','TH-404','TH-405',
+  'TH-501','TH-502','TH-503','TH-504','TH-505','TH-506',
+];
+AIB_POOL.forEach((sp,i)=>{ sp.name=AIB_NM[i]; sp.idx=i; sp.cardCode=AIB_CODES[i]; if(sp.bom===undefined) sp.bom=Math.max(1,Math.ceil(sp.pp/3)); });
 
 function aibSpellDesc(c){
   const sp=c;
@@ -4722,16 +4756,19 @@ function aibResolveAttack(s,o,log,atk,def){
   // カリスマ吸血: トラッシュ 4 枚以上で +1 P (序盤抑制)
   else if(atk.ab==='charisma'){if(s.trash.length>=4)s.P=Math.min(7, s.P+1);}  // v1.7: PP 上限 7
   // v1.7: 攻撃側 ex (self_mill / opp_p_mill / draw_on_hit / bomb_on_hit) を適用
-  let exSelfMill=0, exOppPMill=0, exDrawHit=0, exBombHit=0;
+  // v4.0: コンボ発動時は combo_self_mill_reduce で削り軽減
+  let exSelfMill=0, exOppPMill=0, exDrawHit=0, exBombHit=0, exSelfMillReduce=0;
   (atk.spellCards||[]).forEach(c => {
     if(!c || !c.ex) return;
     exSelfMill += (c.ex.self_mill||0);
     exOppPMill += (c.ex.opp_p_mill||0);
+    if(c._comboFired && c.ex.combo_self_mill_reduce) exSelfMillReduce += c.ex.combo_self_mill_reduce;
     if(final>0){  // 命中時のみ発火
       exDrawHit += (c.ex.draw_on_hit||0);
       exBombHit += (c.ex.bomb_on_hit||0);
     }
   });
+  exSelfMill = Math.max(0, exSelfMill - exSelfMillReduce);
   if(exSelfMill>0) aibMill(s, exSelfMill);
   if(exOppPMill>0) o.P = Math.max(0, o.P - exOppPMill);
   if(exDrawHit>0){ aibDraw(s, exDrawHit); log.push('　　🔮 命中効果: '+exDrawHit+' 枚ドロー'); }
@@ -4954,8 +4991,30 @@ function aibApplyAttackPlan(s, plan, o){
     }
   }
   // v1.7: 詠唱した atk/mill スペルの ex.bonus_if_* を集計して削り量に加算
-  const exBonus = aibApplyExBonus(s, o, spellCards);
+  let exBonus = aibApplyExBonus(s, o, spellCards);
+  // v4.0: コンボ判定(spellCards の連鎖順で comboAfter チェック)
+  exBonus += aibApplyComboBonus(s, o, spellCards);
   return {atkL, ab:d.ab, raw:base+plan.spellBonus+exBonus, spellBonus:plan.spellBonus, exBonus, direct:plan.direct, spellNames, spellCards};
+}
+
+// v4.0: 詠唱順に従ってコンボを判定し、ボーナスを返す。副作用(P 変化等)もここで処理。
+function aibApplyComboBonus(s, o, spellCards){
+  let bonus = 0;
+  for(let i = 0; i < spellCards.length; i++){
+    const c = spellCards[i];
+    if(!c.comboAfter || !c.ex) continue;
+    // 直前の詠唱が comboAfter と一致してたらコンボ発動
+    const prev = i > 0 ? spellCards[i-1] : null;
+    if(prev && prev.cardCode === c.comboAfter){
+      const ex = c.ex;
+      if(ex.combo_bonus) bonus += ex.combo_bonus;
+      if(ex.combo_opp_p_mill) o.P = Math.max(0, o.P - ex.combo_opp_p_mill);
+      if(ex.combo_p_gain) s.P = Math.min(7, s.P + ex.combo_p_gain);
+      // combo_self_mill_reduce は aibResolveAttack の self_mill 計算時に参照(別途)
+      c._comboFired = true;  // FX 用フラグ
+    }
+  }
+  return bonus;
 }
 function aibMctsSelectPlan(s, o, K){
   K = K || AIB_MCTS_K;
@@ -5091,8 +5150,9 @@ function aibComputeAttackGreedy(s,o,forced,humanBonus){
     }
     s.P=budget+reserve;
   } else { spellBonus=humanBonus; }
-  // v1.7: ex bonus を集計(MCTS と同じ aibApplyExBonus を利用)
-  const exBonus = aibApplyExBonus(s, o, spellCards);
+  // v1.7: ex bonus + v4.0: コンボボーナス
+  let exBonus = aibApplyExBonus(s, o, spellCards);
+  exBonus += aibApplyComboBonus(s, o, spellCards);
   return {atkL:atkL,ab:ab,raw:base+spellBonus+exBonus,spellBonus:spellBonus,exBonus,direct:direct,spellNames:spellNames,spellCards:spellCards};
 }
 // v1.7: 詠唱した attack 系スペルの ex.bonus_if_* を集計して返す。next_atk_bonus も加算&クリア。
@@ -6512,24 +6572,29 @@ function autoCreateStarterDecks(){
     if (!c) return null;
     return {cardId: c.id, count: n};
   };
-  // v1.6 スターター: 共有10×4 + 該当ペア専用10×2 = 60枚 + リーダー 2 = 62
-  // 共有10枚: TH-001..010 を各4枚
-  const SHARED = [['TH-001',4],['TH-002',4],['TH-003',4],['TH-004',4],['TH-005',4],
-                  ['TH-006',4],['TH-007',4],['TH-008',4],['TH-009',4],['TH-010',4]];
-  // 博麗 = 霊夢(TH-101..105) + 魔理沙(TH-201..205)、各 2 枚ずつ
+  // v4.0 スターター: アーキタイプ分化
+  // 博麗 = コンボ型(専用 ×4 + 共有 ×2、計60枚)
+  //   霊夢/魔理沙の連鎖を狙う:博麗符印→夢想封印 集、マスタースパーク→ファイナル、夢想妙珠→アグニシャイン→サイレントセレナ
   const hakurei = [
     ['TH-L01',1],['TH-L02',1],
-    ...SHARED,
-    ['TH-101',2],['TH-102',2],['TH-103',2],['TH-104',2],['TH-105',2],
-    ['TH-201',2],['TH-202',2],['TH-203',2],['TH-204',2],['TH-205',2],
-  ];
-  // 紅魔 = レミリア(TH-301..305) + フランドール(TH-401..405)、各 2 枚ずつ
+    // 共有 (×2): 連撃コンボの起点に必要なものを優先
+    ['TH-001',2],['TH-002',2],['TH-003',2],['TH-004',2],['TH-005',2],
+    ['TH-006',2],['TH-007',2],['TH-008',2],['TH-009',2],['TH-010',2],
+    // 霊夢専用 (×4)
+    ['TH-101',4],['TH-102',4],['TH-103',4],['TH-104',4],['TH-105',4],
+    // 魔理沙専用 (×4)
+    ['TH-201',4],['TH-202',4],['TH-203',4],['TH-204',4],['TH-205',4],
+  ];  // = 20 + 20 + 20 = 60 枚
+  // 紅魔 = ミッドレンジ型(共有 ×4 + 専用 ×2、計60枚)
+  //   レミリア/フランドールの単発火力 + 共有スペル豊富で柔軟対応
+  const SHARED = [['TH-001',4],['TH-002',4],['TH-003',4],['TH-004',4],['TH-005',4],
+                  ['TH-006',4],['TH-007',4],['TH-008',4],['TH-009',4],['TH-010',4]];
   const koma = [
     ['TH-L03',1],['TH-L04',1],
     ...SHARED,
     ['TH-301',2],['TH-302',2],['TH-303',2],['TH-304',2],['TH-305',2],
     ['TH-401',2],['TH-402',2],['TH-403',2],['TH-404',2],['TH-405',2],
-  ];
+  ];  // = 40 + 10 + 10 = 60 枚
   function buildDeck(name, entries){
     const cards = entries.map(([code,n]) => need(code,n)).filter(x => x);
     return {id:'d'+Date.now()+Math.random().toString(36).slice(2,5), name, description:'スターターデッキ自動作成', cards, dondengCards:[]};
